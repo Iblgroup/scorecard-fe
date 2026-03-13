@@ -37,6 +37,14 @@ export const colors = {
   tableTotalEnd: '#dbeafe',
 } as const;
 
+// ─── Classification Colors ───────────────────────────────────────────────────
+
+export const clsColors = {
+  A: '#2563eb',
+  B: '#059669',
+  C: '#fca311',
+} as const;
+
 // ─── Gradients ──────────────────────────────────────────────────────────────
 
 export const gradients = {

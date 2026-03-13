@@ -1,10 +1,10 @@
 import { useAppSelector } from '@/app/hooks';
 import { ChartCard } from '@/components/chart-card';
-import { BarChart } from '@/components/charts';
+import { BarChart, LineChart } from '@/components/charts';
 import { DataTable, DataTableRow } from '@/components/data-table';
 import { FilterBar } from '@/components/filter-bar';
 import { HeaderActions } from '@/components/header-actions';
-import { colors, gradients } from '@/constants/theme';
+import { clsColors, colors, gradients } from '@/constants/theme';
 import { Box, Flex, Grid, GridItem, HStack, Text } from '@chakra-ui/react';
 
 // ─── Static Data ─────────────────────────────────────────────────────────────
@@ -15,7 +15,7 @@ const BENCHMARKS = [
     days: 90,
     bm: 92,
     rd: 99,
-    color: '#2563eb',
+    color: clsColors.A,
     bg: '#eff6ff',
     border: '#bfdbfe',
   },
@@ -24,7 +24,7 @@ const BENCHMARKS = [
     days: 78,
     bm: 80,
     rd: 95,
-    color: '#059669',
+    color: clsColors.B,
     bg: '#f0fdf4',
     border: '#a7f3d0',
   },
@@ -33,7 +33,7 @@ const BENCHMARKS = [
     days: 65,
     bm: 70,
     rd: 90,
-    color: '#d97706',
+    color: clsColors.C,
     bg: '#fffbeb',
     border: '#fde68a',
   },
@@ -351,12 +351,7 @@ function BenchmarkBanner({
   );
 }
 
-function CoverDaysCard({
-  label,
-  value,
-  inv,
-  color,
-}: (typeof COVER_DAYS)[0]) {
+function CoverDaysCard({ label, value, inv, color }: (typeof COVER_DAYS)[0]) {
   return (
     <Box
       bg="white"
@@ -391,7 +386,13 @@ function CoverDaysCard({
         {label}
       </Text>
 
-      <Text fontSize="3xl" fontWeight="900" color={color} lineHeight="1.1" mt={2}>
+      <Text
+        fontSize="3xl"
+        fontWeight="900"
+        color={color}
+        lineHeight="1.1"
+        mt={2}
+      >
         {value}
       </Text>
 
@@ -417,7 +418,7 @@ function SupplyChainTab() {
       </HStack>
 
       <Grid templateColumns="repeat(12, 1fr)" gap={4}>
-        <GridItem colSpan={{ base: 12, lg: 5 }}>
+        <GridItem colSpan={{ base: 12, lg: 4 }}>
           <Grid
             templateColumns="repeat(2, 1fr)"
             templateRows="repeat(2, 1fr)"
@@ -431,29 +432,38 @@ function SupplyChainTab() {
             ))}
           </Grid>
         </GridItem>
-        <GridItem colSpan={{ base: 12, lg: 7 }}>
+        <GridItem colSpan={{ base: 12, lg: 8 }}>
           <DataTable
             title="Sales Summary"
             headerGradient={gradients.tableBlue}
-            headers={['Classification', 'Sales (SAR)', '%']}
+            headers={['Classification', 'Sales', '%']}
             searchable={false}
           >
-            {SALES_SUMMARY.map((row) => (
-              <DataTableRow
-                key={row.label}
-                cells={[row.label, row.sales, row.pct]}
-                cellColors={[
-                  undefined,
-                  undefined,
-                  row.up === true
-                    ? '#059669'
-                    : row.up === false
-                      ? '#dc2626'
-                      : '#64748b',
-                ]}
-                cellWeights={[undefined, '600', '700']}
-              />
-            ))}
+            {SALES_SUMMARY.map((row) => {
+              const clsColor = row.label.startsWith('A')
+                ? clsColors.A
+                : row.label.startsWith('B')
+                  ? clsColors.B
+                  : row.label.startsWith('C')
+                    ? clsColors.C
+                    : undefined;
+              return (
+                <DataTableRow
+                  key={row.label}
+                  cells={[row.label, row.sales, row.pct]}
+                  cellColors={[
+                    clsColor,
+                    undefined,
+                    row.up === true
+                      ? '#059669'
+                      : row.up === false
+                        ? '#dc2626'
+                        : '#64748b',
+                  ]}
+                  cellWeights={[clsColor ? '700' : undefined, '600', '700']}
+                />
+              );
+            })}
             <DataTableRow
               cells={['Σ Total', '5,081,000', '▲100%']}
               isTotal
@@ -469,11 +479,11 @@ function SupplyChainTab() {
         <ChartCard
           colSpan={6}
           title="Forecast Accuracy TSCL — By Classification"
-          headerRight={
-            <Text fontSize="11px" color="gray.400">
-              Jan – Mar 2025
-            </Text>
-          }
+          // headerRight={
+          //   <Text fontSize="11px" color="gray.400">
+          //     Jan – Mar 2025
+          //   </Text>
+          // }
           height="240px"
         >
           <BarChart
@@ -494,11 +504,11 @@ function SupplyChainTab() {
         <ChartCard
           colSpan={6}
           title="Forecast Accuracy IBL — By Classification"
-          headerRight={
-            <Text fontSize="11px" color="gray.400">
-              Jan – Mar 2025
-            </Text>
-          }
+          // headerRight={
+          //   <Text fontSize="11px" color="gray.400">
+          //     Jan – Mar 2025
+          //   </Text>
+          // }
           height="240px"
         >
           <BarChart
@@ -520,12 +530,9 @@ function SupplyChainTab() {
   );
 }
 
-// ─── Tab: Service Measure (Inventory & Service) ────────────────────────────────
-
 function ServiceMeasureTab() {
   return (
     <Flex direction="column" gap={4}>
-      {/* Inventory Days + Service Measure Chart */}
       <Grid templateColumns="repeat(12, 1fr)" gap={4}>
         <GridItem colSpan={{ base: 12, lg: 6 }}>
           <DataTable
@@ -537,16 +544,28 @@ function ServiceMeasureTab() {
             rowCollapsible
             maxHeight="340px"
           >
-            {INV_ROWS.map((row) => (
-              <DataTableRow
-                key={row.cls}
-                cells={[row.cls, ...row.vals.map(String)]}
-                isTotal={row.bold}
-                subRows={row.subRows.map((s) => ({
-                  cells: [s.sku, ...s.vals.map(String)],
-                }))}
-              />
-            ))}
+            {INV_ROWS.map((row) => {
+              const clsColor =
+                row.cls === 'A'
+                  ? clsColors.A
+                  : row.cls === 'B'
+                    ? clsColors.B
+                    : row.cls === 'C'
+                      ? clsColors.C
+                      : undefined;
+              return (
+                <DataTableRow
+                  key={row.cls}
+                  cells={[row.cls, ...row.vals.map(String)]}
+                  isTotal={row.bold}
+                  cellColors={[clsColor]}
+                  cellWeights={['700', ...row.vals.map(() => '600')]}
+                  subRows={row.subRows.map((s) => ({
+                    cells: [s.sku, ...s.vals.map(String)],
+                  }))}
+                />
+              );
+            })}
           </DataTable>
         </GridItem>
 
@@ -555,39 +574,37 @@ function ServiceMeasureTab() {
           title="Service Measure — SKU-A%, SKU-B%, SKU-C% by Branch"
           height="340px"
         >
-          <BarChart
+          <LineChart
             data={SERVICE_MEASURE}
             xKey="branch"
-            bars={[
-              { key: 'skuA', label: 'SKU-A%', color: '#06b6d4' },
-              { key: 'skuB', label: 'SKU-B%', color: '#f59e0b' },
-              { key: 'skuC', label: 'SKU-C%', color: '#10b981' },
+            lines={[
+              { key: 'skuA', label: 'SKU-A%', color: clsColors.A },
+              { key: 'skuB', label: 'SKU-B%', color: clsColors.B },
+              { key: 'skuC', label: 'SKU-C%', color: clsColors.C },
             ]}
-            // variant="stacked-bar"
             height={310}
-            yTickFormatter={(v) => `${v}%`}
+            labelFormatter={(v) => `${v}%`}
           />
         </ChartCard>
       </Grid>
 
-      {/* Bottom charts row */}
       <Grid templateColumns="repeat(12, 1fr)" gap={4}>
         <ChartCard
           colSpan={4}
           title="Cover Days TGT vs Actual"
           height="220px"
-          headerRight={
-            <HStack gap={3} fontSize="10px" color="gray.500">
-              <HStack gap={1}>
-                <Box w={2} h={2} bg="#1d4ed8" borderRadius="sm" />
-                Cover Days TGT
-              </HStack>
-              <HStack gap={1}>
-                <Box w={2} h={2} bg="#06b6d4" borderRadius="sm" />
-                Actual Cover Days
-              </HStack>
-            </HStack>
-          }
+          // headerRight={
+          //   <HStack gap={3} fontSize="10px" color="gray.500">
+          //     <HStack gap={1}>
+          //       <Box w={2} h={2} bg="#1d4ed8" borderRadius="sm" />
+          //       Cover Days TGT
+          //     </HStack>
+          //     <HStack gap={1}>
+          //       <Box w={2} h={2} bg="#06b6d4" borderRadius="sm" />
+          //       Actual Cover Days
+          //     </HStack>
+          //   </HStack>
+          // }
         >
           <BarChart
             data={COVER_DAYS_CHART}
@@ -606,18 +623,18 @@ function ServiceMeasureTab() {
           colSpan={4}
           title="SKUs Against Threshold"
           height="220px"
-          headerRight={
-            <HStack gap={3} fontSize="10px" color="gray.500">
-              <HStack gap={1}>
-                <Box w={2} h={2} bg="#1d4ed8" borderRadius="sm" />
-                No. SKUs &gt; Threshold
-              </HStack>
-              <HStack gap={1}>
-                <Box w={2} h={2} bg="#06b6d4" borderRadius="sm" />
-                No. SKUs &lt; Threshold
-              </HStack>
-            </HStack>
-          }
+          // headerRight={
+          //   <HStack gap={3} fontSize="10px" color="gray.500">
+          //     <HStack gap={1}>
+          //       <Box w={2} h={2} bg="#1d4ed8" borderRadius="sm" />
+          //       No. SKUs &gt; Threshold
+          //     </HStack>
+          //     <HStack gap={1}>
+          //       <Box w={2} h={2} bg="#06b6d4" borderRadius="sm" />
+          //       No. SKUs &lt; Threshold
+          //     </HStack>
+          //   </HStack>
+          // }
         >
           <BarChart
             data={SKUS_THRESHOLD}
@@ -661,12 +678,9 @@ function ServiceMeasureTab() {
   );
 }
 
-// ─── Tab: Dispatch, WIP & RPM ─────────────────────────────────────────────────
-
 function DispatchWipTab() {
   return (
     <Grid templateColumns="repeat(3, 1fr)" gap={4}>
-      {/* Dispatch Vs Order */}
       <DataTable
         title="Dispatch Vs Order"
         headerGradient={gradients.tableBlue}

@@ -8,8 +8,23 @@ import {
   Table,
   Text,
 } from '@chakra-ui/react';
-import { Children, cloneElement, isValidElement, useState, type ReactElement, type ReactNode } from 'react';
-import { FiArrowDown, FiArrowUp, FiChevronDown, FiChevronUp, FiDownload, FiMinus, FiPlus } from 'react-icons/fi';
+import {
+  Children,
+  cloneElement,
+  isValidElement,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
+import {
+  FiArrowDown,
+  FiArrowUp,
+  FiChevronDown,
+  FiChevronUp,
+  FiDownload,
+  FiMinus,
+  FiPlus,
+} from 'react-icons/fi';
 import { colors, gradients } from '@/constants/theme';
 import { TablePagination } from '@/components/pagination';
 import * as XLSX from 'xlsx';
@@ -101,11 +116,13 @@ export function DataTable({
   const pageRows = allRows.slice(startIndex, startIndex + pageSize);
   const showPagination = totalCount > pageSize;
 
-  // Inject showToggleCol into each DataTableRow when rowCollapsible is enabled
   const renderedRows = rowCollapsible
     ? pageRows.map((row, i) =>
         isValidElement(row)
-          ? cloneElement(row as ReactElement<DataTableRowProps>, { showToggleCol: true, key: i })
+          ? cloneElement(row as ReactElement<DataTableRowProps>, {
+              showToggleCol: true,
+              key: i,
+            })
           : row
       )
     : pageRows;
@@ -141,7 +158,11 @@ export function DataTable({
                 aria-label={isCollapsed ? 'Expand rows' : 'Collapse rows'}
                 title={isCollapsed ? 'Expand rows' : 'Collapse rows'}
               >
-                {isCollapsed ? <FiChevronDown size={16} /> : <FiChevronUp size={16} />}
+                {isCollapsed ? (
+                  <FiChevronDown size={16} />
+                ) : (
+                  <FiChevronUp size={16} />
+                )}
               </Button>
             )}
             {title && (
@@ -192,7 +213,6 @@ export function DataTable({
                   position: 'sticky',
                   top: 0,
                   zIndex: 2,
-                  background: headerGradient,
                 },
               }
             : undefined
@@ -201,7 +221,6 @@ export function DataTable({
         <Table.Root size="sm" w="full" borderTopRadius="none">
           <Table.Header>
             <Table.Row style={{ background: headerGradient }}>
-              {/* Toggle column header — no label, not sortable */}
               {rowCollapsible && <Table.ColumnHeader w="32px" />}
               {headers.map((h, i) => (
                 <Table.ColumnHeader
@@ -351,7 +370,8 @@ export function DataTableRow({
         ))}
       </Table.Row>
 
-      {hasSubRows && isExpanded &&
+      {hasSubRows &&
+        isExpanded &&
         subRows!.map((sub, i) => (
           <Table.Row key={i} bg="gray.50" _hover={{ bg: 'gray.100' }}>
             {/* indent spacer */}
