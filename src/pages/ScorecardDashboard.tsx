@@ -1,3 +1,13 @@
+import { useGetSalesSummary } from '@/api/salesSummary';
+import { useGetCoverDays } from '@/api/coverDays';
+import { useGetForecastAccuracyMonthly } from '@/api/forecastAccuracyMonthly';
+import { useGetForecastAccuracyYearly } from '@/api/forecastAccuracyYearly';
+import { useGetInventoryDays } from '@/api/inventoryDays';
+import { useGetAboveBelowThreshold } from '@/api/aboveBelowThreshold';
+import { useGetForecastAccuracyCategoryMonthly } from '@/api/forcastAccuracyCategoryMonthly';
+import { useGetForecastAccuracyCategoryYearly } from '@/api/forcastAccuracyCategoryYearly';
+import { useGetIblVsTscl } from '@/api/iblVsTscl';
+import { useGetDispatchVsOrder } from '@/api/dispatchVsOrder';
 import { useAppSelector } from '@/app/hooks';
 import { ChartCard } from '@/components/chart-card';
 import { BarChart, GaugeChart, LineChart } from '@/components/charts';
@@ -8,12 +18,10 @@ import { clsColors, colors, gradients } from '@/constants/theme';
 import { Box, Flex, Grid, GridItem, HStack, Text } from '@chakra-ui/react';
 import { SalesSummaryCard } from '@/components/sales-summary/SalesSummaryCard';
 
-// ─── Static Data ─────────────────────────────────────────────────────────────
-
 const BENCHMARKS = [
   {
     cls: 'A',
-    days: 90,
+    days: 35,
     bm: 92,
     rd: 99,
     color: clsColors.A,
@@ -22,7 +30,7 @@ const BENCHMARKS = [
   },
   {
     cls: 'B',
-    days: 78,
+    days: 25,
     bm: 80,
     rd: 95,
     color: clsColors.B,
@@ -31,7 +39,7 @@ const BENCHMARKS = [
   },
   {
     cls: 'C',
-    days: 65,
+    days: 20,
     bm: 70,
     rd: 90,
     color: clsColors.C,
@@ -41,15 +49,34 @@ const BENCHMARKS = [
 ];
 
 const SALES_SUMMARY = [
-  { label: 'A  —  High Velocity', sales: '2,450,000', pct: '+48.2%', up: true },
+  {
+    label: 'A  —  High Velocity',
+    sku: 'SKU-A',
+    sales: '2,450,000',
+    pct: '+48.2%',
+    up: true,
+  },
   {
     label: 'B  —  Medium Velocity',
+    sku: 'SKU-B',
     sales: '1,830,000',
     pct: '+36.1%',
     up: true,
   },
-  { label: 'C  —  Low Velocity', sales: '793,000', pct: '▼15.6%', up: false },
-  { label: '—  Unclassified', sales: '8,000', pct: '−0.2%', up: null },
+  {
+    label: 'C  —  Low Velocity',
+    sku: 'SKU-C',
+    sales: '793,000',
+    pct: '▼15.6%',
+    up: false,
+  },
+  {
+    label: '—  Unclassified',
+    sku: '—',
+    sales: '8,000',
+    pct: '−0.2%',
+    up: null,
+  },
 ];
 
 const COVER_DAYS = [
@@ -99,18 +126,24 @@ const FORECAST_IBL = [
   { classification: 'C', Jan: 60, Feb: 63, Mar: 67 },
 ];
 
-const INV_BRANCHES = [
-  'Bahawalpur',
-  'Faisalabad',
-  'Gujranwala',
-  'Hyderabad',
-  'Islamabad',
-  'Karachi',
-  'Korangi',
-  'Lahore',
-  'Mingora',
-  'Multan',
-];
+const INV_API_BRANCHES = [
+  { key: 'bahawalpur', label: 'Bahawalpur' },
+  { key: 'faisalabad', label: 'Faisalabad' },
+  { key: 'gujranwala', label: 'Gujranwala' },
+  { key: 'hyderabad', label: 'Hyderabad' },
+  { key: 'islamabad', label: 'Islamabad' },
+  { key: 'karachi', label: 'Karachi' },
+  { key: 'korangi', label: 'Korangi' },
+  { key: 'lahore', label: 'Lahore' },
+  { key: 'mingora', label: 'Mingora' },
+  { key: 'multan', label: 'Multan' },
+  { key: 'peshawar', label: 'Peshawar' },
+  { key: 'quetta', label: 'Quetta' },
+  { key: 'sukkur', label: 'Sukkur' },
+] as const;
+
+// keep for fallback static rendering only
+const INV_BRANCHES = INV_API_BRANCHES.map((b) => b.label);
 
 const INV_ROWS = [
   {
@@ -430,7 +463,46 @@ function CoverDaysCard({ label, value, inv, color }: (typeof COVER_DAYS)[0]) {
   );
 }
 
-function SupplyChainTab() {
+const LABEL_MAP: Record<string, string> = {
+  A: 'A  —  High Velocity',
+  B: 'B  —  Medium Velocity',
+  C: 'C  —  Low Velocity',
+  Other: 'Other',
+};
+
+interface ForecastCategoryRow {
+  category: string;
+  month_label: string;
+  forecast_accuracy_pct: number;
+}
+
+interface SupplyChainTabProps {
+  salesRows: typeof SALES_SUMMARY;
+  salesTotal: { sales: string; pct: string };
+  coverDaysRows: typeof COVER_DAYS;
+  tsclAccuracy: number | null;
+  tsclSalesDisplay?: { achieved: string; target: string };
+  forecastBarData: Record<string, string | number>[];
+  forecastMonths: string[];
+  iblAccuracy: number | null;
+  iblSalesDisplay?: { achieved: string; target: string };
+  iblBarData: Record<string, string | number>[];
+  iblMonths: string[];
+}
+
+function SupplyChainTab({
+  salesRows,
+  salesTotal,
+  tsclAccuracy,
+  tsclSalesDisplay,
+  forecastBarData,
+  forecastMonths,
+  iblAccuracy,
+  iblSalesDisplay,
+  iblBarData,
+  iblMonths,
+  coverDaysRows,
+}: SupplyChainTabProps) {
   return (
     <Flex direction="column" gap={4}>
       {/* Benchmarks + Sales Summary */}
@@ -462,10 +534,7 @@ function SupplyChainTab() {
 
         {/* Sales Summary — 6 cols */}
         <GridItem colSpan={{ base: 12, lg: 6 }}>
-          <SalesSummaryCard
-            rows={SALES_SUMMARY}
-            total={{ sales: '5,081,000', pct: '▲100%' }}
-          />
+          <SalesSummaryCard rows={salesRows} total={salesTotal} />
         </GridItem>
 
         {/* Cover Days — 3 cols */}
@@ -482,7 +551,7 @@ function SupplyChainTab() {
               Cover Days
             </Text>
             <Grid templateColumns="repeat(2, 1fr)" gap={3}>
-              {COVER_DAYS.map((c) => (
+              {coverDaysRows.map((c) => (
                 <CoverDaysCard key={c.label} {...c} />
               ))}
             </Grid>
@@ -502,23 +571,29 @@ function SupplyChainTab() {
               justifyContent="center"
             >
               <GaugeChart
-                value={83}
-                target={90}
+                value={tsclAccuracy ?? 83}
+                target={100}
                 title="TSCL"
                 subtitle="Total Supply Chain Level"
                 color={clsColors.A}
+                displayAchieved={tsclSalesDisplay?.achieved}
+                displayTarget={tsclSalesDisplay?.target}
               />
             </Box>
             <Box w="1px" bg="gray.100" mx={3} flexShrink={0} />
             <Box flex={1} minW={0}>
               <BarChart
-                data={FORECAST_TSCL}
+                data={forecastBarData.length ? forecastBarData : FORECAST_TSCL}
                 xKey="classification"
-                bars={[
-                  { key: 'Jan', label: 'Jan 2025', color: '#2563eb' },
-                  { key: 'Feb', label: 'Feb 2025', color: '#06b6d4' },
-                  { key: 'Mar', label: 'Mar 2025', color: '#10b981' },
-                ]}
+                bars={
+                  forecastMonths.length
+                    ? forecastMonths.map((m, i) => ({
+                        key: m,
+                        label: m,
+                        color: (['#2563eb', '#06b6d4', '#10b981'] as string[])[i] ?? '#2563eb',
+                      }))
+                    : [{ key: 'accuracy', label: 'Forecast Accuracy', color: '#2563eb' }]
+                }
                 height={220}
                 yTickFormatter={(v) => `${v}%`}
                 labelFormatter={(v) => `${v}%`}
@@ -538,23 +613,29 @@ function SupplyChainTab() {
               justifyContent="center"
             >
               <GaugeChart
-                value={78}
-                target={85}
+                value={iblAccuracy ?? 78}
+                target={100}
                 title="IBL"
                 subtitle="Item Branch Level"
                 color={clsColors.B}
+                displayAchieved={iblSalesDisplay?.achieved}
+                displayTarget={iblSalesDisplay?.target}
               />
             </Box>
             <Box w="1px" bg="gray.100" mx={3} flexShrink={0} />
             <Box flex={1} minW={0}>
               <BarChart
-                data={FORECAST_IBL}
+                data={iblBarData.length ? iblBarData : FORECAST_IBL}
                 xKey="classification"
-                bars={[
-                  { key: 'Jan', label: 'Jan 2025', color: '#2563eb' },
-                  { key: 'Feb', label: 'Feb 2025', color: '#06b6d4' },
-                  { key: 'Mar', label: 'Mar 2025', color: '#10b981' },
-                ]}
+                bars={
+                  iblMonths.length
+                    ? iblMonths.map((m, i) => ({
+                        key: m,
+                        label: m,
+                        color: (['#2563eb', '#06b6d4', '#10b981'] as string[])[i] ?? '#2563eb',
+                      }))
+                    : [{ key: 'accuracy', label: 'Forecast Accuracy', color: '#2563eb' }]
+                }
                 height={220}
                 yTickFormatter={(v) => `${v}%`}
                 labelFormatter={(v) => `${v}%`}
@@ -568,7 +649,46 @@ function SupplyChainTab() {
   );
 }
 
-function ServiceMeasureTab() {
+function ServiceMeasureTab({ inventoryDaysData }: { inventoryDaysData: unknown }) {
+  type InvApiRow = Record<string, string | null>;
+  const branchKeys = INV_API_BRANCHES.map((b) => b.key);
+  const invApiRows = (inventoryDaysData as { data?: InvApiRow[] })?.data ?? [];
+
+  const avgVals = (rows: InvApiRow[]) =>
+    branchKeys.map((key) => {
+      const vals = rows.map((r) => Number(r[key] ?? 0)).filter((v) => !isNaN(v));
+      return vals.length ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length) : 0;
+    });
+
+  const grouped = invApiRows.reduce<Record<string, InvApiRow[]>>((acc, row) => {
+    const key = (row.category as string) || 'Other';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(row);
+    return acc;
+  }, {});
+
+  const computedRows =
+    invApiRows.length > 0
+      ? [
+          { cls: '∑', vals: avgVals(invApiRows), bold: true, subRows: [] as { sku: string; vals: number[] }[] },
+          ...(['A', 'B', 'C', 'Other'] as const)
+            .filter((c) => grouped[c]?.length)
+            .map((cls) => ({
+              cls,
+              vals: avgVals(grouped[cls]),
+              bold: false,
+              subRows: grouped[cls].map((r) => ({
+                sku: (r.item_desc as string) ?? '',
+                vals: branchKeys.map((k) => Number(r[k] ?? 0)),
+              })),
+            })),
+        ]
+      : INV_ROWS;
+
+  const tableHeaders = invApiRows.length > 0
+    ? ['Class', ...INV_API_BRANCHES.map((b) => b.label.slice(0, 8))]
+    : ['Class', ...INV_BRANCHES.map((b) => b.slice(0, 8))];
+
   return (
     <Flex direction="column" gap={4}>
       <Grid templateColumns="repeat(12, 1fr)" gap={4}>
@@ -576,13 +696,12 @@ function ServiceMeasureTab() {
           <DataTable
             title="Inventory Days"
             headerGradient={gradients.tableBlue}
-            headers={['Class', ...INV_BRANCHES.map((b) => b.slice(0, 8))]}
+            headers={tableHeaders}
             searchable={false}
-            // collapsible
             rowCollapsible
             maxHeight="340px"
           >
-            {INV_ROWS.map((row) => {
+            {computedRows.map((row) => {
               const clsColor =
                 row.cls === 'A'
                   ? clsColors.A
@@ -792,6 +911,199 @@ function DispatchWipTab() {
 export default function ScorecardDashboard() {
   const { mainTab, filters } = useAppSelector((state) => state.salesDashboard);
 
+  const params = {
+    ...(filters.classification && { classification: filters.classification }),
+    ...(filters.branch && { branch: filters.branch }),
+    ...(filters.sku && { sku: filters.sku }),
+    ...(filters.dateFrom && { dateFrom: filters.dateFrom }),
+    ...(filters.dateTo && { dateTo: filters.dateTo }),
+  };
+
+  const { data: salesSummaryData } = useGetSalesSummary(params);
+  const { data: coverDaysData } = useGetCoverDays(params);
+  const { data: coverDaysDataA } = useGetCoverDays({
+    ...params,
+    classification: 'A',
+  });
+  const { data: coverDaysDataB } = useGetCoverDays({
+    ...params,
+    classification: 'B',
+  });
+  const { data: coverDaysDataC } = useGetCoverDays({
+    ...params,
+    classification: 'C',
+  });
+  const { data: forecastAccuracyMonthlyData } =
+    useGetForecastAccuracyMonthly(params);
+  const { data: forecastAccuracyCategoryMonthlyData } =
+    useGetForecastAccuracyCategoryMonthly({ ...params, date: new Date().toISOString().slice(0, 10) });
+
+  const { data: forecastAccuracyYearlyData } =
+    useGetForecastAccuracyYearly({ ...params, date: new Date().toISOString().slice(0, 10) });
+  const { data: forecastAccuracyCategoryYearlyData } =
+    useGetForecastAccuracyCategoryYearly({ ...params, date: new Date().toISOString().slice(0, 10) });
+
+  const { data: inventoryDaysData } = useGetInventoryDays(params);
+  const { data: aboveBelowThresholdData } = useGetAboveBelowThreshold(params);
+  const { data: iblVsTsclData } = useGetIblVsTscl(params);
+  const { data: dispatchVsOrderData } = useGetDispatchVsOrder(params);
+
+  const apiRows = salesSummaryData?.data as
+    | { classification: string; sku: number; new_total_all_sales: number }[]
+    | undefined;
+
+  const totalSales = apiRows
+    ? apiRows.reduce((sum, item) => sum + Number(item.new_total_all_sales), 0)
+    : null;
+
+  const UP_MAP: Record<string, boolean | null> = {
+    A: true,
+    B: true,
+    C: false,
+    Other: null,
+  };
+
+  const salesRows =
+    apiRows && totalSales
+      ? apiRows.map((item) => {
+          const pct = (
+            (Number(item.new_total_all_sales) / totalSales) *
+            100
+          ).toFixed(1);
+          return {
+            label: LABEL_MAP[item.classification] ?? item.classification,
+            sku: String(item.sku),
+            sales: Number(item.new_total_all_sales).toLocaleString('en-US', {
+              maximumFractionDigits: 0,
+            }),
+            pct: `${pct}%`,
+            up: UP_MAP[item.classification] ?? null,
+          };
+        })
+      : SALES_SUMMARY;
+
+  const salesTotal = {
+    sales: totalSales
+      ? totalSales.toLocaleString('en-US', { maximumFractionDigits: 0 })
+      : '5,081,000',
+    pct: '100%',
+  };
+
+  const extractCoverDay = (data: unknown) => {
+    const row = (
+      data as { data?: { cover_days: number; closing_inventory_ibl: string }[] }
+    )?.data?.[0];
+    return row
+      ? {
+          value: Math.round(Number(row.cover_days)),
+          inv: Number(row.closing_inventory_ibl).toLocaleString('en-US', {
+            maximumFractionDigits: 0,
+          }),
+        }
+      : null;
+  };
+
+  const coverDaysRows: typeof COVER_DAYS = [
+    {
+      ...COVER_DAYS[0],
+      ...(extractCoverDay(coverDaysData) ?? {}),
+    },
+    {
+      ...COVER_DAYS[1],
+      ...(extractCoverDay(coverDaysDataA) ?? {}),
+    },
+    {
+      ...COVER_DAYS[2],
+      ...(extractCoverDay(coverDaysDataB) ?? {}),
+    },
+    {
+      ...COVER_DAYS[3],
+      ...(extractCoverDay(coverDaysDataC) ?? {}),
+    },
+  ];
+
+  const tsclAccuracy = (() => {
+    const row = (forecastAccuracyMonthlyData as { data?: { forecast_accuracy_pct: number; new_total_all_sales: number }[] })?.data?.[0];
+    return row ? Math.round(row.forecast_accuracy_pct * 100 * 10) / 10 : null;
+  })();
+
+  const tsclSalesDisplay = (() => {
+    const row = (forecastAccuracyMonthlyData as { data?: { new_total_all_sales: number; period_sales_trg_ibl_primary: number }[] })?.data?.[0];
+    if (!row) return undefined;
+    return {
+      achieved: Number(row.new_total_all_sales).toLocaleString('en-US', { maximumFractionDigits: 0 }),
+      target: Number(row.period_sales_trg_ibl_primary).toLocaleString('en-US', { maximumFractionDigits: 0 }),
+    };
+  })();
+
+  const iblAccuracy = (() => {
+    const row = (forecastAccuracyYearlyData as { data?: { forecast_accuracy_pct: number; new_total_all_sales: number; budget: number }[] })?.data?.[0];
+    return row ? Math.round(row.forecast_accuracy_pct * 100 * 10) / 10 : null;
+  })();
+
+  const iblSalesDisplay = (() => {
+    const row = (forecastAccuracyYearlyData as { data?: { new_total_all_sales: number; budget: number }[] })?.data?.[0];
+    if (!row) return undefined;
+    return {
+      achieved: Number(row.new_total_all_sales).toLocaleString('en-US', { maximumFractionDigits: 0 }),
+      target: Number(row.budget).toLocaleString('en-US', { maximumFractionDigits: 0 }),
+    };
+  })();
+
+  const iblCategoryRows: ForecastCategoryRow[] =
+    (forecastAccuracyCategoryYearlyData as { data?: ForecastCategoryRow[] })?.data ?? [];
+
+  const iblMonths = [...new Set(iblCategoryRows.map((r) => r.month_label))];
+
+  const iblBarData: Record<string, string | number>[] = Object.values(
+    iblCategoryRows.reduce<Record<string, Record<string, string | number>>>(
+      (acc, r) => {
+        const key = r.category;
+        if (!acc[key]) acc[key] = { classification: key };
+        acc[key][r.month_label] = Math.round(r.forecast_accuracy_pct * 100 * 10) / 10;
+        return acc;
+      },
+      {}
+    )
+  );
+
+  const forecastCategoryRows: ForecastCategoryRow[] =
+    (forecastAccuracyCategoryMonthlyData as { data?: ForecastCategoryRow[] })?.data ?? [];
+
+  const forecastMonths = [...new Set(forecastCategoryRows.map((r) => r.month_label))];
+
+  const forecastBarData: Record<string, string | number>[] = Object.values(
+    forecastCategoryRows.reduce<Record<string, Record<string, string | number>>>(
+      (acc, r) => {
+        const key = r.category;
+        if (!acc[key]) acc[key] = { classification: key };
+        acc[key][r.month_label] = Math.round(r.forecast_accuracy_pct * 100 * 10) / 10;
+        return acc;
+      },
+      {}
+    )
+  );
+
+  console.log('salesSummaryData', salesSummaryData);
+  console.log('coverDaysData', coverDaysData);
+  console.log('coverDaysDataA', coverDaysDataA);
+  console.log('coverDaysDataB', coverDaysDataB);
+  console.log('coverDaysDataC', coverDaysDataC);
+  console.log('forecastAccuracyMonthlyData', forecastAccuracyMonthlyData);
+  console.log('forecastAccuracyYearlyData', forecastAccuracyYearlyData);
+  console.log('inventoryDaysData', inventoryDaysData);
+  console.log('aboveBelowThresholdData', aboveBelowThresholdData);
+  console.log(
+    'forecastAccuracyCategoryMonthlyData',
+    forecastAccuracyCategoryMonthlyData
+  );
+  console.log(
+    'forecastAccuracyCategoryYearlyData',
+    forecastAccuracyCategoryYearlyData
+  );
+  console.log('iblVsTsclData', iblVsTsclData);
+  console.log('dispatchVsOrderData', dispatchVsOrderData);
+
   return (
     <Flex direction="column" minH="100vh" bg={colors.pageBg}>
       {/* Header */}
@@ -860,8 +1172,22 @@ export default function ScorecardDashboard() {
 
       {/* Page content */}
       <Box flex={1} px={4} py={4} overflowY="auto">
-        {mainTab === 'supplyChain' && <SupplyChainTab />}
-        {mainTab === 'serviceMeasure' && <ServiceMeasureTab />}
+        {mainTab === 'supplyChain' && (
+          <SupplyChainTab
+            salesRows={salesRows}
+            salesTotal={salesTotal}
+            coverDaysRows={coverDaysRows}
+            tsclAccuracy={tsclAccuracy}
+            tsclSalesDisplay={tsclSalesDisplay}
+            forecastBarData={forecastBarData}
+            forecastMonths={forecastMonths}
+            iblAccuracy={iblAccuracy}
+            iblSalesDisplay={iblSalesDisplay}
+            iblBarData={iblBarData}
+            iblMonths={iblMonths}
+          />
+        )}
+        {mainTab === 'serviceMeasure' && <ServiceMeasureTab inventoryDaysData={inventoryDaysData} />}
         {mainTab === 'dispatchWip' && <DispatchWipTab />}
       </Box>
     </Flex>

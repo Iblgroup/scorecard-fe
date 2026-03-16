@@ -3,6 +3,7 @@ import { clsColors } from '@/constants/theme';
 
 interface SalesRow {
   label: string;
+  sku: string;
   sales: string;
   pct: string;
   up: boolean | null;
@@ -55,6 +56,8 @@ function Pill({
 }
 
 export function SalesSummaryCard({ rows, total }: SalesSummaryCardProps) {
+  const totalSku = rows.reduce((sum, r) => sum + (Number(r.sku) || 0), 0);
+
   return (
     <Box bg="white" borderRadius="xl" p={4} boxShadow="md" h="full">
       <Text
@@ -85,6 +88,16 @@ export function SalesSummaryCard({ rows, total }: SalesSummaryCardProps) {
           letterSpacing="wide"
         >
           Classification
+        </Text>
+        <Text
+          w="120px"
+          fontSize="12px"
+          fontWeight="700"
+          color="gray.400"
+          textTransform="uppercase"
+          letterSpacing="wide"
+        >
+          SKU
         </Text>
         <Text
           w="90px"
@@ -127,6 +140,9 @@ export function SalesSummaryCard({ rows, total }: SalesSummaryCardProps) {
             <Text flex={1} fontSize="13px" fontWeight="500" color={lc}>
               {row.label}
             </Text>
+            <Text w="120px" fontSize="12px" fontWeight="500" color="gray.600">
+              {row.sku}
+            </Text>
             <Box w="90px" display="flex" justifyContent="center">
               <Pill
                 label={row.sales}
@@ -159,7 +175,10 @@ export function SalesSummaryCard({ rows, total }: SalesSummaryCardProps) {
           gap={3}
         >
           <Text flex={1} fontSize="13px" fontWeight="700" color="#1e293b">
-            Σ Total
+            Total
+          </Text>
+          <Text w="120px" fontSize="12px" fontWeight="600" color="gray.600">
+            {totalSku}
           </Text>
           <Box w="90px" display="flex" justifyContent="center">
             <Pill

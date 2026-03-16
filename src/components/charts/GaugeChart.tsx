@@ -1,4 +1,4 @@
-import { Box, Text, VStack } from '@chakra-ui/react';
+import { Box, Flex, Text, VStack } from '@chakra-ui/react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 export interface GaugeChartProps {
@@ -7,6 +7,8 @@ export interface GaugeChartProps {
   title: string;
   subtitle?: string;
   color?: string;
+  displayTarget?: string; // optional override for target in bottom line
+  displayAchieved?: string; // optional override for achieved in bottom line
 }
 
 export function GaugeChart({
@@ -15,6 +17,8 @@ export function GaugeChart({
   title,
   subtitle,
   color = '#2563eb',
+  displayTarget,
+  displayAchieved,
 }: GaugeChartProps) {
   const diff = value - target;
   const isAbove = diff >= 0;
@@ -78,11 +82,19 @@ export function GaugeChart({
         </Box>
       </Box>
 
-      <Text fontSize="11px" color="gray.500" mt={1}>
-        Target {target}% · Achieved {value}%
-      </Text>
+      <Flex mt={1} gap={3} justify="center">
+        <Box textAlign="center">
+          <Text fontSize="10px" color="gray.400" fontWeight="600" textTransform="uppercase" letterSpacing="wide">Target</Text>
+          <Text fontSize="11px" color="gray.600" fontWeight="700">{displayTarget ?? `${target}%`}</Text>
+        </Box>
+        <Box w="1px" bg="gray.200" alignSelf="stretch" />
+        <Box textAlign="center">
+          <Text fontSize="10px" color="gray.400" fontWeight="600" textTransform="uppercase" letterSpacing="wide">Achieved</Text>
+          <Text fontSize="11px" color={color} fontWeight="700">{displayAchieved ?? `${value}%`}</Text>
+        </Box>
+      </Flex>
       <Text fontSize="12px" fontWeight="700" color={statusColor} mt={0.5}>
-        {statusSymbol} {Math.abs(diff)}% {isAbove ? 'above' : 'below'} target
+        {statusSymbol} {Math.abs(diff).toFixed(1)}% {isAbove ? 'above' : 'below'} target
       </Text>
     </VStack>
   );
