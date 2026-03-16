@@ -1,4 +1,3 @@
-import { useGetAllFilters } from '@/api/allFilters';
 import { useAppDispatch } from '@/app/hooks';
 import { DatePicker } from '@/components/date-picker';
 import { Select } from '@/components/select';
@@ -29,6 +28,10 @@ const CLASSIFICATION_OPTIONS = [
   { value: 'Unclassified', label: 'Unclassified' },
 ];
 
+const BRANCH_OPTIONS: { value: string; label: string }[] = [];
+
+const SKU_OPTIONS: { value: string; label: string }[] = [];
+
 const SELECT_FILTERS: { label: string; key: keyof Filters }[] = [
   { label: 'Classification', key: 'classification' },
   { label: 'Branches', key: 'branch' },
@@ -38,25 +41,13 @@ const SELECT_FILTERS: { label: string; key: keyof Filters }[] = [
 export function FilterBar({ initialFilters }: FilterBarProps) {
   const dispatch = useAppDispatch();
 
-  const { data: filterData } = useGetAllFilters();
-  const rows = (filterData?.data ?? []) as Record<string, unknown>[];
-
-  const buildOptions = (columnKey: string) => {
-    const unique = [
-      ...new Set(
-        rows.map((row) => (row[columnKey] as string)?.trim()).filter(Boolean)
-      ),
-    ];
-    return unique.map((v) => ({ value: v, label: v }));
-  };
-
   const optionsMap: Record<
     'classification' | 'branch' | 'sku',
     { value: string; label: string }[]
   > = {
     classification: CLASSIFICATION_OPTIONS,
-    branch: buildOptions('branch_description'),
-    sku: buildOptions('prod_nm'),
+    branch: BRANCH_OPTIONS,
+    sku: SKU_OPTIONS,
   };
 
   const hasActiveFilters = Object.values(initialFilters).some(Boolean);

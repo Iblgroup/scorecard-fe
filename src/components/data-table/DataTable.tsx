@@ -143,6 +143,7 @@ export function DataTable({
       backdropFilter="blur(10px)"
       borderRadius="lg"
       boxShadow="md"
+      h="100%"
     >
       {(title || searchable || collapsible) && (
         <Flex align="center" justify="space-between" px={3} py={2} gap={3}>

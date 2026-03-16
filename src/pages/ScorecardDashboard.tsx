@@ -1,11 +1,12 @@
 import { useAppSelector } from '@/app/hooks';
 import { ChartCard } from '@/components/chart-card';
-import { BarChart, LineChart } from '@/components/charts';
+import { BarChart, GaugeChart, LineChart } from '@/components/charts';
 import { DataTable, DataTableRow } from '@/components/data-table';
 import { FilterBar } from '@/components/filter-bar';
 import { HeaderActions } from '@/components/header-actions';
 import { clsColors, colors, gradients } from '@/constants/theme';
 import { Box, Flex, Grid, GridItem, HStack, Text } from '@chakra-ui/react';
+import { SalesSummaryCard } from '@/components/sales-summary/SalesSummaryCard';
 
 // ─── Static Data ─────────────────────────────────────────────────────────────
 
@@ -295,58 +296,79 @@ function BenchmarkBanner({
   bm,
   rd,
   color,
-  bg,
-  border,
-}: (typeof BENCHMARKS)[0]) {
+  isLast,
+}: (typeof BENCHMARKS)[0] & { isLast?: boolean }) {
   return (
     <Flex
-      flex={1}
-      bg={bg}
-      border="1px solid"
-      borderColor={border}
-      borderRadius="xl"
-      p={2}
-      align="center"
-      justify="space-between"
-      minW={0}
-      gap={2}
+      pb={isLast ? 0 : 3}
+      mb={isLast ? 0 : 3}
+      borderBottom={isLast ? 'none' : '1px solid'}
+      borderColor="gray.100"
+      gap={3}
     >
       <Flex
-        w={8}
-        h={8}
-        borderRadius="full"
+        w={10}
+        h={10}
+        borderRadius="sm"
         bg={color}
         color="white"
         align="center"
         justify="center"
         fontWeight="900"
-        fontSize="sm"
+        fontSize="xl"
         flexShrink={0}
       >
         {cls}
       </Flex>
-      <Flex grow="1" direction={'column'}>
-        <Text
-          fontSize="10px"
-          fontWeight="700"
-          color={color}
-          textTransform="uppercase"
-          letterSpacing="widest"
-        >
-          Days Benchmark
-        </Text>
-        <HStack gap={4} mt={1}>
-          <Text fontSize="sm" fontWeight="800" color={color}>
-            Days: {days}
+      <Box w="100%">
+        {/* Class + days row */}
+        <HStack gap={2} mb={2}>
+          <Text fontSize="18px" fontWeight="900" color={color} lineHeight={1}>
+            {days}
           </Text>
-          <Text fontSize="sm" fontWeight="600" color="gray.500">
-            BM: {bm}
+          <Text
+            fontSize="11px"
+            fontWeight="500"
+            color="gray.400"
+            lineHeight={1}
+          >
+            days
           </Text>
-          <Text fontSize="sm" fontWeight="600" color="gray.500">
-            RD: {rd}%
-          </Text>
+          <Box flex={1} />
+          <Box
+            px={2}
+            py="2px"
+            borderRadius="4px"
+            bg={`${color}15`}
+            border="1px solid"
+            borderColor={`${color}35`}
+          >
+            <Text fontSize="11px" fontWeight="700" color={color}>
+              BM {bm}
+            </Text>
+          </Box>
         </HStack>
-      </Flex>
+
+        {/* RD progress bar */}
+        <Box>
+          <HStack justify="space-between" mb="4px">
+            <Text
+              fontSize="11px"
+              fontWeight="600"
+              color="gray.400"
+              letterSpacing="wide"
+            >
+              RD
+            </Text>
+            <Text fontSize="11px" fontWeight="700" color={color}>
+              {rd}%
+            </Text>
+          </HStack>
+          <Box h="6px" borderRadius="full" bg={`${color}18`} overflow="hidden">
+            <Box h="100%" w={`${rd}%`} borderRadius="full" bg={color} />
+          </Box>
+        </Box>
+      </Box>
     </Flex>
   );
 }
@@ -355,8 +377,8 @@ function CoverDaysCard({ label, value, inv, color }: (typeof COVER_DAYS)[0]) {
   return (
     <Box
       bg="white"
-      borderRadius="xl"
-      p={4}
+      borderRadius="lg"
+      p={3}
       border="1px solid"
       borderColor="gray.100"
       boxShadow="sm"
@@ -376,7 +398,7 @@ function CoverDaysCard({ label, value, inv, color }: (typeof COVER_DAYS)[0]) {
       />
 
       <Text
-        fontSize="10px"
+        fontSize="11px"
         fontWeight="700"
         color="gray.400"
         textTransform="uppercase"
@@ -387,7 +409,7 @@ function CoverDaysCard({ label, value, inv, color }: (typeof COVER_DAYS)[0]) {
       </Text>
 
       <Text
-        fontSize="3xl"
+        fontSize="1.7rem"
         fontWeight="900"
         color={color}
         lineHeight="1.1"
@@ -411,119 +433,135 @@ function CoverDaysCard({ label, value, inv, color }: (typeof COVER_DAYS)[0]) {
 function SupplyChainTab() {
   return (
     <Flex direction="column" gap={4}>
-      <HStack gap={3} align="stretch">
-        {BENCHMARKS.map((b) => (
-          <BenchmarkBanner key={b.cls} {...b} />
-        ))}
-      </HStack>
-
-      <Grid templateColumns="repeat(12, 1fr)" gap={4}>
-        <GridItem colSpan={{ base: 12, lg: 4 }}>
-          <Grid
-            templateColumns="repeat(2, 1fr)"
-            templateRows="repeat(2, 1fr)"
-            gap={3}
-            h="full"
-          >
-            {COVER_DAYS.map((c) => (
-              <GridItem key={c.label}>
-                <CoverDaysCard {...c} />
-              </GridItem>
-            ))}
-          </Grid>
-        </GridItem>
-        <GridItem colSpan={{ base: 12, lg: 8 }}>
-          <DataTable
-            title="Sales Summary"
-            headerGradient={gradients.tableBlue}
-            headers={['Classification', 'Sales', '%']}
-            searchable={false}
-          >
-            {SALES_SUMMARY.map((row) => {
-              const clsColor = row.label.startsWith('A')
-                ? clsColors.A
-                : row.label.startsWith('B')
-                  ? clsColors.B
-                  : row.label.startsWith('C')
-                    ? clsColors.C
-                    : undefined;
-              return (
-                <DataTableRow
-                  key={row.label}
-                  cells={[row.label, row.sales, row.pct]}
-                  cellColors={[
-                    clsColor,
-                    undefined,
-                    row.up === true
-                      ? '#059669'
-                      : row.up === false
-                        ? '#dc2626'
-                        : '#64748b',
-                  ]}
-                  cellWeights={[clsColor ? '700' : undefined, '600', '700']}
+      {/* Benchmarks + Sales Summary */}
+      <Grid templateColumns="repeat(12, 1fr)" gap={4} alignItems="stretch">
+        {/* Benchmark — 3 cols */}
+        <GridItem colSpan={{ base: 12, lg: 3 }}>
+          <Box bg="white" borderRadius="xl" p={4} boxShadow="md" h="full">
+            <Text
+              fontSize="13px"
+              fontWeight="800"
+              color="gray.700"
+              textTransform="uppercase"
+              letterSpacing="wide"
+              mb={3}
+            >
+              Days Benchmark
+            </Text>
+            <Box>
+              {BENCHMARKS.map((b, i) => (
+                <BenchmarkBanner
+                  key={b.cls}
+                  {...b}
+                  isLast={i === BENCHMARKS.length - 1}
                 />
-              );
-            })}
-            <DataTableRow
-              cells={['Σ Total', '5,081,000', '▲100%']}
-              isTotal
-              cellColors={[undefined, undefined, '#059669']}
-              cellWeights={['800', '800', '800']}
-            />
-          </DataTable>
+              ))}
+            </Box>
+          </Box>
+        </GridItem>
+
+        {/* Sales Summary — 6 cols */}
+        <GridItem colSpan={{ base: 12, lg: 6 }}>
+          <SalesSummaryCard
+            rows={SALES_SUMMARY}
+            total={{ sales: '5,081,000', pct: '▲100%' }}
+          />
+        </GridItem>
+
+        {/* Cover Days — 3 cols */}
+        <GridItem colSpan={{ base: 12, lg: 3 }}>
+          <Box bg="white" borderRadius="xl" p={4} boxShadow="md" h="full">
+            <Text
+              fontSize="13px"
+              fontWeight="800"
+              color="gray.700"
+              textTransform="uppercase"
+              letterSpacing="wide"
+              mb={3}
+            >
+              Cover Days
+            </Text>
+            <Grid templateColumns="repeat(2, 1fr)" gap={3}>
+              {COVER_DAYS.map((c) => (
+                <CoverDaysCard key={c.label} {...c} />
+              ))}
+            </Grid>
+          </Box>
         </GridItem>
       </Grid>
 
       {/* Forecast Accuracy Charts */}
       <Grid templateColumns="repeat(12, 1fr)" gap={4}>
-        <ChartCard
-          colSpan={6}
-          title="Forecast Accuracy TSCL — By Classification"
-          // headerRight={
-          //   <Text fontSize="11px" color="gray.400">
-          //     Jan – Mar 2025
-          //   </Text>
-          // }
-          height="240px"
-        >
-          <BarChart
-            data={FORECAST_TSCL}
-            xKey="classification"
-            bars={[
-              { key: 'Jan', label: 'Jan 2025', color: '#2563eb' },
-              { key: 'Feb', label: 'Feb 2025', color: '#06b6d4' },
-              { key: 'Mar', label: 'Mar 2025', color: '#10b981' },
-            ]}
-            height={220}
-            yTickFormatter={(v) => `${v}%`}
-            labelFormatter={(v) => `${v}%`}
-            showLabels
-          />
+        <ChartCard colSpan={6} title="Forecast Accuracy TSCL" height="240px">
+          <Flex h="100%" gap={0}>
+            <Box
+              w="160px"
+              flexShrink={0}
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <GaugeChart
+                value={83}
+                target={90}
+                title="TSCL"
+                subtitle="Total Supply Chain Level"
+                color={clsColors.A}
+              />
+            </Box>
+            <Box w="1px" bg="gray.100" mx={3} flexShrink={0} />
+            <Box flex={1} minW={0}>
+              <BarChart
+                data={FORECAST_TSCL}
+                xKey="classification"
+                bars={[
+                  { key: 'Jan', label: 'Jan 2025', color: '#2563eb' },
+                  { key: 'Feb', label: 'Feb 2025', color: '#06b6d4' },
+                  { key: 'Mar', label: 'Mar 2025', color: '#10b981' },
+                ]}
+                height={220}
+                yTickFormatter={(v) => `${v}%`}
+                labelFormatter={(v) => `${v}%`}
+                showLabels
+              />
+            </Box>
+          </Flex>
         </ChartCard>
 
-        <ChartCard
-          colSpan={6}
-          title="Forecast Accuracy IBL — By Classification"
-          // headerRight={
-          //   <Text fontSize="11px" color="gray.400">
-          //     Jan – Mar 2025
-          //   </Text>
-          // }
-          height="240px"
-        >
-          <BarChart
-            data={FORECAST_IBL}
-            xKey="classification"
-            bars={[
-              { key: 'Jan', label: 'Jan 2025', color: '#2563eb' },
-              { key: 'Feb', label: 'Feb 2025', color: '#06b6d4' },
-              { key: 'Mar', label: 'Mar 2025', color: '#10b981' },
-            ]}
-            height={220}
-            yTickFormatter={(v) => `${v}%`}
-            labelFormatter={(v) => `${v}%`}
-            showLabels
-          />
+        <ChartCard colSpan={6} title="Forecast Accuracy IBL" height="240px">
+          <Flex h="100%" gap={0}>
+            <Box
+              w="160px"
+              flexShrink={0}
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <GaugeChart
+                value={78}
+                target={85}
+                title="IBL"
+                subtitle="Item Branch Level"
+                color={clsColors.B}
+              />
+            </Box>
+            <Box w="1px" bg="gray.100" mx={3} flexShrink={0} />
+            <Box flex={1} minW={0}>
+              <BarChart
+                data={FORECAST_IBL}
+                xKey="classification"
+                bars={[
+                  { key: 'Jan', label: 'Jan 2025', color: '#2563eb' },
+                  { key: 'Feb', label: 'Feb 2025', color: '#06b6d4' },
+                  { key: 'Mar', label: 'Mar 2025', color: '#10b981' },
+                ]}
+                height={220}
+                yTickFormatter={(v) => `${v}%`}
+                labelFormatter={(v) => `${v}%`}
+                showLabels
+              />
+            </Box>
+          </Flex>
         </ChartCard>
       </Grid>
     </Flex>
@@ -575,6 +613,7 @@ function ServiceMeasureTab() {
           height="340px"
         >
           <LineChart
+            variant="filled"
             data={SERVICE_MEASURE}
             xKey="branch"
             lines={[
@@ -794,7 +833,7 @@ export default function ScorecardDashboard() {
           <HeaderActions />
 
           {/* Quarter label */}
-          <HStack flexShrink={0} gap={2}>
+          {/* <HStack flexShrink={0} gap={2}>
             <Box w="1px" h={4} bg="gray.200" />
             <Text
               fontSize="xs"
@@ -804,7 +843,7 @@ export default function ScorecardDashboard() {
             >
               Q1 2025 · Jan — Mar
             </Text>
-          </HStack>
+          </HStack> */}
         </Flex>
       </Box>
 

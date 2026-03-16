@@ -3,14 +3,14 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { ApiEndpoints } from '@/api/endpoints';
 import { ApiKey } from '@/utils/enum';
 
-const getSalesSummary = async (params?: Record<string, unknown>) => {
-  return axios.get(ApiEndpoints.saleSummary, { params });
+const getCoverDays = async (params?: Record<string, unknown>) => {
+  return axios.get(ApiEndpoints.coverDays, { params });
 };
 
-export const useGetSalesSummary = (params?: Record<string, unknown>) => {
+export const useGetCoverDays = (params?: Record<string, unknown>) => {
   return useQuery({
-    queryKey: [ApiKey.saleSummary, params],
-    queryFn: () => getSalesSummary(params),
+    queryKey: [ApiKey.coverDays, params],
+    queryFn: () => getCoverDays(params),
     placeholderData: keepPreviousData,
     staleTime: 5 * 60 * 1000,
   });

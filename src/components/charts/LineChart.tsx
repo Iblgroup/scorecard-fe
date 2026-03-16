@@ -1,13 +1,14 @@
 import { useRef, useEffect, useState } from 'react';
-import { Box } from '@chakra-ui/react';
+import { Box, Flex, HStack } from '@chakra-ui/react';
 import {
   LineChart as RechartsLineChart,
+  AreaChart as RechartsAreaChart,
   Line,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   LabelList,
 } from 'recharts';
@@ -29,6 +30,7 @@ export interface LineChartProps {
   xKey: string;
   height?: number | string;
   labelFormatter?: (value: number) => string;
+  variant?: 'line' | 'filled';
 }
 
 // ─── Formatters ──────────────────────────────────────────────────────────────
@@ -48,26 +50,29 @@ function renderXTick(tickWidth: number) {
     const { x, y, payload } = props;
     const val = payload?.value;
     if (val === undefined || val === null) return null;
-    const charsPerLine = Math.max(1, Math.floor(tickWidth / 6));
+    const charsPerLine = Math.max(1, Math.floor(tickWidth / 7));
     const full = String(val);
-    const line1 = full.slice(0, charsPerLine);
+    let line1 = full.slice(0, charsPerLine);
     const rest = full.slice(charsPerLine);
-    const line2 = rest.length > charsPerLine
-      ? rest.slice(0, charsPerLine - 1) + '…'
-      : rest;
-    const lines = line2 ? [line1, line2] : [line1];
+    let line2 = rest ? (rest.length > charsPerLine ? rest.slice(0, charsPerLine - 1) + '…' : rest) : '';
+    // if line1 itself is longer than charsPerLine (no room for 2 chars), truncate with ellipsis
+    if (full.length > charsPerLine * 2) {
+      line1 = full.slice(0, charsPerLine);
+      line2 = full.slice(charsPerLine, charsPerLine * 2 - 1) + '…';
+    }
+    const textLines = line2 ? [line1, line2] : [line1];
     return (
-      <g transform={`translate(${x},${y + 10})`}>
-        {lines.map((line, i) => (
+      <g transform={`translate(${x},${y + 6})`}>
+        {textLines.map((t, i) => (
           <text
             key={i}
             x={0}
-            y={i * 12}
+            y={i * 13}
             textAnchor="middle"
             fill="#000"
-            style={{ fontSize: '12px', fontWeight: 600 }}
+            style={{ fontSize: '11px', fontWeight: 600 }}
           >
-            {line}
+            {t}
           </text>
         ))}
       </g>
@@ -94,7 +99,7 @@ function renderYTick(props: any, formatter: (v: number) => string = formatCompac
   );
 }
 
-export function LineChart({ data, lines, xKey, height = 250, labelFormatter = formatCompact }: LineChartProps) {
+export function LineChart({ data, lines, xKey, height = 250, labelFormatter = formatCompact, variant = 'line' }: LineChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState(0);
   const showLegend = lines.length > 1;
@@ -108,108 +113,138 @@ export function LineChart({ data, lines, xKey, height = 250, labelFormatter = fo
     return () => ro.disconnect();
   }, []);
 
-  const tickWidth =
-    chartWidth && data.length ? chartWidth / data.length - 10 : 50;
+  const tickWidth = chartWidth && data.length ? chartWidth / data.length - 10 : 50;
+
+  const sharedChildren = (
+    <>
+      <defs>
+        {lines.map((line) => (
+          <linearGradient key={line.key} id={`fill-${line.key}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor={line.color} stopOpacity={0.25} />
+            <stop offset="95%" stopColor={line.color} stopOpacity={0.03} />
+          </linearGradient>
+        ))}
+      </defs>
+      <CartesianGrid stroke={colors.gridStroke} strokeDasharray="4 4" vertical={false} horizontal={true} />
+      <XAxis dataKey={xKey} tickLine={false} axisLine={false} tick={renderXTick(tickWidth)} interval={0} height={48} />
+      <YAxis tick={(props) => renderYTick(props, labelFormatter)} tickLine={false} axisLine={false} width={40} />
+      <Tooltip
+        contentStyle={{
+          background: '#ffffff',
+          borderRadius: '6px',
+          border: '1px solid #e5e7eb',
+          padding: '8px 12px',
+          fontSize: 13,
+        }}
+        formatter={(value) => formatCompact(Number(value))}
+        labelStyle={{ fontSize: 13, fontWeight: 500 }}
+      />
+    </>
+  );
 
   return (
-    <Box ref={containerRef} w="100%" h={height}>
-      <ResponsiveContainer width="100%" height="100%">
-        <RechartsLineChart
-          data={data}
-          margin={{ top: 24, right: 20, left: 0, bottom: 0 }}
+    <Flex w="100%" h={height} direction="column" position="relative">
+      {showLegend && (
+        <HStack
+          justify="flex-end"
+          gap={3}
+          flexShrink={0}
+          pos="relative"
+          zIndex={1}
+          top="-32px"
+          right={0}
         >
-          <CartesianGrid
-            stroke={colors.gridStroke}
-            strokeDasharray="4 4"
-            vertical={false}
-            horizontal={true}
-          />
-          <XAxis
-            dataKey={xKey}
-            tickLine={false}
-            axisLine={false}
-            tick={renderXTick(tickWidth)}
-          />
-          <YAxis
-            tick={(props) => renderYTick(props, labelFormatter)}
-            tickLine={false}
-            axisLine={false}
-            // width={50}
-          />
-          <Tooltip
-            contentStyle={{
-              background: '#ffffff',
-              borderRadius: '6px',
-              border: '1px solid #e5e7eb',
-              padding: '8px 12px',
-              fontSize: 13,
-            }}
-            formatter={(value) => formatCompact(Number(value))}
-            // itemStyle={{ fontSize: 12, fontWeight: 500 }}
-            labelStyle={{ fontSize: 13, fontWeight: 500 }}
-          />
-
-          {showLegend && (
-            <Legend
-              verticalAlign="top"
-              align="right"
-              iconSize={8}
-              wrapperStyle={{ fontSize: 14, fontWeight: 500 }}
-            />
-          )}
-          <defs>
-            {lines
-              .filter((l) => l.gradient)
-              .map((line) => (
-                <linearGradient
-                  key={line.key}
-                  id={`gradient-${line.key}`}
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
-                >
-                  <stop offset="5%" stopColor={line.color} stopOpacity={0.3} />
-                  <stop offset="95%" stopColor={line.color} stopOpacity={0} />
-                </linearGradient>
-              ))}
-          </defs>
           {lines.map((line) => (
-            <Line
-              key={line.key}
-              type="monotone"
-              dataKey={line.key}
-              name={line.label}
-              stroke={line.color}
-              strokeWidth={2}
-              strokeDasharray={line.dashed ? '5 5' : undefined}
-              fill={line.gradient ? `url(#gradient-${line.key})` : undefined}
-              dot={{ r: 3, fill: line.color, strokeWidth: 0 }}
-              activeDot={{ r: 5 }}
-            >
-              <LabelList
-                dataKey={line.key}
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                content={(props: any) => {
-                  const { x, y, value, index } = props;
-                  if (value === undefined || value === null) return null;
-                  const isTop = index % 2 === 0;
-                  return (
-                    <text
-                      x={x}
-                      y={isTop ? y - 6 : y + 16}
-                      textAnchor="middle"
-                      style={{ fontSize: 10, fontWeight: 700, fill: '#000' }}
-                    >
-                      {labelFormatter(Number(value))}
-                    </text>
-                  );
-                }}
-              />
-            </Line>
+            <HStack key={line.key} gap={1} fontSize="13px" fontWeight={500}>
+              <Box w={2} h={2} borderRadius="sm" bg={line.color} flexShrink={0} />
+              {line.label}
+            </HStack>
           ))}
-        </RechartsLineChart>
+        </HStack>
+      )}
+      <Box ref={containerRef} flex={1}>
+      <ResponsiveContainer width="100%" height="100%">
+        {variant === 'filled' ? (
+          <RechartsAreaChart data={data} margin={{ top: 24, right: 20, left: 0, bottom: 20 }}>
+            {sharedChildren}
+            {lines.map((line, lineIdx) => {
+              const yOffset = lineIdx === 0 ? -8 : lineIdx === 1 ? 14 : 24;
+              return (
+                <Area
+                  key={line.key}
+                  type="monotone"
+                  dataKey={line.key}
+                  name={line.label}
+                  stroke={line.color}
+                  strokeWidth={2}
+                  strokeDasharray={line.dashed ? '5 5' : undefined}
+                  fill={`url(#fill-${line.key})`}
+                  dot={{ r: 3, fill: line.color, strokeWidth: 0 }}
+                  activeDot={{ r: 5 }}
+                >
+                  <LabelList
+                    dataKey={line.key}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    content={(props: any) => {
+                      const { x, y, value } = props;
+                      if (value === undefined || value === null) return null;
+                      return (
+                        <text
+                          x={x}
+                          y={y + yOffset}
+                          textAnchor="middle"
+                          style={{ fontSize: 10, fontWeight: 700, fill: line.color }}
+                        >
+                          {labelFormatter(Number(value))}
+                        </text>
+                      );
+                    }}
+                  />
+                </Area>
+              );
+            })}
+          </RechartsAreaChart>
+        ) : (
+          <RechartsLineChart data={data} margin={{ top: 24, right: 20, left: 0, bottom: 0 }}>
+            {sharedChildren}
+            {lines.map((line) => (
+              <Line
+                key={line.key}
+                type="monotone"
+                dataKey={line.key}
+                name={line.label}
+                stroke={line.color}
+                strokeWidth={2}
+                strokeDasharray={line.dashed ? '5 5' : undefined}
+                fill={line.gradient ? `url(#fill-${line.key})` : undefined}
+                dot={{ r: 3, fill: line.color, strokeWidth: 0 }}
+                activeDot={{ r: 5 }}
+              >
+                <LabelList
+                  dataKey={line.key}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  content={(props: any) => {
+                    const { x, y, value, index } = props;
+                    if (value === undefined || value === null) return null;
+                    const isTop = index % 2 === 0;
+                    return (
+                      <text
+                        x={x}
+                        y={isTop ? y - 6 : y + 16}
+                        textAnchor="middle"
+                        style={{ fontSize: 10, fontWeight: 700, fill: '#000' }}
+                      >
+                        {labelFormatter(Number(value))}
+                      </text>
+                    );
+                  }}
+                />
+              </Line>
+            ))}
+          </RechartsLineChart>
+        )}
       </ResponsiveContainer>
-    </Box>
+      </Box>
+    </Flex>
   );
 }
