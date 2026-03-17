@@ -21,7 +21,6 @@ import { useGetWip } from '@/api/wip';
 import { useGetRpm } from '@/api/rpm';
 import { useGetServiceMeasure } from '@/api/serviceMeasure';
 import { useGetTgtVsActual } from '@/api/tgtVsActual';
-import { useGetFilters } from '@/api/filters';
 
 const BENCHMARKS = [
   {
@@ -91,6 +90,7 @@ const COVER_DAYS = [
     inv: '54,188',
     color: '#1d4ed8',
     bg: '#fff',
+    border: 'transparent',
     dot: '=',
   },
   {
@@ -99,6 +99,7 @@ const COVER_DAYS = [
     inv: '28,408',
     color: clsColors.A,
     bg: clsColors.Abg,
+    border: clsColors.Aborder,
     dot: '●',
   },
   {
@@ -107,6 +108,7 @@ const COVER_DAYS = [
     inv: '13,608',
     color: clsColors.B,
     bg: clsColors.Bbg,
+    border: clsColors.Bborder,
     dot: '●',
   },
   {
@@ -115,6 +117,7 @@ const COVER_DAYS = [
     inv: '7,188',
     color: clsColors.C,
     bg: clsColors.Cbg,
+    border: clsColors.Cborder,
     dot: '●',
   },
 ];
@@ -361,7 +364,7 @@ function BenchmarkBanner({
             days
           </Text>
           <Box flex={1} />
-          <Box
+          {/* <Box
             px={2}
             py="2px"
             borderRadius="4px"
@@ -372,7 +375,7 @@ function BenchmarkBanner({
             <Text fontSize="11px" fontWeight="700" color={color}>
               BM {bm}
             </Text>
-          </Box>
+          </Box> */}
         </HStack>
 
         {/* RD progress bar */}
@@ -405,6 +408,7 @@ function CoverDaysCard({
   inv,
   color,
   bg,
+  border,
   dot,
 }: (typeof COVER_DAYS)[0]) {
   const isClassified = dot === '●';
@@ -464,9 +468,16 @@ function CoverDaysCard({
     );
   }
 
-  // A / B / C — badge design
   return (
-    <Box bg={bg} borderRadius="xl" px={3} py={2} boxShadow="sm">
+    <Box
+      bg={bg}
+      borderRadius="md"
+      px={3}
+      py={2}
+      boxShadow="sm"
+      border="1px solid"
+      borderColor={border}
+    >
       <Flex align="center" gap={3}>
         <Flex
           w={10}
@@ -725,12 +736,14 @@ function ServiceMeasureTab({
   pctSkusData,
   serviceMeasureData,
   tgtVsActualData,
+  classification,
 }: {
   inventoryDaysData: unknown;
   skusThresholdData: { class: string; above: number; below: number }[];
   pctSkusData: { class: string; pct: number }[];
   serviceMeasureData: unknown;
   tgtVsActualData: unknown;
+  classification: string;
 }) {
   type ServiceRow = {
     branch_desc: string;
@@ -749,9 +762,15 @@ function ServiceMeasureTab({
     )
     .map((r) => ({
       branch: r.branch_desc,
-      skuA: parseFloat(r['SKU-A%']),
-      skuB: parseFloat(r['SKU-B%']),
-      skuC: parseFloat(r['SKU-C%']),
+      skuA: !isNaN(parseFloat(r['SKU-A%']))
+        ? parseFloat(r['SKU-A%'])
+        : undefined,
+      skuB: !isNaN(parseFloat(r['SKU-B%']))
+        ? parseFloat(r['SKU-B%'])
+        : undefined,
+      skuC: !isNaN(parseFloat(r['SKU-C%']))
+        ? parseFloat(r['SKU-C%'])
+        : undefined,
     }));
   type TgtVsActualRow = {
     classification: string;
@@ -869,7 +888,9 @@ function ServiceMeasureTab({
               { key: 'skuA', label: 'SKU-A%', color: clsColors.A },
               { key: 'skuB', label: 'SKU-B%', color: clsColors.B },
               { key: 'skuC', label: 'SKU-C%', color: clsColors.C },
-            ]}
+            ].filter(
+              (l) => !classification || l.key === `sku${classification}`
+            )}
             height={310}
             labelFormatter={(v) => `${v}%`}
           />
@@ -951,13 +972,13 @@ function ServiceMeasureTab({
               {
                 key: 'pct',
                 label: '% SKUs',
-                color: '#1d4ed8',
+                color: clsColors.A,
                 cellColor: (e) =>
                   String(e.class) === 'A'
-                    ? '#1d4ed8'
+                    ? clsColors.A
                     : String(e.class) === 'B'
-                      ? '#06b6d4'
-                      : '#d97706',
+                      ? clsColors.B
+                      : clsColors.C,
               },
             ]}
             showLabels
@@ -1101,8 +1122,8 @@ export default function ScorecardDashboard() {
     ...(filters.classification && { classification: filters.classification }),
     ...(filters.branch && { branch: filters.branch }),
     ...(filters.sku && { sku: filters.sku }),
-    ...(filters.dateFrom && { dateFrom: filters.dateFrom }),
-    ...(filters.dateTo && { dateTo: filters.dateTo }),
+    ...(filters.dateFrom && { startDate: filters.dateFrom }),
+    ...(filters.dateTo && { endDate: filters.dateTo }),
   };
 
   const { data: salesSummaryData } = useGetSalesSummary(params);
@@ -1157,7 +1178,6 @@ export default function ScorecardDashboard() {
   const { data: rpmData } = useGetRpm(params);
   const { data: serviceMeasureData } = useGetServiceMeasure(params);
   const { data: tgtVsActualData } = useGetTgtVsActual(params);
-  const { data: filtersData } = useGetFilters();
 
   const apiRows = salesSummaryData?.data as
     | { classification: string; sku: number; new_total_all_sales: number }[]
@@ -1274,18 +1294,22 @@ export default function ScorecardDashboard() {
           'No Of SKUs < Threshold'
         ] ?? 0,
     },
-  ];
+  ].filter(
+    (d) => !filters.classification || d.class === filters.classification
+  );
 
   type IblVsTsclRow = { category: string; forecast_vs_budget_pct: number };
   const iblVsTsclRows =
     (iblVsTsclData as { data?: IblVsTsclRow[] })?.data ?? [];
-  const pctSkusData = (['A', 'B', 'C'] as const).map((cls) => {
-    const row = iblVsTsclRows.find((r) => r.category === cls);
-    return {
-      class: cls,
-      pct: row ? Math.round(row.forecast_vs_budget_pct) : 0,
-    };
-  });
+  const pctSkusData = (['A', 'B', 'C'] as const)
+    .filter((cls) => !filters.classification || cls === filters.classification)
+    .map((cls) => {
+      const row = iblVsTsclRows.find((r) => r.category === cls);
+      return {
+        class: cls,
+        pct: row ? Math.round(row.forecast_vs_budget_pct) : 0,
+      };
+    });
 
   const tsclAccuracy = (() => {
     const row = (
@@ -1497,6 +1521,7 @@ export default function ScorecardDashboard() {
             pctSkusData={pctSkusData}
             serviceMeasureData={serviceMeasureData}
             tgtVsActualData={tgtVsActualData}
+            classification={filters.classification}
           />
         )}
         {mainTab === 'dispatchWip' && (

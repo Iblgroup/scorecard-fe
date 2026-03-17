@@ -19,6 +19,12 @@ interface SalesDashboardState {
     filters: Filters
 }
 
+const today = new Date()
+const toDate = today.toISOString().slice(0, 10)
+const fromDate = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate())
+    .toISOString()
+    .slice(0, 10)
+
 const initialState: SalesDashboardState = {
     mainTab: 'supplyChain',
     activeTab: 'visualizations',
@@ -27,8 +33,8 @@ const initialState: SalesDashboardState = {
         classification: '',
         branch: '',
         sku: '',
-        dateFrom: '',
-        dateTo: '',
+        dateFrom: fromDate,
+        dateTo: toDate,
     },
 }
 
@@ -49,7 +55,16 @@ export const salesDashboardSlice = createSlice({
             state.filters[action.payload.key] = action.payload.value
         },
         resetFilters: (state) => {
-            state.filters = initialState.filters
+            const now = new Date()
+            state.filters = {
+                classification: '',
+                branch: '',
+                sku: '',
+                dateFrom: new Date(now.getFullYear(), now.getMonth() - 1, now.getDate())
+                    .toISOString()
+                    .slice(0, 10),
+                dateTo: now.toISOString().slice(0, 10),
+            }
         },
     },
 })
