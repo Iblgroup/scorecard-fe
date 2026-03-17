@@ -9,4 +9,9 @@ export enum ApiKey {
   forecastAccuracyCategoryYearly = 'forecastAccuracyCategoryYearly',
   iblVsTscl = 'iblVsTscl',
   dispatchVsOrder = 'dispatchVsOrder',
+  serviceMeasure = 'serviceMeasure',
+  tgtVsActual = 'tgtVsActual',
+  filters = 'filters',
+  rpm = 'rpm',
+  wip = 'wip',
 }

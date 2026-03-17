@@ -43,6 +43,9 @@ export const clsColors = {
   A: '#2563eb',
   B: '#059669',
   C: '#fca311',
+  Abg: '#dbeafe',
+  Bbg: '#fef3c7',
+  Cbg: '#ede9fe',
 } as const;
 
 // ─── Gradients ──────────────────────────────────────────────────────────────

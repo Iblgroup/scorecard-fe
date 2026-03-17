@@ -1,4 +1,5 @@
 import { useAppDispatch } from '@/app/hooks';
+import { useGetFilters } from '@/api/filters';
 import { DatePicker } from '@/components/date-picker';
 import { Select } from '@/components/select';
 import { colors } from '@/constants/theme';
@@ -7,6 +8,7 @@ import {
   setFilter,
 } from '@/features/salesDashboard/salesDashboardSlice';
 import { Flex, Grid, IconButton } from '@chakra-ui/react';
+import { useMemo } from 'react';
 import { FiX } from 'react-icons/fi';
 
 interface Filters {
@@ -21,16 +23,13 @@ export interface FilterBarProps {
   initialFilters: Filters;
 }
 
+type FilterRow = { branch_desc: string; classification: string; sku: string };
+
 const CLASSIFICATION_OPTIONS = [
   { value: 'A', label: 'A — High Velocity' },
   { value: 'B', label: 'B — Medium Velocity' },
   { value: 'C', label: 'C — Low Velocity' },
-  { value: 'Unclassified', label: 'Unclassified' },
 ];
-
-const BRANCH_OPTIONS: { value: string; label: string }[] = [];
-
-const SKU_OPTIONS: { value: string; label: string }[] = [];
 
 const SELECT_FILTERS: { label: string; key: keyof Filters }[] = [
   { label: 'Classification', key: 'classification' },
@@ -40,14 +39,30 @@ const SELECT_FILTERS: { label: string; key: keyof Filters }[] = [
 
 export function FilterBar({ initialFilters }: FilterBarProps) {
   const dispatch = useAppDispatch();
+  const { data: filtersData } = useGetFilters();
+  const rows: FilterRow[] = (filtersData as { data?: FilterRow[] })?.data ?? [];
+
+  const branchOptions = useMemo(() => {
+    const seen = new Set<string>();
+    return rows
+      .filter((r) => r.branch_desc && !seen.has(r.branch_desc) && seen.add(r.branch_desc))
+      .map((r) => ({ value: r.branch_desc, label: r.branch_desc }));
+  }, [rows]);
+
+  const skuOptions = useMemo(() => {
+    const seen = new Set<string>();
+    return rows
+      .filter((r) => r.sku && !seen.has(r.sku) && seen.add(r.sku))
+      .map((r) => ({ value: r.sku, label: r.sku }));
+  }, [rows]);
 
   const optionsMap: Record<
     'classification' | 'branch' | 'sku',
     { value: string; label: string }[]
   > = {
     classification: CLASSIFICATION_OPTIONS,
-    branch: BRANCH_OPTIONS,
-    sku: SKU_OPTIONS,
+    branch: branchOptions,
+    sku: skuOptions,
   };
 
   const hasActiveFilters = Object.values(initialFilters).some(Boolean);

@@ -83,7 +83,16 @@ export function DataTable({
   const [searchQuery, setSearchQuery] = useState('');
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  let allRows = Children.toArray(children);
+  const allChildren = Children.toArray(children);
+
+  // Separate pinned total rows (always visible at bottom, outside pagination)
+  const pinnedRows = allChildren.filter(
+    (row) => isValidElement(row) && (row.props as { isTotal?: boolean }).isTotal
+  );
+  let allRows = allChildren.filter(
+    (row) =>
+      !(isValidElement(row) && (row.props as { isTotal?: boolean }).isTotal)
+  );
 
   if (searchable && searchQuery.trim()) {
     const q = searchQuery.toLowerCase();
@@ -257,22 +266,27 @@ export function DataTable({
           </Table.Header>
           {!isCollapsed && (
             <Table.Body>
-              {isLoading
-                ? Array.from({ length: 10 }).map((_, rowIdx) => (
-                    <Table.Row key={rowIdx} opacity={1 - rowIdx * 0.07}>
-                      {rowCollapsible && <Table.Cell w="32px" />}
-                      {headers.map((_, colIdx) => (
-                        <Table.Cell key={colIdx} py={2}>
-                          <Skeleton
-                            height="12px"
-                            width={`${65 + ((rowIdx * 13 + colIdx * 17) % 30)}%`}
-                            borderRadius="sm"
-                          />
-                        </Table.Cell>
-                      ))}
-                    </Table.Row>
-                  ))
-                : renderedRows}
+              {isLoading ? (
+                Array.from({ length: 10 }).map((_, rowIdx) => (
+                  <Table.Row key={rowIdx} opacity={1 - rowIdx * 0.07}>
+                    {rowCollapsible && <Table.Cell w="32px" />}
+                    {headers.map((_, colIdx) => (
+                      <Table.Cell key={colIdx} py={2}>
+                        <Skeleton
+                          height="12px"
+                          width={`${65 + ((rowIdx * 13 + colIdx * 17) % 30)}%`}
+                          borderRadius="sm"
+                        />
+                      </Table.Cell>
+                    ))}
+                  </Table.Row>
+                ))
+              ) : (
+                <>
+                  {renderedRows}
+                  {pinnedRows}
+                </>
+              )}
             </Table.Body>
           )}
         </Table.Root>

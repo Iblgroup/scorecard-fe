@@ -19,7 +19,12 @@ export const ApiEndpoints = {
   forecastAccuracyCategoryMonthly: '/forecast-accuracy-category-monthly',
   forecastAccuracyCategoryYearly: '/forecast-accuracy-category-yearly',
   iblVsTscl: '/ibl-vs-tscl',
+  rpm: '/rpm',
+  wip: '/wip',
+  filters: '/filters',
+  serviceMeasure: '/service-measure',
   dispatchVsOrder: '/dispatch-vs-order',
+  tgtVsActual: '/tgt-vs-actual',
 } as const;
 
 export type ApiEndpoints = typeof ApiEndpoints;

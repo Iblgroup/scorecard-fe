@@ -17,6 +17,11 @@ import { HeaderActions } from '@/components/header-actions';
 import { clsColors, colors, gradients } from '@/constants/theme';
 import { Box, Flex, Grid, GridItem, HStack, Text } from '@chakra-ui/react';
 import { SalesSummaryCard } from '@/components/sales-summary/SalesSummaryCard';
+import { useGetWip } from '@/api/wip';
+import { useGetRpm } from '@/api/rpm';
+import { useGetServiceMeasure } from '@/api/serviceMeasure';
+import { useGetTgtVsActual } from '@/api/tgtVsActual';
+import { useGetFilters } from '@/api/filters';
 
 const BENCHMARKS = [
   {
@@ -85,31 +90,31 @@ const COVER_DAYS = [
     value: 54,
     inv: '54,188',
     color: '#1d4ed8',
-    bg: '#eff6ff',
+    bg: '#fff',
     dot: '=',
   },
   {
     label: 'A – Cover Days',
     value: 28,
     inv: '28,408',
-    color: '#2563eb',
-    bg: '#dbeafe',
+    color: clsColors.A,
+    bg: clsColors.Abg,
     dot: '●',
   },
   {
     label: 'B – Cover Days',
     value: 18,
     inv: '13,608',
-    color: '#d97706',
-    bg: '#fef3c7',
+    color: clsColors.B,
+    bg: clsColors.Bbg,
     dot: '●',
   },
   {
     label: 'C – Cover Days',
     value: 8,
     inv: '7,188',
-    color: '#7c3aed',
-    bg: '#ede9fe',
+    color: clsColors.C,
+    bg: clsColors.Cbg,
     dot: '●',
   },
 ];
@@ -240,18 +245,6 @@ const COVER_DAYS_CHART = [
   { class: 'A', tgt: 25, actual: 53 },
   { class: 'B', tgt: 25, actual: 51 },
   { class: 'C', tgt: 15, actual: 89 },
-];
-
-const SKUS_THRESHOLD = [
-  { class: 'A', above: 7, below: 9 },
-  { class: 'B', above: 20, below: 22 },
-  { class: 'C', above: 106, below: 181 },
-];
-
-const PCT_SKUS = [
-  { class: 'A', pct: 100 },
-  { class: 'B', pct: 100 },
-  { class: 'C', pct: 100 },
 ];
 
 const DISPATCH_VS_ORDER = [
@@ -406,59 +399,117 @@ function BenchmarkBanner({
   );
 }
 
-function CoverDaysCard({ label, value, inv, color }: (typeof COVER_DAYS)[0]) {
-  return (
-    <Box
-      bg="white"
-      borderRadius="lg"
-      p={3}
-      border="1px solid"
-      borderColor="gray.100"
-      boxShadow="sm"
-      h="full"
-      position="relative"
-      overflow="hidden"
-    >
-      {/* colored top accent bar */}
+function CoverDaysCard({
+  label,
+  value,
+  inv,
+  color,
+  bg,
+  dot,
+}: (typeof COVER_DAYS)[0]) {
+  const isClassified = dot === '●';
+  const letter = label.charAt(0);
+
+  if (!isClassified) {
+    // Total Cover Days — original design
+    return (
       <Box
-        position="absolute"
-        top={0}
-        left={0}
-        right={0}
-        h="3px"
-        bg={color}
-        borderTopRadius="xl"
-      />
-
-      <Text
-        fontSize="11px"
-        fontWeight="700"
-        color="gray.400"
-        textTransform="uppercase"
-        letterSpacing="widest"
-        mt={1}
+        bg="white"
+        borderRadius="lg"
+        p={3}
+        border="1px solid"
+        borderColor="gray.100"
+        boxShadow="sm"
+        h="full"
+        position="relative"
+        overflow="hidden"
       >
-        {label}
-      </Text>
-
-      <Text
-        fontSize="1.7rem"
-        fontWeight="900"
-        color={color}
-        lineHeight="1.1"
-        mt={2}
-      >
-        {value}
-      </Text>
-
-      <Box mt={2} pt={2} borderTop="1px solid" borderColor="gray.100">
-        <Text fontSize="11px" color="gray.400">
-          Inventory:{' '}
-          <Box as="span" fontWeight="600" color="gray.600">
-            {inv}
-          </Box>
+        <Box
+          position="absolute"
+          top={0}
+          left={0}
+          right={0}
+          h="3px"
+          bg={color}
+          borderTopRadius="xl"
+        />
+        <Text
+          fontSize="11px"
+          fontWeight="700"
+          color="gray.400"
+          textTransform="uppercase"
+          letterSpacing="widest"
+          mt={1}
+        >
+          {label}
         </Text>
+        <Text
+          fontSize="1.7rem"
+          fontWeight="900"
+          color={color}
+          lineHeight="1.1"
+          mt={2}
+        >
+          {value}
+        </Text>
+        <Box mt={2} pt={2} borderTop="1px solid" borderColor="gray.100">
+          <Text fontSize="11px" color="gray.400">
+            Inventory:{' '}
+            <Box as="span" fontWeight="600" color="gray.600">
+              {inv}
+            </Box>
+          </Text>
+        </Box>
       </Box>
+    );
+  }
+
+  // A / B / C — badge design
+  return (
+    <Box bg={bg} borderRadius="xl" px={3} py={2} boxShadow="sm">
+      <Flex align="center" gap={3}>
+        <Flex
+          w={10}
+          h={10}
+          borderRadius="sm"
+          bg={color}
+          color="white"
+          align="center"
+          justify="center"
+          fontWeight="900"
+          fontSize="xl"
+          flexShrink={0}
+        >
+          {letter}
+        </Flex>
+        <Box>
+          <Flex align="center" gap={2}>
+            <Text
+              fontSize="1.6rem"
+              fontWeight="900"
+              color={color}
+              lineHeight="1"
+            >
+              {value}
+            </Text>
+            <Text
+              fontSize="11px"
+              fontWeight="600"
+              color={color}
+              textTransform="uppercase"
+              letterSpacing="wide"
+            >
+              Cover Days
+            </Text>
+          </Flex>
+          <Text fontSize="11px" color="gray.500" mt={0.5}>
+            Inventory:{' '}
+            <Box as="span" fontWeight="600" color="gray.600">
+              {inv}
+            </Box>
+          </Text>
+        </Box>
+      </Flex>
     </Box>
   );
 }
@@ -533,12 +584,12 @@ function SupplyChainTab({
         </GridItem>
 
         {/* Sales Summary — 6 cols */}
-        <GridItem colSpan={{ base: 12, lg: 6 }}>
+        <GridItem colSpan={{ base: 12, lg: 5 }}>
           <SalesSummaryCard rows={salesRows} total={salesTotal} />
         </GridItem>
 
         {/* Cover Days — 3 cols */}
-        <GridItem colSpan={{ base: 12, lg: 3 }}>
+        <GridItem colSpan={{ base: 12, lg: 4 }}>
           <Box bg="white" borderRadius="xl" p={4} boxShadow="md" h="full">
             <Text
               fontSize="13px"
@@ -550,10 +601,13 @@ function SupplyChainTab({
             >
               Cover Days
             </Text>
-            <Grid templateColumns="repeat(2, 1fr)" gap={3}>
-              {coverDaysRows.map((c) => (
-                <CoverDaysCard key={c.label} {...c} />
-              ))}
+            <Grid templateColumns="1fr 1fr" gap={3} alignItems="start">
+              <CoverDaysCard {...coverDaysRows[0]} />
+              <Flex direction="column" gap={2}>
+                {coverDaysRows.slice(1).map((c) => (
+                  <CoverDaysCard key={c.label} {...c} />
+                ))}
+              </Flex>
             </Grid>
           </Box>
         </GridItem>
@@ -590,9 +644,17 @@ function SupplyChainTab({
                     ? forecastMonths.map((m, i) => ({
                         key: m,
                         label: m,
-                        color: (['#2563eb', '#06b6d4', '#10b981'] as string[])[i] ?? '#2563eb',
+                        color:
+                          (['#2563eb', '#06b6d4', '#10b981'] as string[])[i] ??
+                          '#2563eb',
                       }))
-                    : [{ key: 'accuracy', label: 'Forecast Accuracy', color: '#2563eb' }]
+                    : [
+                        {
+                          key: 'accuracy',
+                          label: 'Forecast Accuracy',
+                          color: '#2563eb',
+                        },
+                      ]
                 }
                 height={220}
                 yTickFormatter={(v) => `${v}%`}
@@ -632,9 +694,17 @@ function SupplyChainTab({
                     ? iblMonths.map((m, i) => ({
                         key: m,
                         label: m,
-                        color: (['#2563eb', '#06b6d4', '#10b981'] as string[])[i] ?? '#2563eb',
+                        color:
+                          (['#2563eb', '#06b6d4', '#10b981'] as string[])[i] ??
+                          '#2563eb',
                       }))
-                    : [{ key: 'accuracy', label: 'Forecast Accuracy', color: '#2563eb' }]
+                    : [
+                        {
+                          key: 'accuracy',
+                          label: 'Forecast Accuracy',
+                          color: '#2563eb',
+                        },
+                      ]
                 }
                 height={220}
                 yTickFormatter={(v) => `${v}%`}
@@ -649,15 +719,65 @@ function SupplyChainTab({
   );
 }
 
-function ServiceMeasureTab({ inventoryDaysData }: { inventoryDaysData: unknown }) {
+function ServiceMeasureTab({
+  inventoryDaysData,
+  skusThresholdData,
+  pctSkusData,
+  serviceMeasureData,
+  tgtVsActualData,
+}: {
+  inventoryDaysData: unknown;
+  skusThresholdData: { class: string; above: number; below: number }[];
+  pctSkusData: { class: string; pct: number }[];
+  serviceMeasureData: unknown;
+  tgtVsActualData: unknown;
+}) {
+  type ServiceRow = {
+    branch_desc: string;
+    'SKU-A%': string;
+    'SKU-B%': string;
+    'SKU-C%': string;
+  };
+  const serviceMeasureChartData = (
+    (serviceMeasureData as { data?: ServiceRow[] })?.data ?? []
+  )
+    .filter(
+      (r) =>
+        Number(r['SKU-A%']) !== 0 ||
+        Number(r['SKU-B%']) !== 0 ||
+        Number(r['SKU-C%']) !== 0
+    )
+    .map((r) => ({
+      branch: r.branch_desc,
+      skuA: parseFloat(r['SKU-A%']),
+      skuB: parseFloat(r['SKU-B%']),
+      skuC: parseFloat(r['SKU-C%']),
+    }));
+  type TgtVsActualRow = {
+    classification: string;
+    cover_days_tgt: string;
+    actual_cover_days: string;
+  };
+  const coverDaysChartData = (
+    (tgtVsActualData as { data?: TgtVsActualRow[] })?.data ?? []
+  ).map((r) => ({
+    class: r.classification,
+    tgt: parseFloat(r.cover_days_tgt),
+    actual: parseFloat(r.actual_cover_days),
+  }));
+
   type InvApiRow = Record<string, string | null>;
   const branchKeys = INV_API_BRANCHES.map((b) => b.key);
   const invApiRows = (inventoryDaysData as { data?: InvApiRow[] })?.data ?? [];
 
   const avgVals = (rows: InvApiRow[]) =>
     branchKeys.map((key) => {
-      const vals = rows.map((r) => Number(r[key] ?? 0)).filter((v) => !isNaN(v));
-      return vals.length ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length) : 0;
+      const vals = rows
+        .map((r) => Number(r[key] ?? 0))
+        .filter((v) => !isNaN(v));
+      return vals.length
+        ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length)
+        : 0;
     });
 
   const grouped = invApiRows.reduce<Record<string, InvApiRow[]>>((acc, row) => {
@@ -670,7 +790,12 @@ function ServiceMeasureTab({ inventoryDaysData }: { inventoryDaysData: unknown }
   const computedRows =
     invApiRows.length > 0
       ? [
-          { cls: '∑', vals: avgVals(invApiRows), bold: true, subRows: [] as { sku: string; vals: number[] }[] },
+          {
+            cls: '∑',
+            vals: avgVals(invApiRows),
+            bold: true,
+            subRows: [] as { sku: string; vals: number[] }[],
+          },
           ...(['A', 'B', 'C', 'Other'] as const)
             .filter((c) => grouped[c]?.length)
             .map((cls) => ({
@@ -685,9 +810,10 @@ function ServiceMeasureTab({ inventoryDaysData }: { inventoryDaysData: unknown }
         ]
       : INV_ROWS;
 
-  const tableHeaders = invApiRows.length > 0
-    ? ['Class', ...INV_API_BRANCHES.map((b) => b.label.slice(0, 8))]
-    : ['Class', ...INV_BRANCHES.map((b) => b.slice(0, 8))];
+  const tableHeaders =
+    invApiRows.length > 0
+      ? ['Class', ...INV_API_BRANCHES.map((b) => b.label.slice(0, 8))]
+      : ['Class', ...INV_BRANCHES.map((b) => b.slice(0, 8))];
 
   return (
     <Flex direction="column" gap={4}>
@@ -733,7 +859,11 @@ function ServiceMeasureTab({ inventoryDaysData }: { inventoryDaysData: unknown }
         >
           <LineChart
             variant="filled"
-            data={SERVICE_MEASURE}
+            data={
+              serviceMeasureChartData.length > 0
+                ? serviceMeasureChartData
+                : SERVICE_MEASURE
+            }
             xKey="branch"
             lines={[
               { key: 'skuA', label: 'SKU-A%', color: clsColors.A },
@@ -765,7 +895,11 @@ function ServiceMeasureTab({ inventoryDaysData }: { inventoryDaysData: unknown }
           // }
         >
           <BarChart
-            data={COVER_DAYS_CHART}
+            data={
+              coverDaysChartData.length > 0
+                ? coverDaysChartData
+                : COVER_DAYS_CHART
+            }
             xKey="class"
             barSize={32}
             height={200}
@@ -795,7 +929,7 @@ function ServiceMeasureTab({ inventoryDaysData }: { inventoryDaysData: unknown }
           // }
         >
           <BarChart
-            data={SKUS_THRESHOLD}
+            data={skusThresholdData}
             xKey="class"
             barSize={32}
             height={200}
@@ -809,7 +943,7 @@ function ServiceMeasureTab({ inventoryDaysData }: { inventoryDaysData: unknown }
 
         <ChartCard colSpan={4} title="% SKUs vs Threshold" height="220px">
           <BarChart
-            data={PCT_SKUS}
+            data={pctSkusData}
             xKey="class"
             barSize={48}
             height={200}
@@ -836,27 +970,63 @@ function ServiceMeasureTab({ inventoryDaysData }: { inventoryDaysData: unknown }
   );
 }
 
-function DispatchWipTab() {
+function DispatchWipTab({
+  dispatchVsOrderData,
+  wipData,
+  rpmData,
+}: {
+  dispatchVsOrderData: unknown;
+  wipData: unknown;
+  rpmData: unknown;
+}) {
+  type DispatchRow = { material_name: string; delivery_pct: string };
+  type WipRow = { 'item desc': string; Wip_total: string };
+  type RpmRow = { materialname: string; total_value: string };
+  const dispatchRows =
+    (dispatchVsOrderData as { data?: DispatchRow[] })?.data ?? [];
+  const wipRows = (wipData as { data?: WipRow[] })?.data ?? [];
+  const rpmRows = (rpmData as { data?: RpmRow[] })?.data ?? [];
+  const wipTotal = wipRows.reduce(
+    (sum, r) => sum + Number(r.Wip_total ?? 0),
+    0
+  );
+
   return (
     <Grid templateColumns="repeat(3, 1fr)" gap={4}>
       <DataTable
         title="Dispatch Vs Order"
         headerGradient={gradients.tableBlue}
         headers={['Material Name', '%']}
-        pageSize={25}
+        pageSize={15}
         searchable={false}
       >
-        {DISPATCH_VS_ORDER.map((row) => (
-          <DataTableRow
-            key={row.material}
-            cells={[row.material, row.pct]}
-            cellColors={[
-              row.pct !== '100%' ? '#2563eb' : undefined,
-              row.pct !== '100%' ? '#dc2626' : '#059669',
-            ]}
-            cellWeights={[undefined, '700']}
-          />
-        ))}
+        {dispatchRows.length > 0
+          ? dispatchRows.map((row) => {
+              const pct = `${parseFloat(row.delivery_pct).toFixed(2)}%`;
+              const isBelow100 = parseFloat(row.delivery_pct) < 100;
+              return (
+                <DataTableRow
+                  key={row.material_name}
+                  cells={[row.material_name, pct]}
+                  cellColors={[
+                    isBelow100 ? '#2563eb' : undefined,
+                    isBelow100 ? '#dc2626' : '#059669',
+                  ]}
+                  cellWeights={[undefined, '700']}
+                />
+              );
+            })
+          : DISPATCH_VS_ORDER.map((row) => (
+              <DataTableRow
+                key={row.material}
+                cells={[row.material, row.pct]}
+                cellColors={[
+                  row.pct !== '100%' ? '#2563eb' : undefined,
+                  row.pct !== '100%' ? '#dc2626' : '#059669',
+                ]}
+                cellWeights={[undefined, '700']}
+              />
+            ))}
       </DataTable>
 
       {/* WIP */}
@@ -864,21 +1034,29 @@ function DispatchWipTab() {
         title="WIP"
         headerGradient={gradients.tableBlue}
         headers={['Material Name', 'WIP Value']}
-        pageSize={25}
+        pageSize={15}
         searchable={false}
       >
-        {WIP_DATA.map((row) => (
-          <DataTableRow
-            key={row.material}
-            cells={[row.material, row.value]}
-            cellWeights={[undefined, '600']}
-          />
-        ))}
-        <DataTableRow
-          cells={['Total', '310,498,800']}
-          isTotal
-          cellWeights={['700', '700']}
-        />
+        {wipRows.length > 0
+          ? wipRows.map((row) => (
+              <DataTableRow
+                key={row['item desc']}
+                cells={[
+                  row['item desc'],
+                  Number(row.Wip_total ?? 0).toLocaleString('en-US', {
+                    maximumFractionDigits: 0,
+                  }),
+                ]}
+                cellWeights={[undefined, '600']}
+              />
+            ))
+          : WIP_DATA.map((row) => (
+              <DataTableRow
+                key={row.material}
+                cells={[row.material, row.value]}
+                cellWeights={[undefined, '600']}
+              />
+            ))}
       </DataTable>
 
       {/* RPM */}
@@ -886,21 +1064,29 @@ function DispatchWipTab() {
         title="RPM"
         headerGradient={gradients.tableIndigo}
         headers={['Material Name', 'RPM Value']}
-        pageSize={25}
+        pageSize={15}
         searchable={false}
       >
-        {RPM_DATA.map((row) => (
-          <DataTableRow
-            key={row.material}
-            cells={[row.material, row.value]}
-            cellWeights={[undefined, '600']}
-          />
-        ))}
-        <DataTableRow
-          cells={['Total', '184,320,500']}
-          isTotal
-          cellWeights={['700', '700']}
-        />
+        {rpmRows.length > 0
+          ? rpmRows.map((row) => (
+              <DataTableRow
+                key={row.materialname}
+                cells={[
+                  row.materialname,
+                  Number(row.total_value ?? 0).toLocaleString('en-US', {
+                    maximumFractionDigits: 0,
+                  }),
+                ]}
+                cellWeights={[undefined, '600']}
+              />
+            ))
+          : RPM_DATA.map((row) => (
+              <DataTableRow
+                key={row.material}
+                cells={[row.material, row.value]}
+                cellWeights={[undefined, '600']}
+              />
+            ))}
       </DataTable>
     </Grid>
   );
@@ -936,17 +1122,42 @@ export default function ScorecardDashboard() {
   const { data: forecastAccuracyMonthlyData } =
     useGetForecastAccuracyMonthly(params);
   const { data: forecastAccuracyCategoryMonthlyData } =
-    useGetForecastAccuracyCategoryMonthly({ ...params, date: new Date().toISOString().slice(0, 10) });
+    useGetForecastAccuracyCategoryMonthly({
+      ...params,
+      date: new Date().toISOString().slice(0, 10),
+    });
 
-  const { data: forecastAccuracyYearlyData } =
-    useGetForecastAccuracyYearly({ ...params, date: new Date().toISOString().slice(0, 10) });
+  const { data: forecastAccuracyYearlyData } = useGetForecastAccuracyYearly({
+    ...params,
+    date: new Date().toISOString().slice(0, 10),
+  });
   const { data: forecastAccuracyCategoryYearlyData } =
-    useGetForecastAccuracyCategoryYearly({ ...params, date: new Date().toISOString().slice(0, 10) });
+    useGetForecastAccuracyCategoryYearly({
+      ...params,
+      date: new Date().toISOString().slice(0, 10),
+    });
 
   const { data: inventoryDaysData } = useGetInventoryDays(params);
-  const { data: aboveBelowThresholdData } = useGetAboveBelowThreshold(params);
+  const { data: aboveBelowThresholdDataA } = useGetAboveBelowThreshold({
+    ...params,
+    category: 'A',
+  });
+  const { data: aboveBelowThresholdDataB } = useGetAboveBelowThreshold({
+    ...params,
+    category: 'B',
+  });
+  const { data: aboveBelowThresholdDataC } = useGetAboveBelowThreshold({
+    ...params,
+    category: 'C',
+  });
   const { data: iblVsTsclData } = useGetIblVsTscl(params);
   const { data: dispatchVsOrderData } = useGetDispatchVsOrder(params);
+
+  const { data: wipData } = useGetWip(params);
+  const { data: rpmData } = useGetRpm(params);
+  const { data: serviceMeasureData } = useGetServiceMeasure(params);
+  const { data: tgtVsActualData } = useGetTgtVsActual(params);
+  const { data: filtersData } = useGetFilters();
 
   const apiRows = salesSummaryData?.data as
     | { classification: string; sku: number; new_total_all_sales: number }[]
@@ -1022,36 +1233,122 @@ export default function ScorecardDashboard() {
     },
   ];
 
+  type ThresholdRow = {
+    Classification: string;
+    'No Of SKUs > Threshold': number;
+    'No Of SKUs < Threshold': number;
+  };
+  const extractThreshold = (d: unknown) =>
+    (d as { data?: ThresholdRow[] })?.data?.[0];
+  const skusThresholdData = [
+    {
+      class: 'A',
+      above:
+        extractThreshold(aboveBelowThresholdDataA)?.[
+          'No Of SKUs > Threshold'
+        ] ?? 0,
+      below:
+        extractThreshold(aboveBelowThresholdDataA)?.[
+          'No Of SKUs < Threshold'
+        ] ?? 0,
+    },
+    {
+      class: 'B',
+      above:
+        extractThreshold(aboveBelowThresholdDataB)?.[
+          'No Of SKUs > Threshold'
+        ] ?? 0,
+      below:
+        extractThreshold(aboveBelowThresholdDataB)?.[
+          'No Of SKUs < Threshold'
+        ] ?? 0,
+    },
+    {
+      class: 'C',
+      above:
+        extractThreshold(aboveBelowThresholdDataC)?.[
+          'No Of SKUs > Threshold'
+        ] ?? 0,
+      below:
+        extractThreshold(aboveBelowThresholdDataC)?.[
+          'No Of SKUs < Threshold'
+        ] ?? 0,
+    },
+  ];
+
+  type IblVsTsclRow = { category: string; forecast_vs_budget_pct: number };
+  const iblVsTsclRows =
+    (iblVsTsclData as { data?: IblVsTsclRow[] })?.data ?? [];
+  const pctSkusData = (['A', 'B', 'C'] as const).map((cls) => {
+    const row = iblVsTsclRows.find((r) => r.category === cls);
+    return {
+      class: cls,
+      pct: row ? Math.round(row.forecast_vs_budget_pct) : 0,
+    };
+  });
+
   const tsclAccuracy = (() => {
-    const row = (forecastAccuracyMonthlyData as { data?: { forecast_accuracy_pct: number; new_total_all_sales: number }[] })?.data?.[0];
+    const row = (
+      forecastAccuracyMonthlyData as {
+        data?: { forecast_accuracy_pct: number; new_total_all_sales: number }[];
+      }
+    )?.data?.[0];
     return row ? Math.round(row.forecast_accuracy_pct * 100 * 10) / 10 : null;
   })();
 
   const tsclSalesDisplay = (() => {
-    const row = (forecastAccuracyMonthlyData as { data?: { new_total_all_sales: number; period_sales_trg_ibl_primary: number }[] })?.data?.[0];
+    const row = (
+      forecastAccuracyMonthlyData as {
+        data?: {
+          new_total_all_sales: number;
+          period_sales_trg_ibl_primary: number;
+        }[];
+      }
+    )?.data?.[0];
     if (!row) return undefined;
     return {
-      achieved: Number(row.new_total_all_sales).toLocaleString('en-US', { maximumFractionDigits: 0 }),
-      target: Number(row.period_sales_trg_ibl_primary).toLocaleString('en-US', { maximumFractionDigits: 0 }),
+      achieved: Number(row.new_total_all_sales).toLocaleString('en-US', {
+        maximumFractionDigits: 0,
+      }),
+      target: Number(row.period_sales_trg_ibl_primary).toLocaleString('en-US', {
+        maximumFractionDigits: 0,
+      }),
     };
   })();
 
   const iblAccuracy = (() => {
-    const row = (forecastAccuracyYearlyData as { data?: { forecast_accuracy_pct: number; new_total_all_sales: number; budget: number }[] })?.data?.[0];
+    const row = (
+      forecastAccuracyYearlyData as {
+        data?: {
+          forecast_accuracy_pct: number;
+          new_total_all_sales: number;
+          budget: number;
+        }[];
+      }
+    )?.data?.[0];
     return row ? Math.round(row.forecast_accuracy_pct * 100 * 10) / 10 : null;
   })();
 
   const iblSalesDisplay = (() => {
-    const row = (forecastAccuracyYearlyData as { data?: { new_total_all_sales: number; budget: number }[] })?.data?.[0];
+    const row = (
+      forecastAccuracyYearlyData as {
+        data?: { new_total_all_sales: number; budget: number }[];
+      }
+    )?.data?.[0];
     if (!row) return undefined;
     return {
-      achieved: Number(row.new_total_all_sales).toLocaleString('en-US', { maximumFractionDigits: 0 }),
-      target: Number(row.budget).toLocaleString('en-US', { maximumFractionDigits: 0 }),
+      achieved: Number(row.new_total_all_sales).toLocaleString('en-US', {
+        maximumFractionDigits: 0,
+      }),
+      target: Number(row.budget).toLocaleString('en-US', {
+        maximumFractionDigits: 0,
+      }),
     };
   })();
 
   const iblCategoryRows: ForecastCategoryRow[] =
-    (forecastAccuracyCategoryYearlyData as { data?: ForecastCategoryRow[] })?.data ?? [];
+    (forecastAccuracyCategoryYearlyData as { data?: ForecastCategoryRow[] })
+      ?.data ?? [];
 
   const iblMonths = [...new Set(iblCategoryRows.map((r) => r.month_label))];
 
@@ -1060,7 +1357,8 @@ export default function ScorecardDashboard() {
       (acc, r) => {
         const key = r.category;
         if (!acc[key]) acc[key] = { classification: key };
-        acc[key][r.month_label] = Math.round(r.forecast_accuracy_pct * 100 * 10) / 10;
+        acc[key][r.month_label] =
+          Math.round(r.forecast_accuracy_pct * 100 * 10) / 10;
         return acc;
       },
       {}
@@ -1068,20 +1366,23 @@ export default function ScorecardDashboard() {
   );
 
   const forecastCategoryRows: ForecastCategoryRow[] =
-    (forecastAccuracyCategoryMonthlyData as { data?: ForecastCategoryRow[] })?.data ?? [];
+    (forecastAccuracyCategoryMonthlyData as { data?: ForecastCategoryRow[] })
+      ?.data ?? [];
 
-  const forecastMonths = [...new Set(forecastCategoryRows.map((r) => r.month_label))];
+  const forecastMonths = [
+    ...new Set(forecastCategoryRows.map((r) => r.month_label)),
+  ];
 
   const forecastBarData: Record<string, string | number>[] = Object.values(
-    forecastCategoryRows.reduce<Record<string, Record<string, string | number>>>(
-      (acc, r) => {
-        const key = r.category;
-        if (!acc[key]) acc[key] = { classification: key };
-        acc[key][r.month_label] = Math.round(r.forecast_accuracy_pct * 100 * 10) / 10;
-        return acc;
-      },
-      {}
-    )
+    forecastCategoryRows.reduce<
+      Record<string, Record<string, string | number>>
+    >((acc, r) => {
+      const key = r.category;
+      if (!acc[key]) acc[key] = { classification: key };
+      acc[key][r.month_label] =
+        Math.round(r.forecast_accuracy_pct * 100 * 10) / 10;
+      return acc;
+    }, {})
   );
 
   console.log('salesSummaryData', salesSummaryData);
@@ -1092,7 +1393,9 @@ export default function ScorecardDashboard() {
   console.log('forecastAccuracyMonthlyData', forecastAccuracyMonthlyData);
   console.log('forecastAccuracyYearlyData', forecastAccuracyYearlyData);
   console.log('inventoryDaysData', inventoryDaysData);
-  console.log('aboveBelowThresholdData', aboveBelowThresholdData);
+  console.log('aboveBelowThresholdDataA', aboveBelowThresholdDataA);
+  console.log('aboveBelowThresholdDataB', aboveBelowThresholdDataB);
+  console.log('aboveBelowThresholdDataC', aboveBelowThresholdDataC);
   console.log(
     'forecastAccuracyCategoryMonthlyData',
     forecastAccuracyCategoryMonthlyData
@@ -1187,8 +1490,22 @@ export default function ScorecardDashboard() {
             iblMonths={iblMonths}
           />
         )}
-        {mainTab === 'serviceMeasure' && <ServiceMeasureTab inventoryDaysData={inventoryDaysData} />}
-        {mainTab === 'dispatchWip' && <DispatchWipTab />}
+        {mainTab === 'serviceMeasure' && (
+          <ServiceMeasureTab
+            inventoryDaysData={inventoryDaysData}
+            skusThresholdData={skusThresholdData}
+            pctSkusData={pctSkusData}
+            serviceMeasureData={serviceMeasureData}
+            tgtVsActualData={tgtVsActualData}
+          />
+        )}
+        {mainTab === 'dispatchWip' && (
+          <DispatchWipTab
+            dispatchVsOrderData={dispatchVsOrderData}
+            wipData={wipData}
+            rpmData={rpmData}
+          />
+        )}
       </Box>
     </Flex>
   );

@@ -70,7 +70,6 @@ export function SalesSummaryCard({ rows, total }: SalesSummaryCardProps) {
       >
         Sales Summary
       </Text>
-
       {/* Header */}
       <Flex
         align="center"
