@@ -32,6 +32,7 @@ export interface BarChartProps {
   verticalXLabels?: boolean;
   variant?: 'grouped' | 'stacked-bar';
   xTickMargin?: number;
+  xLabelColors?: Record<string, string>;
 }
 
 function formatCompact(value: number): string {
@@ -41,27 +42,61 @@ function formatCompact(value: number): string {
   return value.toString();
 }
 
-function renderXTick(tickWidth: number, tickMargin = 6) {
+function renderXTick(
+  tickWidth: number,
+  tickMargin = 6,
+  xLabelColors?: Record<string, string>
+) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (props: any) => {
     const { x, y, payload } = props;
     const val = payload?.value;
     if (val === undefined || val === null) return null;
-    const charsPerLine = Math.max(1, Math.floor(tickWidth / 7.2));
     const full = String(val);
+    const color = xLabelColors?.[full];
+
+    if (color) {
+      const bw = 24;
+      const bh = 24;
+      return (
+        <g transform={`translate(${x},${y + tickMargin})`}>
+          <rect
+            x={-bw / 2}
+            y={0}
+            width={bw}
+            height={bh}
+            rx={4}
+            ry={4}
+            fill={color}
+          />
+          <text
+            x={0}
+            y={bh / 2 + 4}
+            textAnchor="middle"
+            fill="#fff"
+            style={{ fontSize: '12px', fontWeight: 700 }}
+          >
+            {full}
+          </text>
+        </g>
+      );
+    }
+
+    const charsPerLine = Math.max(1, Math.floor(tickWidth / 7.2));
     const line1 = full.slice(0, charsPerLine);
     const rest = full.slice(charsPerLine);
-    const line2 = rest.length > charsPerLine
-      ? rest.slice(0, charsPerLine - 1) + '…'
-      : rest;
+    const line2 =
+      rest.length > charsPerLine ? rest.slice(0, charsPerLine - 1) + '…' : rest;
     const lines = line2 ? [line1, line2] : [line1];
+    // when badge mode is active, align plain text to badge vertical center (bh/2 + 4 = 16)
+    const textBaseY = xLabelColors ? 16 : 0;
     return (
       <g transform={`translate(${x},${y + tickMargin})`}>
         {lines.map((line, i) => (
           <text
             key={i}
             x={0}
-            y={i * 13}
+            y={textBaseY + i * 13}
             textAnchor="middle"
             fill="#000"
             style={{ fontSize: '11px', fontWeight: 600 }}
@@ -165,6 +200,7 @@ export function BarChart({
   verticalXLabels = false,
   variant = 'grouped',
   xTickMargin = 6,
+  xLabelColors,
 }: BarChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -189,7 +225,7 @@ export function BarChart({
     innerWidth && data.length ? innerWidth / data.length - 10 : 50;
   const ticks = computeYTicks(data, bars, isStacked);
 
-  const xAxisHeight = verticalXLabels ? VERT_AXIS_HEIGHT : undefined;
+  const xAxisHeight = verticalXLabels ? VERT_AXIS_HEIGHT : xLabelColors ? 44 : undefined;
 
   return (
     <Flex w="100%" h={height} direction="column" position={'relative'}>
@@ -245,7 +281,7 @@ export function BarChart({
                 tick={
                   verticalXLabels
                     ? renderXTickVertical()
-                    : renderXTick(tickWidth, xTickMargin)
+                    : renderXTick(tickWidth, xTickMargin, xLabelColors)
                 }
                 height={xAxisHeight}
               />
@@ -271,7 +307,9 @@ export function BarChart({
               {bars.map((bar, barIdx) => {
                 const isTopBar = isStacked && barIdx === bars.length - 1;
                 const radius: [number, number, number, number] = isStacked
-                  ? isTopBar ? [4, 4, 0, 0] : [0, 0, 0, 0]
+                  ? isTopBar
+                    ? [4, 4, 0, 0]
+                    : [0, 0, 0, 0]
                   : [4, 4, 0, 0];
                 return (
                   <Bar
@@ -286,7 +324,9 @@ export function BarChart({
                       data.map((entry, index) => (
                         <Cell
                           key={index}
-                          fill={bar.cellColor!(entry as Record<string, unknown>)}
+                          fill={bar.cellColor!(
+                            entry as Record<string, unknown>
+                          )}
                         />
                       ))}
                     {showLabels && (
@@ -294,7 +334,11 @@ export function BarChart({
                         dataKey={bar.key}
                         position={isStacked ? 'inside' : 'top'}
                         formatter={(v) => labelFormatter(Number(v))}
-                        style={{ fontSize: 11, fontWeight: 700, fill: isStacked ? '#fff' : bar.color }}
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          fill: isStacked ? '#fff' : bar.color,
+                        }}
                       />
                     )}
                   </Bar>

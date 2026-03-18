@@ -4,6 +4,7 @@ import { colors } from '@/constants/theme';
 
 export interface ChartCardProps {
   title: string;
+  titleNode?: ReactNode;
   children: ReactNode;
   colSpan?: number;
   height?: string;
@@ -24,6 +25,7 @@ const LINE_SVG_POINTS = LINE_DOTS.map((bottom, i) => {
 
 export function ChartCard({
   title,
+  titleNode,
   children,
   colSpan = 4,
   height = 'auto',
@@ -51,7 +53,7 @@ export function ChartCard({
             textTransform="uppercase"
             letterSpacing="wide"
           >
-            {title}
+            {titleNode ?? title}
           </Text>
           {headerRight}
         </Box>

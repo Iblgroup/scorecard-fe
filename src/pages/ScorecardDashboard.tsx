@@ -157,12 +157,6 @@ const INV_BRANCHES = INV_API_BRANCHES.map((b) => b.label);
 
 const INV_ROWS = [
   {
-    cls: '∑',
-    vals: [43, 34, 36, 45, 50, 273, 92, 129, 46, 57],
-    bold: true,
-    subRows: [] as { sku: string; vals: number[] }[],
-  },
-  {
     cls: 'A',
     vals: [34, 25, 24, 23, 39, 190, 17, 95, 34, 35],
     bold: false,
@@ -630,7 +624,7 @@ function SupplyChainTab({
 
       {/* Forecast Accuracy Charts */}
       <Grid templateColumns="repeat(12, 1fr)" gap={4}>
-        <ChartCard colSpan={6} title="Forecast Accuracy TSCL" height="240px">
+        <ChartCard colSpan={6} title="Forecast Accuracy TSCL" height="280px">
           <Flex h="100%" gap={0}>
             <Box
               w="160px"
@@ -659,8 +653,7 @@ function SupplyChainTab({
                     ? forecastMonths.map((m, i) => ({
                         key: m,
                         label: m,
-                        color:
-                          CHART_COLORS[i] ?? CHART_COLORS[0],
+                        color: CHART_COLORS[i] ?? CHART_COLORS[0],
                       }))
                     : [
                         {
@@ -670,17 +663,22 @@ function SupplyChainTab({
                         },
                       ]
                 }
-                height={220}
+                height={260}
                 yTickFormatter={(v) => `${v}%`}
                 labelFormatter={(v) => `${v}%`}
                 showLabels
-                xTickMargin={14}
+                xTickMargin={4}
+                xLabelColors={{
+                  A: clsColors.A,
+                  B: clsColors.B,
+                  C: clsColors.C,
+                }}
               />
             </Box>
           </Flex>
         </ChartCard>
 
-        <ChartCard colSpan={6} title="Forecast Accuracy IBL" height="240px">
+        <ChartCard colSpan={6} title="Forecast Accuracy IBL" height="280px">
           <Flex h="100%" gap={0}>
             <Box
               w="160px"
@@ -709,8 +707,7 @@ function SupplyChainTab({
                     ? iblMonths.map((m, i) => ({
                         key: m,
                         label: m,
-                        color:
-                          CHART_COLORS[i] ?? CHART_COLORS[0],
+                        color: CHART_COLORS[i] ?? CHART_COLORS[0],
                       }))
                     : [
                         {
@@ -720,11 +717,16 @@ function SupplyChainTab({
                         },
                       ]
                 }
-                height={220}
+                height={260}
                 yTickFormatter={(v) => `${v}%`}
                 labelFormatter={(v) => `${v}%`}
                 showLabels
-                xTickMargin={14}
+                xTickMargin={4}
+                xLabelColors={{
+                  A: clsColors.A,
+                  B: clsColors.B,
+                  C: clsColors.C,
+                }}
               />
             </Box>
           </Flex>
@@ -813,12 +815,6 @@ function ServiceMeasureTab({
   const computedRows =
     invApiRows.length > 0
       ? [
-          {
-            cls: '∑',
-            vals: avgVals(invApiRows),
-            bold: true,
-            subRows: [] as { sku: string; vals: number[] }[],
-          },
           ...(['A', 'B', 'C', 'Other'] as const)
             .filter((c) => grouped[c]?.length)
             .map((cls) => ({
@@ -859,12 +855,29 @@ function ServiceMeasureTab({
                     : row.cls === 'C'
                       ? clsColors.C
                       : undefined;
+              const clsBadge = clsColor ? (
+                <Box
+                  display="inline-flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  w="22px"
+                  h="22px"
+                  borderRadius="4px"
+                  bg={clsColor}
+                  color="white"
+                  fontSize="12px"
+                  fontWeight="700"
+                >
+                  {row.cls}
+                </Box>
+              ) : undefined;
               return (
                 <DataTableRow
                   key={row.cls}
                   cells={[row.cls, ...row.vals.map(String)]}
                   isTotal={row.bold}
                   cellColors={[clsColor]}
+                  cellNodes={[clsBadge]}
                   cellWeights={['700', ...row.vals.map(() => '600')]}
                   subRows={row.subRows.map((s) => ({
                     cells: [s.sku, ...s.vals.map(String)],
@@ -875,11 +888,7 @@ function ServiceMeasureTab({
           </DataTable>
         </GridItem>
 
-        <ChartCard
-          colSpan={6}
-          title="Service Measure — SKU-A%, SKU-B%, SKU-C% by Branch"
-          height="340px"
-        >
+        <ChartCard colSpan={6} title="Service Measure by Branch" height="340px">
           <LineChart
             variant="filled"
             data={
@@ -929,16 +938,27 @@ function ServiceMeasureTab({
             barSize={32}
             height={200}
             bars={[
-              { key: 'tgt', label: 'Cover Days TGT', color: CHART_COLORS[0] },
-              { key: 'actual', label: 'Actual Cover Days', color: CHART_COLORS[1] },
+              { key: 'tgt', label: 'TGT', color: CHART_COLORS[0] },
+              {
+                key: 'actual',
+                label: 'Actual',
+                color: CHART_COLORS[1],
+              },
             ]}
             showLabels
+            xLabelColors={{ A: clsColors.A, B: clsColors.B, C: clsColors.C }}
           />
         </ChartCard>
 
         <ChartCard
           colSpan={4}
           title="SKUs Against Threshold"
+          titleNode={
+            <>
+              SKU<span style={{ textTransform: 'lowercase' }}>s</span> VS
+              Threshold
+            </>
+          }
           height="220px"
           // headerRight={
           //   <HStack gap={3} fontSize="10px" color="gray.500">
@@ -959,14 +979,33 @@ function ServiceMeasureTab({
             barSize={32}
             height={200}
             bars={[
-              { key: 'above', label: 'No. SKUs > Threshold', color: CHART_COLORS[0] },
-              { key: 'below', label: 'No. SKUs < Threshold', color: CHART_COLORS[1] },
+              {
+                key: 'above',
+                label: 'Above',
+                color: CHART_COLORS[0],
+              },
+              {
+                key: 'below',
+                label: 'Below',
+                color: CHART_COLORS[1],
+              },
             ]}
             showLabels
+            xLabelColors={{ A: clsColors.A, B: clsColors.B, C: clsColors.C }}
           />
         </ChartCard>
 
-        <ChartCard colSpan={4} title="% SKUs vs Threshold" height="220px">
+        <ChartCard
+          colSpan={4}
+          title="% SKUs vs Threshold"
+          titleNode={
+            <>
+              % SKU<span style={{ textTransform: 'lowercase' }}>s</span> vs
+              Threshold
+            </>
+          }
+          height="220px"
+        >
           <BarChart
             data={pctSkusData}
             xKey="class"
@@ -988,6 +1027,7 @@ function ServiceMeasureTab({
             showLabels
             yTickFormatter={(v) => `${v}%`}
             labelFormatter={(v) => `${v}%`}
+            xLabelColors={{ A: clsColors.A, B: clsColors.B, C: clsColors.C }}
           />
         </ChartCard>
       </Grid>

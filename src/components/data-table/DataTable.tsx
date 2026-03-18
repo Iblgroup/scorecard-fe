@@ -325,6 +325,7 @@ export interface DataTableRowProps {
   isTotal?: boolean;
   cellColors?: (string | undefined)[];
   cellWeights?: (string | undefined)[];
+  cellNodes?: (ReactNode | undefined)[];
   subRows?: SubRowData[];
   /** Injected by DataTable when rowCollapsible={true} */
   showToggleCol?: boolean;
@@ -335,6 +336,7 @@ export function DataTableRow({
   isTotal = false,
   cellColors,
   cellWeights,
+  cellNodes,
   subRows,
   showToggleCol = false,
 }: DataTableRowProps) {
@@ -377,10 +379,10 @@ export function DataTableRow({
         {cells.map((cell, i) => (
           <Table.Cell
             key={i}
-            color={cellColors?.[i]}
+            color={cellNodes?.[i] ? undefined : cellColors?.[i]}
             fontWeight={cellWeights?.[i]}
           >
-            {cell}
+            {cellNodes?.[i] ?? cell}
           </Table.Cell>
         ))}
       </Table.Row>
