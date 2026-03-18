@@ -332,7 +332,7 @@ function BenchmarkBanner({
       pb={isLast ? 0 : 3}
       mb={isLast ? 0 : 3}
       borderBottom={isLast ? 'none' : '1px solid'}
-      borderColor="gray.100"
+      borderColor="gray.300"
       gap={3}
     >
       <Flex
@@ -358,7 +358,7 @@ function BenchmarkBanner({
           <Text
             fontSize="11px"
             fontWeight="500"
-            color="gray.400"
+            color="gray.500"
             lineHeight={1}
           >
             days
@@ -384,7 +384,7 @@ function BenchmarkBanner({
             <Text
               fontSize="11px"
               fontWeight="600"
-              color="gray.400"
+              color="gray.500"
               letterSpacing="wide"
             >
               RD
@@ -393,7 +393,12 @@ function BenchmarkBanner({
               {rd}%
             </Text>
           </HStack>
-          <Box h="6px" borderRadius="full" bg={`${color}18`} overflow="hidden">
+          <Box
+            h="6px"
+            borderRadius="full"
+            bg={`${color}18`}
+            overflow="hidden"
+          >
             <Box h="100%" w={`${rd}%`} borderRadius="full" bg={color} />
           </Box>
         </Box>
@@ -571,17 +576,19 @@ function SupplyChainTab({
       <Grid templateColumns="repeat(12, 1fr)" gap={4} alignItems="stretch">
         {/* Benchmark — 3 cols */}
         <GridItem colSpan={{ base: 12, lg: 3 }}>
-          <Box bg="white" borderRadius="xl" p={4} boxShadow="md" h="full">
-            <Text
-              fontSize="13px"
-              fontWeight="800"
-              color="gray.700"
-              textTransform="uppercase"
-              letterSpacing="wide"
-              mb={3}
-            >
-              Days Benchmark
-            </Text>
+          <Box bg="gray.200" borderRadius="xl" p={4} boxShadow="md" h="full">
+            <HStack mb={4} gap={2}>
+              <Box w={1} h={5} bg="gray.700" borderRadius="full" />
+              <Text
+                fontSize="13px"
+                fontWeight="800"
+                color="gray.700"
+                textTransform="uppercase"
+                letterSpacing="wide"
+              >
+                Days Benchmark
+              </Text>
+            </HStack>
             <Box>
               {BENCHMARKS.map((b, i) => (
                 <BenchmarkBanner
