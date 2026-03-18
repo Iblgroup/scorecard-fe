@@ -831,8 +831,8 @@ function ServiceMeasureTab({
 
   const tableHeaders =
     invApiRows.length > 0
-      ? ['Class', ...INV_API_BRANCHES.map((b) => b.label.slice(0, 8))]
-      : ['Class', ...INV_BRANCHES.map((b) => b.slice(0, 8))];
+      ? ['Class', ...INV_API_BRANCHES.map((b) => b.label)]
+      : ['Class', ...INV_BRANCHES];
 
   return (
     <Flex direction="column" gap={4}>
@@ -1063,7 +1063,6 @@ function DispatchWipTab({
         headerGradient={gradients.tableBlue}
         headers={['Material Name', '%']}
         pageSize={15}
-        searchable={false}
       >
         {dispatchRows.length > 0
           ? dispatchRows.map((row) => {
@@ -1100,7 +1099,6 @@ function DispatchWipTab({
         headerGradient={gradients.tableBlue}
         headers={['Material Name', 'WIP Value']}
         pageSize={15}
-        searchable={false}
       >
         {wipRows.length > 0
           ? wipRows.map((row) => (
@@ -1130,7 +1128,6 @@ function DispatchWipTab({
         headerGradient={gradients.tableIndigo}
         headers={['Material Name', 'RPM Value']}
         pageSize={15}
-        searchable={false}
       >
         {rpmRows.length > 0
           ? rpmRows.map((row) => (

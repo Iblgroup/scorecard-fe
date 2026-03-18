@@ -215,9 +215,7 @@ export function LineChart({
               margin={{ top: 24, right: 20, left: 0, bottom: 20 }}
             >
               {sharedChildren}
-              {lines.map((line, lineIdx) => {
-                const yOffset = lineIdx === 0 ? -8 : lineIdx === 1 ? 14 : 24;
-                return (
+              {lines.map((line) => (
                   <Area
                     key={line.key}
                     type="monotone"
@@ -234,8 +232,24 @@ export function LineChart({
                       dataKey={line.key}
                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       content={(props: any) => {
-                        const { x, y, value } = props;
+                        const { x, y, value, index } = props;
                         if (value === undefined || value === null) return null;
+                        // rank all lines at this index by value (descending)
+                        const vals = lines.map((l) => Number(data[index]?.[l.key] ?? 0));
+                        const sorted = [...vals].sort((a, b) => b - a);
+                        const myVal = Number(value);
+                        const rank = sorted.indexOf(myVal); // 0=top, 1=mid, 2=bot
+                        let yOffset: number;
+                        if (rank === 0) {
+                          yOffset = -8; // highest → above
+                        } else if (rank === sorted.length - 1) {
+                          yOffset = 14; // lowest → below
+                        } else {
+                          // middle → go toward the side with more space
+                          const topVal = sorted[0];
+                          const botVal = sorted[sorted.length - 1];
+                          yOffset = (myVal - botVal) < (topVal - myVal) ? -8 : 14;
+                        }
                         return (
                           <text
                             x={x}
@@ -247,14 +261,13 @@ export function LineChart({
                               fill: line.color,
                             }}
                           >
-                            {labelFormatter(Number(value))}
+                            {labelFormatter(Math.round(Number(value)))}
                           </text>
                         );
                       }}
                     />
                   </Area>
-                );
-              })}
+              ))}
             </RechartsAreaChart>
           ) : (
             <RechartsLineChart
