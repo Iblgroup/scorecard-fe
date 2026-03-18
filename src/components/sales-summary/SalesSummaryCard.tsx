@@ -14,10 +14,8 @@ interface SalesSummaryCardProps {
   total?: { sales: string; pct: string };
 }
 
-function pctColor(up: boolean | null) {
-  if (up === true) return '#059669';
-  if (up === false) return '#dc2626';
-  return '#64748b';
+function pctColor(_up: boolean | null) {
+  return '#059669';
 }
 
 function labelColor(label: string) {

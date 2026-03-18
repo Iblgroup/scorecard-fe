@@ -88,7 +88,7 @@ const COVER_DAYS = [
     label: 'Total Cover Days',
     value: 54,
     inv: '54,188',
-    color: '#1d4ed8',
+    color: '#0891b2',
     bg: '#fff',
     border: 'transparent',
     dot: '=',
@@ -121,6 +121,8 @@ const COVER_DAYS = [
     dot: '●',
   },
 ];
+
+const CHART_COLORS = ['#646ECB', '#5AC8D8', '#FFDD67'] as const;
 
 const FORECAST_TSCL = [
   { classification: 'A', Jan: 84, Feb: 87, Mar: 90 },
@@ -448,7 +450,7 @@ function CoverDaysCard({
           {label}
         </Text>
         <Text
-          fontSize="1.7rem"
+          fontSize="2.5rem"
           fontWeight="900"
           color={color}
           lineHeight="1.1"
@@ -640,7 +642,7 @@ function SupplyChainTab({
               <GaugeChart
                 value={tsclAccuracy ?? 83}
                 target={100}
-                title="TSCL"
+                title=""
                 subtitle="Total Supply Chain Level"
                 color={clsColors.A}
                 displayAchieved={tsclSalesDisplay?.achieved}
@@ -658,14 +660,13 @@ function SupplyChainTab({
                         key: m,
                         label: m,
                         color:
-                          (['#2563eb', '#06b6d4', '#10b981'] as string[])[i] ??
-                          '#2563eb',
+                          CHART_COLORS[i] ?? CHART_COLORS[0],
                       }))
                     : [
                         {
                           key: 'accuracy',
                           label: 'Forecast Accuracy',
-                          color: '#2563eb',
+                          color: CHART_COLORS[0],
                         },
                       ]
                 }
@@ -673,6 +674,7 @@ function SupplyChainTab({
                 yTickFormatter={(v) => `${v}%`}
                 labelFormatter={(v) => `${v}%`}
                 showLabels
+                xTickMargin={14}
               />
             </Box>
           </Flex>
@@ -690,7 +692,7 @@ function SupplyChainTab({
               <GaugeChart
                 value={iblAccuracy ?? 78}
                 target={100}
-                title="IBL"
+                title=""
                 subtitle="Item Branch Level"
                 color={clsColors.B}
                 displayAchieved={iblSalesDisplay?.achieved}
@@ -708,14 +710,13 @@ function SupplyChainTab({
                         key: m,
                         label: m,
                         color:
-                          (['#2563eb', '#06b6d4', '#10b981'] as string[])[i] ??
-                          '#2563eb',
+                          CHART_COLORS[i] ?? CHART_COLORS[0],
                       }))
                     : [
                         {
                           key: 'accuracy',
                           label: 'Forecast Accuracy',
-                          color: '#2563eb',
+                          color: CHART_COLORS[0],
                         },
                       ]
                 }
@@ -723,6 +724,7 @@ function SupplyChainTab({
                 yTickFormatter={(v) => `${v}%`}
                 labelFormatter={(v) => `${v}%`}
                 showLabels
+                xTickMargin={14}
               />
             </Box>
           </Flex>
@@ -927,8 +929,8 @@ function ServiceMeasureTab({
             barSize={32}
             height={200}
             bars={[
-              { key: 'tgt', label: 'Cover Days TGT', color: '#1d4ed8' },
-              { key: 'actual', label: 'Actual Cover Days', color: '#06b6d4' },
+              { key: 'tgt', label: 'Cover Days TGT', color: CHART_COLORS[0] },
+              { key: 'actual', label: 'Actual Cover Days', color: CHART_COLORS[1] },
             ]}
             showLabels
           />
@@ -957,8 +959,8 @@ function ServiceMeasureTab({
             barSize={32}
             height={200}
             bars={[
-              { key: 'above', label: 'No. SKUs > Threshold', color: '#1d4ed8' },
-              { key: 'below', label: 'No. SKUs < Threshold', color: '#06b6d4' },
+              { key: 'above', label: 'No. SKUs > Threshold', color: CHART_COLORS[0] },
+              { key: 'below', label: 'No. SKUs < Threshold', color: CHART_COLORS[1] },
             ]}
             showLabels
           />
@@ -1161,18 +1163,7 @@ export default function ScorecardDashboard() {
     });
 
   const { data: inventoryDaysData } = useGetInventoryDays(params);
-  const { data: aboveBelowThresholdDataA } = useGetAboveBelowThreshold({
-    ...params,
-    category: 'A',
-  });
-  const { data: aboveBelowThresholdDataB } = useGetAboveBelowThreshold({
-    ...params,
-    category: 'B',
-  });
-  const { data: aboveBelowThresholdDataC } = useGetAboveBelowThreshold({
-    ...params,
-    category: 'C',
-  });
+  const { data: aboveBelowThresholdData } = useGetAboveBelowThreshold(params);
   const { data: iblVsTsclData } = useGetIblVsTscl(params);
   const { data: dispatchVsOrderData } = useGetDispatchVsOrder(params);
 
@@ -1260,45 +1251,18 @@ export default function ScorecardDashboard() {
     'No Of SKUs > Threshold': number;
     'No Of SKUs < Threshold': number;
   };
-  const extractThreshold = (d: unknown) =>
-    (d as { data?: ThresholdRow[] })?.data?.[0];
-  const skusThresholdData = [
-    {
-      class: 'A',
-      above:
-        extractThreshold(aboveBelowThresholdDataA)?.[
-          'No Of SKUs > Threshold'
-        ] ?? 0,
-      below:
-        extractThreshold(aboveBelowThresholdDataA)?.[
-          'No Of SKUs < Threshold'
-        ] ?? 0,
-    },
-    {
-      class: 'B',
-      above:
-        extractThreshold(aboveBelowThresholdDataB)?.[
-          'No Of SKUs > Threshold'
-        ] ?? 0,
-      below:
-        extractThreshold(aboveBelowThresholdDataB)?.[
-          'No Of SKUs < Threshold'
-        ] ?? 0,
-    },
-    {
-      class: 'C',
-      above:
-        extractThreshold(aboveBelowThresholdDataC)?.[
-          'No Of SKUs > Threshold'
-        ] ?? 0,
-      below:
-        extractThreshold(aboveBelowThresholdDataC)?.[
-          'No Of SKUs < Threshold'
-        ] ?? 0,
-    },
-  ].filter(
-    (d) => !filters.classification || d.class === filters.classification
-  );
+  const thresholdRows =
+    (aboveBelowThresholdData as { data?: ThresholdRow[] })?.data ?? [];
+  const skusThresholdData = thresholdRows
+    .filter(
+      (r) =>
+        !filters.classification || r.Classification === filters.classification
+    )
+    .map((r) => ({
+      class: r.Classification,
+      above: Number(r['No Of SKUs > Threshold']) ?? 0,
+      below: Number(r['No Of SKUs < Threshold']) ?? 0,
+    }));
 
   type IblVsTsclRow = { category: string; forecast_vs_budget_pct: number };
   const iblVsTsclRows =
@@ -1419,9 +1383,7 @@ export default function ScorecardDashboard() {
   console.log('forecastAccuracyMonthlyData', forecastAccuracyMonthlyData);
   console.log('forecastAccuracyYearlyData', forecastAccuracyYearlyData);
   console.log('inventoryDaysData', inventoryDaysData);
-  console.log('aboveBelowThresholdDataA', aboveBelowThresholdDataA);
-  console.log('aboveBelowThresholdDataB', aboveBelowThresholdDataB);
-  console.log('aboveBelowThresholdDataC', aboveBelowThresholdDataC);
+  console.log('aboveBelowThresholdData', aboveBelowThresholdData);
   console.log(
     'forecastAccuracyCategoryMonthlyData',
     forecastAccuracyCategoryMonthlyData
@@ -1447,18 +1409,14 @@ export default function ScorecardDashboard() {
         <Flex align="center" gap={3}>
           {/* Logo */}
           <HStack gap={2} flexShrink={0}>
-            <Flex
-              w={8}
-              h={8}
-              bg="blue.700"
-              borderRadius="md"
-              align="center"
-              justify="center"
-              flexShrink={0}
-            >
-              <Text color="white" fontWeight="900" fontSize="xs">
-                SC
-              </Text>
+            <Flex w={50} h={50} align="center" justify="center" flexShrink={0}>
+              <img
+                src="https://www.iblgrp.com/images/iblpvt-logo.jpeg"
+                alt="IBL Logo"
+                width="100%"
+                height="100%"
+                style={{ objectFit: 'contain', borderRadius: 4 }}
+              />
             </Flex>
             <Text
               fontWeight="700"
@@ -1466,7 +1424,7 @@ export default function ScorecardDashboard() {
               color="gray.900"
               whiteSpace="nowrap"
             >
-              SupplyChain Analytics
+              SupplyChain Pulse 1.0
             </Text>
           </HStack>
 

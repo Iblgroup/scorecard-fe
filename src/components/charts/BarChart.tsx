@@ -31,6 +31,7 @@ export interface BarChartProps {
   showLabels?: boolean;
   verticalXLabels?: boolean;
   variant?: 'grouped' | 'stacked-bar';
+  xTickMargin?: number;
 }
 
 function formatCompact(value: number): string {
@@ -40,7 +41,7 @@ function formatCompact(value: number): string {
   return value.toString();
 }
 
-function renderXTick(tickWidth: number) {
+function renderXTick(tickWidth: number, tickMargin = 6) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (props: any) => {
     const { x, y, payload } = props;
@@ -55,7 +56,7 @@ function renderXTick(tickWidth: number) {
       : rest;
     const lines = line2 ? [line1, line2] : [line1];
     return (
-      <g transform={`translate(${x},${y + 6})`}>
+      <g transform={`translate(${x},${y + tickMargin})`}>
         {lines.map((line, i) => (
           <text
             key={i}
@@ -163,6 +164,7 @@ export function BarChart({
   showLabels = false,
   verticalXLabels = false,
   variant = 'grouped',
+  xTickMargin = 6,
 }: BarChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -243,7 +245,7 @@ export function BarChart({
                 tick={
                   verticalXLabels
                     ? renderXTickVertical()
-                    : renderXTick(tickWidth)
+                    : renderXTick(tickWidth, xTickMargin)
                 }
                 height={xAxisHeight}
               />
