@@ -107,7 +107,7 @@ export function ServiceMeasureChart({
                 width={36}
               />
               <Tooltip
-                formatter={(v: number, name: string) => [`${v}%`, name]}
+                formatter={(v: number | undefined, name: string | undefined) => [`${v ?? ''}%`, name ?? '']}
                 cursor={{ fill: '#f1f5f9' }}
                 contentStyle={{
                   background: '#fff',
@@ -166,7 +166,7 @@ export function ServiceMeasureChart({
               width={36}
             />
             <Tooltip
-              formatter={(v: number, name: string) => [`${v}%`, name]}
+              formatter={(v: number | undefined, name: string | undefined) => [`${v ?? ''}%`, name ?? '']}
               contentStyle={{
                 background: '#fff',
                 borderRadius: 6,

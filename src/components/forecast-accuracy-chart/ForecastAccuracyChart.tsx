@@ -64,7 +64,7 @@ export function ForecastAccuracyChart({ data, height = 240 }: ForecastAccuracyCh
             tick={{ fontSize: 13, fontWeight: 700, fill: '#1e293b' }}
           />
           <Tooltip
-            formatter={(value: number) => [`${value}%`]}
+            formatter={(value: number | undefined) => [`${value ?? ''}%`]}
             contentStyle={{
               background: '#fff',
               borderRadius: 6,
@@ -90,7 +90,7 @@ export function ForecastAccuracyChart({ data, height = 240 }: ForecastAccuracyCh
               <LabelList
                 dataKey={month}
                 position="right"
-                formatter={(v: number) => `${v}%`}
+                formatter={(v) => `${v ?? ''}%`}
                 style={{ fontSize: 11, fontWeight: 600, fill: '#334155' }}
               />
             </Bar>

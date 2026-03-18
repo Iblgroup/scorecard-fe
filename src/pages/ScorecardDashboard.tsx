@@ -322,7 +322,7 @@ const RPM_DATA = [
 function BenchmarkBanner({
   cls,
   days,
-  bm,
+  // bm,
   rd,
   color,
   isLast,
@@ -393,12 +393,7 @@ function BenchmarkBanner({
               {rd}%
             </Text>
           </HStack>
-          <Box
-            h="6px"
-            borderRadius="full"
-            bg={`${color}18`}
-            overflow="hidden"
-          >
+          <Box h="6px" borderRadius="full" bg={`${color}18`} overflow="hidden">
             <Box h="100%" w={`${rd}%`} borderRadius="full" bg={color} />
           </Box>
         </Box>
@@ -1014,10 +1009,10 @@ function DispatchWipTab({
     (dispatchVsOrderData as { data?: DispatchRow[] })?.data ?? [];
   const wipRows = (wipData as { data?: WipRow[] })?.data ?? [];
   const rpmRows = (rpmData as { data?: RpmRow[] })?.data ?? [];
-  const wipTotal = wipRows.reduce(
-    (sum, r) => sum + Number(r.Wip_total ?? 0),
-    0
-  );
+  // const wipTotal = wipRows.reduce(
+  //   (sum, r) => sum + Number(r.Wip_total ?? 0),
+  //   0
+  // );
 
   return (
     <Grid templateColumns="repeat(3, 1fr)" gap={4}>

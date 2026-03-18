@@ -1,10 +1,13 @@
-name: dsr-fe
+name: scorecard-fe
 
 services:
   app:
-    image: iblcloud/searl-dsr-fe:1.0.0
-    container_name: searl-dsr-fe
+    image: iblcloud/searle-scorecard-fe:1.0.0
+    container_name: searle-scorecard-fe
     restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://192.168.130.72:3014/api}
     ports:
