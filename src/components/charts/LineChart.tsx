@@ -54,7 +54,11 @@ function renderXTick(tickWidth: number) {
     const full = String(val);
     let line1 = full.slice(0, charsPerLine);
     const rest = full.slice(charsPerLine);
-    let line2 = rest ? (rest.length > charsPerLine ? rest.slice(0, charsPerLine - 1) + '…' : rest) : '';
+    let line2 = rest
+      ? rest.length > charsPerLine
+        ? rest.slice(0, charsPerLine - 1) + '…'
+        : rest
+      : '';
     // if line1 itself is longer than charsPerLine (no room for 2 chars), truncate with ellipsis
     if (full.length > charsPerLine * 2) {
       line1 = full.slice(0, charsPerLine);
@@ -62,7 +66,7 @@ function renderXTick(tickWidth: number) {
     }
     const textLines = line2 ? [line1, line2] : [line1];
     return (
-      <g transform={`translate(${x},${y + 6})`}>
+      <g transform={`translate(${x},${y + 16})`}>
         {textLines.map((t, i) => (
           <text
             key={i}
@@ -81,7 +85,10 @@ function renderXTick(tickWidth: number) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function renderYTick(props: any, formatter: (v: number) => string = formatCompact) {
+function renderYTick(
+  props: any,
+  formatter: (v: number) => string = formatCompact
+) {
   const { x, y, payload } = props;
   const val = payload?.value;
   if (val === undefined || val === null) return null;
@@ -99,7 +106,14 @@ function renderYTick(props: any, formatter: (v: number) => string = formatCompac
   );
 }
 
-export function LineChart({ data, lines, xKey, height = 250, labelFormatter = formatCompact, variant = 'line' }: LineChartProps) {
+export function LineChart({
+  data,
+  lines,
+  xKey,
+  height = 250,
+  labelFormatter = formatCompact,
+  variant = 'line',
+}: LineChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState(0);
   const showLegend = lines.length > 1;
@@ -113,21 +127,46 @@ export function LineChart({ data, lines, xKey, height = 250, labelFormatter = fo
     return () => ro.disconnect();
   }, []);
 
-  const tickWidth = chartWidth && data.length ? chartWidth / data.length - 10 : 50;
+  const tickWidth =
+    chartWidth && data.length ? chartWidth / data.length - 10 : 50;
 
   const sharedChildren = (
     <>
       <defs>
         {lines.map((line) => (
-          <linearGradient key={line.key} id={`fill-${line.key}`} x1="0" y1="0" x2="0" y2="1">
+          <linearGradient
+            key={line.key}
+            id={`fill-${line.key}`}
+            x1="0"
+            y1="0"
+            x2="0"
+            y2="1"
+          >
             <stop offset="5%" stopColor={line.color} stopOpacity={0.25} />
             <stop offset="95%" stopColor={line.color} stopOpacity={0.03} />
           </linearGradient>
         ))}
       </defs>
-      <CartesianGrid stroke={colors.gridStroke} strokeDasharray="4 4" vertical={false} horizontal={true} />
-      <XAxis dataKey={xKey} tickLine={false} axisLine={false} tick={renderXTick(tickWidth)} interval={0} height={48} />
-      <YAxis tick={(props) => renderYTick(props, labelFormatter)} tickLine={false} axisLine={false} width={40} />
+      <CartesianGrid
+        stroke={colors.gridStroke}
+        strokeDasharray="4 4"
+        vertical={false}
+        horizontal={true}
+      />
+      <XAxis
+        dataKey={xKey}
+        tickLine={false}
+        axisLine={false}
+        tick={renderXTick(tickWidth)}
+        interval={0}
+        height={48}
+      />
+      <YAxis
+        tick={(props) => renderYTick(props, labelFormatter)}
+        tickLine={false}
+        axisLine={false}
+        width={40}
+      />
       <Tooltip
         contentStyle={{
           background: '#ffffff',
@@ -156,21 +195,75 @@ export function LineChart({ data, lines, xKey, height = 250, labelFormatter = fo
         >
           {lines.map((line) => (
             <HStack key={line.key} gap={1} fontSize="13px" fontWeight={500}>
-              <Box w={2} h={2} borderRadius="sm" bg={line.color} flexShrink={0} />
+              <Box
+                w={2}
+                h={2}
+                borderRadius="sm"
+                bg={line.color}
+                flexShrink={0}
+              />
               {line.label}
             </HStack>
           ))}
         </HStack>
       )}
       <Box ref={containerRef} flex={1}>
-      <ResponsiveContainer width="100%" height="100%">
-        {variant === 'filled' ? (
-          <RechartsAreaChart data={data} margin={{ top: 24, right: 20, left: 0, bottom: 20 }}>
-            {sharedChildren}
-            {lines.map((line, lineIdx) => {
-              const yOffset = lineIdx === 0 ? -8 : lineIdx === 1 ? 14 : 24;
-              return (
-                <Area
+        <ResponsiveContainer width="100%" height="100%">
+          {variant === 'filled' ? (
+            <RechartsAreaChart
+              data={data}
+              margin={{ top: 24, right: 20, left: 0, bottom: 20 }}
+            >
+              {sharedChildren}
+              {lines.map((line, lineIdx) => {
+                const yOffset = lineIdx === 0 ? -8 : lineIdx === 1 ? 14 : 24;
+                return (
+                  <Area
+                    key={line.key}
+                    type="monotone"
+                    dataKey={line.key}
+                    name={line.label}
+                    stroke={line.color}
+                    strokeWidth={2}
+                    strokeDasharray={line.dashed ? '5 5' : undefined}
+                    fill={`url(#fill-${line.key})`}
+                    dot={{ r: 3, fill: line.color, strokeWidth: 0 }}
+                    activeDot={{ r: 5 }}
+                  >
+                    <LabelList
+                      dataKey={line.key}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      content={(props: any) => {
+                        const { x, y, value } = props;
+                        if (value === undefined || value === null) return null;
+                        return (
+                          <text
+                            x={x}
+                            y={y + yOffset}
+                            textAnchor="middle"
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 700,
+                              fill: line.color,
+                            }}
+                          >
+                            {labelFormatter(Number(value))}
+                          </text>
+                        );
+                      }}
+                    />
+                  </Area>
+                );
+              })}
+            </RechartsAreaChart>
+          ) : (
+            <RechartsLineChart
+              data={data}
+              margin={{ top: 24, right: 20, left: 0, bottom: 0 }}
+            >
+              {sharedChildren}
+              {lines.map((line) => (
+                <Line
                   key={line.key}
                   type="monotone"
                   dataKey={line.key}
@@ -178,7 +271,7 @@ export function LineChart({ data, lines, xKey, height = 250, labelFormatter = fo
                   stroke={line.color}
                   strokeWidth={2}
                   strokeDasharray={line.dashed ? '5 5' : undefined}
-                  fill={`url(#fill-${line.key})`}
+                  fill={line.gradient ? `url(#fill-${line.key})` : undefined}
                   dot={{ r: 3, fill: line.color, strokeWidth: 0 }}
                   activeDot={{ r: 5 }}
                 >
@@ -186,64 +279,30 @@ export function LineChart({ data, lines, xKey, height = 250, labelFormatter = fo
                     dataKey={line.key}
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     content={(props: any) => {
-                      const { x, y, value } = props;
+                      const { x, y, value, index } = props;
                       if (value === undefined || value === null) return null;
+                      const isTop = index % 2 === 0;
                       return (
                         <text
                           x={x}
-                          y={y + yOffset}
+                          y={isTop ? y - 6 : y + 16}
                           textAnchor="middle"
-                          style={{ fontSize: 10, fontWeight: 700, fill: line.color }}
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 700,
+                            fill: '#000',
+                          }}
                         >
                           {labelFormatter(Number(value))}
                         </text>
                       );
                     }}
                   />
-                </Area>
-              );
-            })}
-          </RechartsAreaChart>
-        ) : (
-          <RechartsLineChart data={data} margin={{ top: 24, right: 20, left: 0, bottom: 0 }}>
-            {sharedChildren}
-            {lines.map((line) => (
-              <Line
-                key={line.key}
-                type="monotone"
-                dataKey={line.key}
-                name={line.label}
-                stroke={line.color}
-                strokeWidth={2}
-                strokeDasharray={line.dashed ? '5 5' : undefined}
-                fill={line.gradient ? `url(#fill-${line.key})` : undefined}
-                dot={{ r: 3, fill: line.color, strokeWidth: 0 }}
-                activeDot={{ r: 5 }}
-              >
-                <LabelList
-                  dataKey={line.key}
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  content={(props: any) => {
-                    const { x, y, value, index } = props;
-                    if (value === undefined || value === null) return null;
-                    const isTop = index % 2 === 0;
-                    return (
-                      <text
-                        x={x}
-                        y={isTop ? y - 6 : y + 16}
-                        textAnchor="middle"
-                        style={{ fontSize: 10, fontWeight: 700, fill: '#000' }}
-                      >
-                        {labelFormatter(Number(value))}
-                      </text>
-                    );
-                  }}
-                />
-              </Line>
-            ))}
-          </RechartsLineChart>
-        )}
-      </ResponsiveContainer>
+                </Line>
+              ))}
+            </RechartsLineChart>
+          )}
+        </ResponsiveContainer>
       </Box>
     </Flex>
   );
