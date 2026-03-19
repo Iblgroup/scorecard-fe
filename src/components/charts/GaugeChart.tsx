@@ -1,4 +1,4 @@
-import { Box, Flex, Text, VStack } from '@chakra-ui/react';
+import { Box, Flex, Skeleton, Text, VStack } from '@chakra-ui/react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 export interface GaugeChartProps {
@@ -9,6 +9,7 @@ export interface GaugeChartProps {
   color?: string;
   displayTarget?: string; // optional override for target in bottom line
   displayAchieved?: string; // optional override for achieved in bottom line
+  isLoading?: boolean;
 }
 
 export function GaugeChart({
@@ -19,7 +20,18 @@ export function GaugeChart({
   color = '#2563eb',
   displayTarget,
   displayAchieved,
+  isLoading = false,
 }: GaugeChartProps) {
+  if (isLoading) {
+    return (
+      <VStack gap={2} align="center" justify="center" h="100%" w="100%">
+        <Skeleton height="140px" width="140px" borderRadius="full" />
+        <Skeleton height="12px" width="80px" borderRadius="md" />
+        <Skeleton height="10px" width="100px" borderRadius="md" />
+      </VStack>
+    );
+  }
+
   const diff = value - target;
   const isAbove = diff >= 0;
   const statusColor = isAbove ? '#059669' : '#dc2626';

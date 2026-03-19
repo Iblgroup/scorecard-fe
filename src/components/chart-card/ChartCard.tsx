@@ -1,4 +1,4 @@
-import { Box, GridItem, Skeleton, Text } from '@chakra-ui/react';
+import { Box, Flex, GridItem, Skeleton, Text } from '@chakra-ui/react';
 import type { ReactNode } from 'react';
 import { colors } from '@/constants/theme';
 
@@ -9,7 +9,7 @@ export interface ChartCardProps {
   colSpan?: number;
   height?: string;
   isLoading?: boolean;
-  variant?: 'bar' | 'line';
+  variant?: 'bar' | 'line' | 'gauge-bar';
   headerRight?: ReactNode;
 }
 
@@ -59,7 +59,20 @@ export function ChartCard({
         </Box>
         <Box h={height} position="relative">
           {isLoading ? (
-            variant === 'line' ? (
+            variant === 'gauge-bar' ? (
+              /* ── Gauge + Bar skeleton: circle on left, bars on right ── */
+              <Flex h={skeletonH} gap={0}>
+                <Box w="160px" flexShrink={0} display="flex" alignItems="center" justifyContent="center">
+                  <Skeleton height="140px" width="140px" borderRadius="full" />
+                </Box>
+                <Box w="1px" bg="gray.100" mx={3} flexShrink={0} />
+                <Box flex={1} display="flex" alignItems="flex-end" justifyContent="space-between" gap="6px" px={2}>
+                  {BAR_HEIGHTS.map((pct, i) => (
+                    <Skeleton key={i} flex={1} height={`${pct}%`} borderRadius="sm" />
+                  ))}
+                </Box>
+              </Flex>
+            ) : variant === 'line' ? (
               /* ── Line chart skeleton: grid lines + connecting line + dots ── */
               <Box position="relative" h={skeletonH} overflow="hidden">
                 {/* Horizontal grid lines */}

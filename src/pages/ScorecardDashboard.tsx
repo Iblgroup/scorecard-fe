@@ -460,7 +460,7 @@ function SupplyChainTab({
           title="Forecast Accuracy TSCL"
           height="280px"
           isLoading={isLoadingForecastTscl}
-          variant="bar"
+          variant="gauge-bar"
         >
           <Flex h="100%" gap={0}>
             <Box
@@ -478,6 +478,7 @@ function SupplyChainTab({
                 color={clsColors.A}
                 displayAchieved={tsclSalesDisplay?.achieved}
                 displayTarget={tsclSalesDisplay?.target}
+                isLoading={isLoadingForecastTscl}
               />
             </Box>
             <Box w="1px" bg="gray.100" mx={3} flexShrink={0} />
@@ -520,7 +521,7 @@ function SupplyChainTab({
           title="Forecast Accuracy IBL"
           height="280px"
           isLoading={isLoadingForecastIbl}
-          variant="bar"
+          variant="gauge-bar"
         >
           <Flex h="100%" gap={0}>
             <Box
@@ -538,6 +539,7 @@ function SupplyChainTab({
                 color={clsColors.B}
                 displayAchieved={iblSalesDisplay?.achieved}
                 displayTarget={iblSalesDisplay?.target}
+                isLoading={isLoadingForecastIbl}
               />
             </Box>
             <Box w="1px" bg="gray.100" mx={3} flexShrink={0} />
@@ -967,27 +969,28 @@ export default function ScorecardDashboard() {
     ...(filters.dateTo && { endDate: filters.dateTo }),
   };
 
-  const { data: salesSummaryData, isLoading: isLoadingSales } =
+  const { data: salesSummaryData, isFetching: isLoadingSales } =
     useGetSalesSummary(params);
-  const { data: coverDaysData, isLoading: isLoadingCoverDays } =
+  const { data: coverDaysData, isFetching: isFetchingCoverDays } =
     useGetCoverDays(params);
-  const { data: coverDaysDataA } = useGetCoverDays({
+  const { data: coverDaysDataA, isFetching: isFetchingCoverDaysA } = useGetCoverDays({
     ...params,
     classification: 'A',
   });
-  const { data: coverDaysDataB } = useGetCoverDays({
+  const { data: coverDaysDataB, isFetching: isFetchingCoverDaysB } = useGetCoverDays({
     ...params,
     classification: 'B',
   });
-  const { data: coverDaysDataC } = useGetCoverDays({
+  const { data: coverDaysDataC, isFetching: isFetchingCoverDaysC } = useGetCoverDays({
     ...params,
     classification: 'C',
   });
+  const isLoadingCoverDays = isFetchingCoverDays || isFetchingCoverDaysA || isFetchingCoverDaysB || isFetchingCoverDaysC;
   const { data: forecastAccuracyMonthlyData } =
     useGetForecastAccuracyMonthly(params);
   const {
     data: forecastAccuracyCategoryMonthlyData,
-    isLoading: isLoadingForecastTscl,
+    isFetching: isLoadingForecastTscl,
   } = useGetForecastAccuracyCategoryMonthly({
     ...params,
     date: new Date().toISOString().slice(0, 10),
@@ -999,26 +1002,26 @@ export default function ScorecardDashboard() {
   });
   const {
     data: forecastAccuracyCategoryYearlyData,
-    isLoading: isLoadingForecastIbl,
+    isFetching: isLoadingForecastIbl,
   } = useGetForecastAccuracyCategoryYearly({
     ...params,
     date: new Date().toISOString().slice(0, 10),
   });
 
-  const { data: inventoryDaysData, isLoading: isLoadingInventoryDays } =
+  const { data: inventoryDaysData, isFetching: isLoadingInventoryDays } =
     useGetInventoryDays(params);
-  const { data: aboveBelowThresholdData, isLoading: isLoadingThreshold } =
+  const { data: aboveBelowThresholdData, isFetching: isLoadingThreshold } =
     useGetAboveBelowThreshold(params);
-  const { data: iblVsTsclData, isLoading: isLoadingIblVsTscl } =
+  const { data: iblVsTsclData, isFetching: isLoadingIblVsTscl } =
     useGetIblVsTscl(params);
-  const { data: dispatchVsOrderData, isLoading: isLoadingDispatch } =
+  const { data: dispatchVsOrderData, isFetching: isLoadingDispatch } =
     useGetDispatchVsOrder(params);
 
-  const { data: wipData, isLoading: isLoadingWip } = useGetWip(params);
-  const { data: rpmData, isLoading: isLoadingRpm } = useGetRpm(params);
-  const { data: serviceMeasureData, isLoading: isLoadingServiceMeasure } =
+  const { data: wipData, isFetching: isLoadingWip } = useGetWip(params);
+  const { data: rpmData, isFetching: isLoadingRpm } = useGetRpm(params);
+  const { data: serviceMeasureData, isFetching: isLoadingServiceMeasure } =
     useGetServiceMeasure(params);
-  const { data: tgtVsActualData, isLoading: isLoadingTgtVsActual } =
+  const { data: tgtVsActualData, isFetching: isLoadingTgtVsActual } =
     useGetTgtVsActual(params);
 
   const apiRows = salesSummaryData?.data as
