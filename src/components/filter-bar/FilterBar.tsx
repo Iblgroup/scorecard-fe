@@ -23,13 +23,19 @@ export interface FilterBarProps {
   initialFilters: Filters;
 }
 
-type FilterRow = { branch_desc: string; classification: string; sku: string };
+type FilterRow = {
+  branch_desc: string;
+  branch_code: string;
+  classification: string;
+  sku: string;
+  sap_mapping_code: number;
+};
 
-const CLASSIFICATION_OPTIONS = [
-  { value: 'A', label: 'A — High Velocity' },
-  { value: 'B', label: 'B — Medium Velocity' },
-  { value: 'C', label: 'C — Low Velocity' },
-];
+const CLS_LABEL: Record<string, string> = {
+  A: 'A — High Velocity',
+  B: 'B — Medium Velocity',
+  C: 'C — Low Velocity',
+};
 
 const SELECT_FILTERS: { label: string; key: keyof Filters }[] = [
   { label: 'Classification', key: 'classification' },
@@ -39,28 +45,39 @@ const SELECT_FILTERS: { label: string; key: keyof Filters }[] = [
 
 export function FilterBar({ initialFilters }: FilterBarProps) {
   const dispatch = useAppDispatch();
-  const { data: filtersData } = useGetFilters();
+  const { data: filtersData } = useGetFilters({
+    ...(initialFilters.classification && { classification: initialFilters.classification }),
+    ...(initialFilters.sku && { sku: initialFilters.sku }),
+  });
   const rows: FilterRow[] = (filtersData as { data?: FilterRow[] })?.data ?? [];
+
+  const classificationOptions = useMemo(() => {
+    const seen = new Set<string>();
+    return rows
+      .filter((r) => r.classification && !seen.has(r.classification) && seen.add(r.classification))
+      .sort((a, b) => a.classification.localeCompare(b.classification))
+      .map((r) => ({ value: r.classification, label: CLS_LABEL[r.classification] ?? r.classification }));
+  }, [rows]);
 
   const branchOptions = useMemo(() => {
     const seen = new Set<string>();
     return rows
-      .filter((r) => r.branch_desc && !seen.has(r.branch_desc) && seen.add(r.branch_desc))
-      .map((r) => ({ value: r.branch_desc, label: r.branch_desc }));
+      .filter((r) => r.branch_code && !seen.has(r.branch_code) && seen.add(r.branch_code))
+      .map((r) => ({ value: r.branch_code, label: r.branch_desc }));
   }, [rows]);
 
   const skuOptions = useMemo(() => {
-    const seen = new Set<string>();
+    const seen = new Set<number>();
     return rows
-      .filter((r) => r.sku && !seen.has(r.sku) && seen.add(r.sku))
-      .map((r) => ({ value: r.sku, label: r.sku }));
+      .filter((r) => r.sap_mapping_code && !seen.has(r.sap_mapping_code) && seen.add(r.sap_mapping_code))
+      .map((r) => ({ value: String(r.sap_mapping_code), label: r.sku }));
   }, [rows]);
 
   const optionsMap: Record<
     'classification' | 'branch' | 'sku',
     { value: string; label: string }[]
   > = {
-    classification: CLASSIFICATION_OPTIONS,
+    classification: classificationOptions,
     branch: branchOptions,
     sku: skuOptions,
   };

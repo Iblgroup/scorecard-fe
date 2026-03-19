@@ -15,7 +15,15 @@ import { DataTable, DataTableRow } from '@/components/data-table';
 import { FilterBar } from '@/components/filter-bar';
 import { HeaderActions } from '@/components/header-actions';
 import { clsColors, colors, gradients } from '@/constants/theme';
-import { Box, Flex, Grid, GridItem, HStack, Text } from '@chakra-ui/react';
+import {
+  Box,
+  Flex,
+  Grid,
+  GridItem,
+  HStack,
+  Skeleton,
+  Text,
+} from '@chakra-ui/react';
 import { SalesSummaryCard } from '@/components/sales-summary/SalesSummaryCard';
 import { useGetWip } from '@/api/wip';
 import { useGetRpm } from '@/api/rpm';
@@ -49,37 +57,6 @@ const BENCHMARKS = [
     color: clsColors.C,
     bg: '#fffbeb',
     border: '#fde68a',
-  },
-];
-
-const SALES_SUMMARY = [
-  {
-    label: 'A  —  High Velocity',
-    sku: 'SKU-A',
-    sales: '2,450,000',
-    pct: '+48.2%',
-    up: true,
-  },
-  {
-    label: 'B  —  Medium Velocity',
-    sku: 'SKU-B',
-    sales: '1,830,000',
-    pct: '+36.1%',
-    up: true,
-  },
-  {
-    label: 'C  —  Low Velocity',
-    sku: 'SKU-C',
-    sales: '793,000',
-    pct: '▼15.6%',
-    up: false,
-  },
-  {
-    label: '—  Unclassified',
-    sku: '—',
-    sales: '8,000',
-    pct: '−0.2%',
-    up: null,
   },
 ];
 
@@ -122,19 +99,7 @@ const COVER_DAYS = [
   },
 ];
 
-const CHART_COLORS = ['#646ECB', '#5AC8D8', '#FFDD67'] as const;
-
-const FORECAST_TSCL = [
-  { classification: 'A', Jan: 84, Feb: 87, Mar: 90 },
-  { classification: 'B', Jan: 78, Feb: 81, Mar: 84 },
-  { classification: 'C', Jan: 71, Feb: 75, Mar: 79 },
-];
-
-const FORECAST_IBL = [
-  { classification: 'A', Jan: 80, Feb: 86, Mar: 88 },
-  { classification: 'B', Jan: 70, Feb: 74, Mar: 76 },
-  { classification: 'C', Jan: 60, Feb: 63, Mar: 67 },
-];
+const CHART_COLORS = ['#646ECB', '#5AC8D8', '#16476A'] as const;
 
 const INV_API_BRANCHES = [
   { key: 'bahawalpur', label: 'Bahawalpur' },
@@ -151,169 +116,6 @@ const INV_API_BRANCHES = [
   { key: 'quetta', label: 'Quetta' },
   { key: 'sukkur', label: 'Sukkur' },
 ] as const;
-
-// keep for fallback static rendering only
-const INV_BRANCHES = INV_API_BRANCHES.map((b) => b.label);
-
-const INV_ROWS = [
-  {
-    cls: 'A',
-    vals: [34, 25, 24, 23, 39, 190, 17, 95, 34, 35],
-    bold: false,
-    subRows: [
-      {
-        sku: 'Extor 10/160 Tablet',
-        vals: [46, 29, 25, 17, 41, 57, 82, 37, 56, 48],
-      },
-      {
-        sku: 'Extor 5/160 Tablet',
-        vals: [32, 28, 15, 54, 15, 14, 23, 11, 96, 35],
-      },
-      { sku: 'Extor 5/80 Tablet', vals: [4, 7, 6, 0, 10, 12, 4, 5, 0, 9] },
-      {
-        sku: 'Hydryllin 120ml Syrup',
-        vals: [50, 45, 31, 65, 105, 306, 21, 218, 28, 80],
-      },
-      {
-        sku: 'Nuberol 100s Tablet',
-        vals: [63, 63, 65, 12, 65, 91, 16, 62, 46, 62],
-      },
-    ],
-  },
-  {
-    cls: 'B',
-    vals: [35, 24, 26, 24, 26, 235, 27, 73, 32, 38],
-    bold: false,
-    subRows: [
-      {
-        sku: 'Nuberol Forte 650mg Tab',
-        vals: [39, 27, 45, 8, 49, 62, 9, 169, 37, 38],
-      },
-      {
-        sku: 'Nuberol-P 1gm 100ml Inj.',
-        vals: [330, 48, 16, 96, 43, 686, 16, 2922, 59, 80],
-      },
-      {
-        sku: 'Peditral Orange Sachet NP',
-        vals: [14, 22, 24, 10, 55, 740, 6, 130, 1, 11],
-      },
-      {
-        sku: 'Spiromide 20mg Tablet',
-        vals: [3, 11, 12, 19, 5, 10, 0, 11, 0, 0],
-      },
-    ],
-  },
-  {
-    cls: 'C',
-    vals: [64, 56, 59, 43, 59, 247, 103, 175, 48, 75],
-    bold: false,
-    subRows: [
-      { sku: 'Spiromide 40mg Tablet', vals: [5, 0, 4, 50, 0, 68, 81, 0, 7, 1] },
-      { sku: 'Sustac 2.6mg Tablet', vals: [7, 5, 7, 9, 5, 3, 3, 1, 0, 4] },
-      {
-        sku: 'Sustac 6.4mg Tablet',
-        vals: [18, 28, 36, 6, 26, 73, 122, 0, 0, 4],
-      },
-      { sku: 'Vitrum Tablet', vals: [54, 30, 15, 40, 26, 134, 11, 79, 41, 50] },
-    ],
-  },
-  {
-    cls: 'Other',
-    vals: [39, 30, 36, 91, 77, 418, 221, 171, 71, 78],
-    bold: false,
-    subRows: [] as { sku: string; vals: number[] }[],
-  },
-];
-
-const SERVICE_MEASURE = [
-  { branch: 'Bahawalpur', skuA: 47, skuB: 31, skuC: 31 },
-  { branch: 'Faisalabad', skuA: 40, skuB: 31, skuC: 31 },
-  { branch: 'Gujranwala', skuA: 40, skuB: 39, skuC: 38 },
-  { branch: 'Hyderabad', skuA: 53, skuB: 46, skuC: 38 },
-  { branch: 'Islamabad', skuA: 59, skuB: 50, skuC: 23 },
-  { branch: 'Karachi', skuA: 54, skuB: 42, skuC: 40 },
-  { branch: 'Korangi', skuA: 58, skuB: 40, skuC: 40 },
-  { branch: 'Lahore', skuA: 53, skuB: 40, skuC: 38 },
-  { branch: 'Mingora', skuA: 60, skuB: 40, skuC: 40 },
-  { branch: 'Multan', skuA: 60, skuB: 40, skuC: 40 },
-  { branch: 'Peshawar', skuA: 55, skuB: 38, skuC: 35 },
-  { branch: 'Quetta', skuA: 60, skuB: 42, skuC: 38 },
-];
-
-const COVER_DAYS_CHART = [
-  { class: 'A', tgt: 25, actual: 53 },
-  { class: 'B', tgt: 25, actual: 51 },
-  { class: 'C', tgt: 15, actual: 89 },
-];
-
-const DISPATCH_VS_ORDER = [
-  { material: 'ADRONIL 3MG/3ML INJ 1s (PAK)', pct: '100%' },
-  { material: 'ALDACTONE 100MG COATED TAB 10s (PAK)', pct: '100%' },
-  { material: 'ALDACTONE A 25MG COATED TAB 100s (PAK)', pct: '100%' },
-  { material: 'BACIPORE 48 AMP 10s (PAK)', pct: '100%' },
-  { material: "BEMPICS 180MG TAB 10's (PAK)", pct: '100%' },
-  { material: 'CALAN SR TAB 240MG 10s BLI (PAK)', pct: '100%' },
-  { material: "CANDEREL 18MG TAB 10's (PAK)", pct: '98%' },
-  { material: "CANDEREL 36MG SACHET 30's (PAK)", pct: '95%' },
-  { material: "DEKTOP 30MG CAP 10's (PAK)", pct: '100%' },
-  { material: "DEKTOP 60MG CAP 30's (PAK)", pct: '92%' },
-  { material: "EMICURE 500MG TAB 14's (PAK)", pct: '100%' },
-  { material: "GLUCOVANCE 500MG TAB 30's (PAK)", pct: '88%' },
-  { material: 'HYDRASEC 30MG SACHET (PAK)', pct: '100%' },
-  { material: "IMODIUM 2MG CAP 10's (PAK)", pct: '96%' },
-  { material: "JANUVIA 100MG TAB 28's (PAK)", pct: '100%' },
-  { material: "KETOVAIL 200MG TAB 30's (PAK)", pct: '100%' },
-  { material: "LAMICTAL 100MG TAB 30's (PAK)", pct: '91%' },
-  { material: "MOTILIUM 10MG TAB 30's (PAK)", pct: '100%' },
-  { material: "NEXIUM 40MG TAB 14's (PAK)", pct: '100%' },
-  { material: "OMNICEF 300MG CAP 10's (PAK)", pct: '94%' },
-];
-
-const WIP_DATA = [
-  { material: 'CALAN SR 240MG TAB (BULK)', value: '4,461,420' },
-  { material: 'CANDEREL 18MG TAB (BULK)', value: '3,956,748' },
-  { material: 'CANDEREL 36MG SACHET (BULK)', value: '399,510' },
-  { material: 'DEKTOP 30MG CAP (BULK)', value: '10,673,190' },
-  { material: "DEKTOP 60MG CAP 30's (PAK)", value: '303,820' },
-  { material: 'EMICURE 500MG TAB (BULK)', value: '8,214,500' },
-  { material: 'GLUCOVANCE 500 (BULK)', value: '6,540,300' },
-  { material: 'HYDRASEC SACHET (BULK)', value: '2,188,000' },
-  { material: 'IMODIUM 2MG (BULK)', value: '1,920,450' },
-  { material: 'JANUVIA 100MG (BULK)', value: '14,330,210' },
-  { material: 'KETOVAIL 200MG (BULK)', value: '5,760,000' },
-  { material: 'LAMICTAL 100MG (BULK)', value: '3,410,250' },
-  { material: 'MOTILIUM 10MG (BULK)', value: '9,870,000' },
-  { material: 'NEXIUM 40MG (BULK)', value: '22,440,000' },
-  { material: 'OMNICEF 300MG (BULK)', value: '11,230,002' },
-  { material: 'PANADOL 500MG (BULK)', value: '18,900,000' },
-  { material: 'RISPERDAL 2MG (BULK)', value: '7,650,000' },
-  { material: 'SEROQUEL 200MG (BULK)', value: '31,200,000' },
-  { material: 'TEGRETOL 200MG (BULK)', value: '16,080,000' },
-  { material: 'VERMOX 100MG (BULK)', value: '39,970,000' },
-];
-
-const RPM_DATA = [
-  { material: 'Aluminium Foil 20 Micron', value: '8,240,000' },
-  { material: 'Blister PVC 250 Micron', value: '6,190,000' },
-  { material: 'Carton Box 200GSM (Small)', value: '3,920,000' },
-  { material: 'Carton Box 200GSM (Large)', value: '5,460,000' },
-  { material: 'Closure PP 28mm White', value: '1,230,500' },
-  { material: 'Desiccant Silica Gel 1g', value: '980,000' },
-  { material: 'HDPE Bottle 100ml', value: '4,320,000' },
-  { material: 'Induction Seal Liner 38mm', value: '2,140,000' },
-  { material: 'Label PP White Gloss', value: '3,680,000' },
-  { material: 'Leaflet A4 60GSM', value: '1,560,000' },
-  { material: 'Outer Shipper 5-Ply', value: '7,840,000' },
-  { material: 'PET Bottle 60ml Amber', value: '5,120,000' },
-  { material: 'Pillow Pouch Film 40Mic', value: '4,450,000' },
-  { material: 'Sachet Laminate 3-Ply', value: '9,200,000' },
-  { material: 'Shrink Wrap LDPE 40Mic', value: '2,670,000' },
-  { material: 'Stretch Film 23 Micron', value: '1,840,000' },
-  { material: 'Tamper Evident Band', value: '3,310,000' },
-  { material: 'Tray PET 300Mic Clear', value: '6,920,000' },
-  { material: 'Vial 10ml Clear Glass', value: '12,500,000' },
-  { material: 'Vial Rubber Stopper 20mm', value: '4,780,000' },
-];
 
 function BenchmarkBanner({
   cls,
@@ -535,7 +337,13 @@ interface ForecastCategoryRow {
 }
 
 interface SupplyChainTabProps {
-  salesRows: typeof SALES_SUMMARY;
+  salesRows: {
+    label: string;
+    sku: string;
+    sales: string;
+    pct: string;
+    up: boolean | null;
+  }[];
   salesTotal: { sales: string; pct: string };
   coverDaysRows: typeof COVER_DAYS;
   tsclAccuracy: number | null;
@@ -546,6 +354,10 @@ interface SupplyChainTabProps {
   iblSalesDisplay?: { achieved: string; target: string };
   iblBarData: Record<string, string | number>[];
   iblMonths: string[];
+  isLoadingSales: boolean;
+  isLoadingCoverDays: boolean;
+  isLoadingForecastTscl: boolean;
+  isLoadingForecastIbl: boolean;
 }
 
 function SupplyChainTab({
@@ -560,6 +372,10 @@ function SupplyChainTab({
   iblBarData,
   iblMonths,
   coverDaysRows,
+  isLoadingSales,
+  isLoadingCoverDays,
+  isLoadingForecastTscl,
+  isLoadingForecastIbl,
 }: SupplyChainTabProps) {
   return (
     <Flex direction="column" gap={4}>
@@ -594,7 +410,11 @@ function SupplyChainTab({
 
         {/* Sales Summary — 6 cols */}
         <GridItem colSpan={{ base: 12, lg: 5 }}>
-          <SalesSummaryCard rows={salesRows} total={salesTotal} />
+          <SalesSummaryCard
+            rows={salesRows}
+            total={salesTotal}
+            isLoading={isLoadingSales}
+          />
         </GridItem>
 
         {/* Cover Days — 3 cols */}
@@ -610,21 +430,38 @@ function SupplyChainTab({
             >
               Cover Days
             </Text>
-            <Grid templateColumns="1fr 1fr" gap={3} alignItems="start">
-              <CoverDaysCard {...coverDaysRows[0]} />
-              <Flex direction="column" gap={2}>
-                {coverDaysRows.slice(1).map((c) => (
-                  <CoverDaysCard key={c.label} {...c} />
-                ))}
-              </Flex>
-            </Grid>
+            {isLoadingCoverDays ? (
+              <Grid templateColumns="1fr 1fr" gap={3} alignItems="start">
+                <Skeleton height="120px" borderRadius="lg" />
+                <Flex direction="column" gap={2}>
+                  <Skeleton height="52px" borderRadius="lg" />
+                  <Skeleton height="52px" borderRadius="lg" />
+                  <Skeleton height="52px" borderRadius="lg" />
+                </Flex>
+              </Grid>
+            ) : (
+              <Grid templateColumns="1fr 1fr" gap={3} alignItems="start">
+                <CoverDaysCard {...coverDaysRows[0]} />
+                <Flex direction="column" gap={2}>
+                  {coverDaysRows.slice(1).map((c) => (
+                    <CoverDaysCard key={c.label} {...c} />
+                  ))}
+                </Flex>
+              </Grid>
+            )}
           </Box>
         </GridItem>
       </Grid>
 
       {/* Forecast Accuracy Charts */}
       <Grid templateColumns="repeat(12, 1fr)" gap={4}>
-        <ChartCard colSpan={6} title="Forecast Accuracy TSCL" height="280px">
+        <ChartCard
+          colSpan={6}
+          title="Forecast Accuracy TSCL"
+          height="280px"
+          isLoading={isLoadingForecastTscl}
+          variant="bar"
+        >
           <Flex h="100%" gap={0}>
             <Box
               w="160px"
@@ -634,7 +471,7 @@ function SupplyChainTab({
               justifyContent="center"
             >
               <GaugeChart
-                value={tsclAccuracy ?? 83}
+                value={tsclAccuracy ?? 0}
                 target={100}
                 title=""
                 subtitle="Total Supply Chain Level"
@@ -646,7 +483,7 @@ function SupplyChainTab({
             <Box w="1px" bg="gray.100" mx={3} flexShrink={0} />
             <Box flex={1} minW={0}>
               <BarChart
-                data={forecastBarData.length ? forecastBarData : FORECAST_TSCL}
+                data={forecastBarData}
                 xKey="classification"
                 bars={
                   forecastMonths.length
@@ -678,7 +515,13 @@ function SupplyChainTab({
           </Flex>
         </ChartCard>
 
-        <ChartCard colSpan={6} title="Forecast Accuracy IBL" height="280px">
+        <ChartCard
+          colSpan={6}
+          title="Forecast Accuracy IBL"
+          height="280px"
+          isLoading={isLoadingForecastIbl}
+          variant="bar"
+        >
           <Flex h="100%" gap={0}>
             <Box
               w="160px"
@@ -688,7 +531,7 @@ function SupplyChainTab({
               justifyContent="center"
             >
               <GaugeChart
-                value={iblAccuracy ?? 78}
+                value={iblAccuracy ?? 0}
                 target={100}
                 title=""
                 subtitle="Item Branch Level"
@@ -700,7 +543,7 @@ function SupplyChainTab({
             <Box w="1px" bg="gray.100" mx={3} flexShrink={0} />
             <Box flex={1} minW={0}>
               <BarChart
-                data={iblBarData.length ? iblBarData : FORECAST_IBL}
+                data={iblBarData}
                 xKey="classification"
                 bars={
                   iblMonths.length
@@ -743,6 +586,11 @@ function ServiceMeasureTab({
   serviceMeasureData,
   tgtVsActualData,
   classification,
+  isLoadingInventoryDays,
+  isLoadingServiceMeasure,
+  isLoadingTgtVsActual,
+  isLoadingThreshold,
+  isLoadingPctSkus,
 }: {
   inventoryDaysData: unknown;
   skusThresholdData: { class: string; above: number; below: number }[];
@@ -750,6 +598,11 @@ function ServiceMeasureTab({
   serviceMeasureData: unknown;
   tgtVsActualData: unknown;
   classification: string;
+  isLoadingInventoryDays: boolean;
+  isLoadingServiceMeasure: boolean;
+  isLoadingTgtVsActual: boolean;
+  isLoadingThreshold: boolean;
+  isLoadingPctSkus: boolean;
 }) {
   type ServiceRow = {
     branch_desc: string;
@@ -812,27 +665,19 @@ function ServiceMeasureTab({
     return acc;
   }, {});
 
-  const computedRows =
-    invApiRows.length > 0
-      ? [
-          ...(['A', 'B', 'C', 'Other'] as const)
-            .filter((c) => grouped[c]?.length)
-            .map((cls) => ({
-              cls,
-              vals: avgVals(grouped[cls]),
-              bold: false,
-              subRows: grouped[cls].map((r) => ({
-                sku: (r.item_desc as string) ?? '',
-                vals: branchKeys.map((k) => Number(r[k] ?? 0)),
-              })),
-            })),
-        ]
-      : INV_ROWS;
+  const computedRows = (['A', 'B', 'C', 'Other'] as const)
+    .filter((c) => grouped[c]?.length)
+    .map((cls) => ({
+      cls,
+      vals: avgVals(grouped[cls]),
+      bold: false,
+      subRows: grouped[cls].map((r: InvApiRow) => ({
+        sku: (r.item_desc as string) ?? '',
+        vals: branchKeys.map((k) => Number(r[k] ?? 0)),
+      })),
+    }));
 
-  const tableHeaders =
-    invApiRows.length > 0
-      ? ['Class', ...INV_API_BRANCHES.map((b) => b.label)]
-      : ['Class', ...INV_BRANCHES];
+  const tableHeaders = ['Class', ...INV_API_BRANCHES.map((b) => b.label)];
 
   return (
     <Flex direction="column" gap={4}>
@@ -845,6 +690,7 @@ function ServiceMeasureTab({
             searchable={false}
             rowCollapsible
             maxHeight="340px"
+            isLoading={isLoadingInventoryDays}
           >
             {computedRows.map((row) => {
               const clsColor =
@@ -888,14 +734,16 @@ function ServiceMeasureTab({
           </DataTable>
         </GridItem>
 
-        <ChartCard colSpan={6} title="Service Measure by Branch" height="340px">
+        <ChartCard
+          colSpan={6}
+          title="Service Measure by Branch"
+          height="340px"
+          isLoading={isLoadingServiceMeasure}
+          variant="line"
+        >
           <LineChart
             variant="filled"
-            data={
-              serviceMeasureChartData.length > 0
-                ? serviceMeasureChartData
-                : SERVICE_MEASURE
-            }
+            data={serviceMeasureChartData}
             xKey="branch"
             lines={[
               { key: 'skuA', label: 'SKU-A%', color: clsColors.A },
@@ -915,25 +763,10 @@ function ServiceMeasureTab({
           colSpan={4}
           title="Cover Days TGT vs Actual"
           height="220px"
-          // headerRight={
-          //   <HStack gap={3} fontSize="10px" color="gray.500">
-          //     <HStack gap={1}>
-          //       <Box w={2} h={2} bg="#1d4ed8" borderRadius="sm" />
-          //       Cover Days TGT
-          //     </HStack>
-          //     <HStack gap={1}>
-          //       <Box w={2} h={2} bg="#06b6d4" borderRadius="sm" />
-          //       Actual Cover Days
-          //     </HStack>
-          //   </HStack>
-          // }
+          isLoading={isLoadingTgtVsActual}
         >
           <BarChart
-            data={
-              coverDaysChartData.length > 0
-                ? coverDaysChartData
-                : COVER_DAYS_CHART
-            }
+            data={coverDaysChartData}
             xKey="class"
             barSize={32}
             height={200}
@@ -960,18 +793,7 @@ function ServiceMeasureTab({
             </>
           }
           height="220px"
-          // headerRight={
-          //   <HStack gap={3} fontSize="10px" color="gray.500">
-          //     <HStack gap={1}>
-          //       <Box w={2} h={2} bg="#1d4ed8" borderRadius="sm" />
-          //       No. SKUs &gt; Threshold
-          //     </HStack>
-          //     <HStack gap={1}>
-          //       <Box w={2} h={2} bg="#06b6d4" borderRadius="sm" />
-          //       No. SKUs &lt; Threshold
-          //     </HStack>
-          //   </HStack>
-          // }
+          isLoading={isLoadingThreshold}
         >
           <BarChart
             data={skusThresholdData}
@@ -997,14 +819,15 @@ function ServiceMeasureTab({
 
         <ChartCard
           colSpan={4}
-          title="% SKUs vs Threshold"
-          titleNode={
-            <>
-              % SKU<span style={{ textTransform: 'lowercase' }}>s</span> vs
-              Threshold
-            </>
-          }
+          title="IBL Vs TSCL %"
+          // titleNode={
+          //   <>
+          //     % SKU<span style={{ textTransform: 'lowercase' }}>s</span> vs
+          //     Threshold
+          //   </>
+          // }
           height="220px"
+          isLoading={isLoadingPctSkus}
         >
           <BarChart
             data={pctSkusData}
@@ -1039,10 +862,16 @@ function DispatchWipTab({
   dispatchVsOrderData,
   wipData,
   rpmData,
+  isLoadingDispatch,
+  isLoadingWip,
+  isLoadingRpm,
 }: {
   dispatchVsOrderData: unknown;
   wipData: unknown;
   rpmData: unknown;
+  isLoadingDispatch: boolean;
+  isLoadingWip: boolean;
+  isLoadingRpm: boolean;
 }) {
   type DispatchRow = { material_name: string; delivery_pct: string };
   type WipRow = { 'item desc': string; Wip_total: string };
@@ -1051,10 +880,6 @@ function DispatchWipTab({
     (dispatchVsOrderData as { data?: DispatchRow[] })?.data ?? [];
   const wipRows = (wipData as { data?: WipRow[] })?.data ?? [];
   const rpmRows = (rpmData as { data?: RpmRow[] })?.data ?? [];
-  // const wipTotal = wipRows.reduce(
-  //   (sum, r) => sum + Number(r.Wip_total ?? 0),
-  //   0
-  // );
 
   return (
     <Grid templateColumns="repeat(3, 1fr)" gap={4}>
@@ -1063,34 +888,23 @@ function DispatchWipTab({
         headerGradient={gradients.tableBlue}
         headers={['Material Name', '%']}
         pageSize={15}
+        isLoading={isLoadingDispatch}
       >
-        {dispatchRows.length > 0
-          ? dispatchRows.map((row) => {
-              const pct = `${parseFloat(row.delivery_pct).toFixed(2)}%`;
-              const isBelow100 = parseFloat(row.delivery_pct) < 100;
-              return (
-                <DataTableRow
-                  key={row.material_name}
-                  cells={[row.material_name, pct]}
-                  cellColors={[
-                    isBelow100 ? '#2563eb' : undefined,
-                    isBelow100 ? '#dc2626' : '#059669',
-                  ]}
-                  cellWeights={[undefined, '700']}
-                />
-              );
-            })
-          : DISPATCH_VS_ORDER.map((row) => (
-              <DataTableRow
-                key={row.material}
-                cells={[row.material, row.pct]}
-                cellColors={[
-                  row.pct !== '100%' ? '#2563eb' : undefined,
-                  row.pct !== '100%' ? '#dc2626' : '#059669',
-                ]}
-                cellWeights={[undefined, '700']}
-              />
-            ))}
+        {dispatchRows.map((row) => {
+          const pct = `${parseFloat(row.delivery_pct).toFixed(2)}%`;
+          const isBelow100 = parseFloat(row.delivery_pct) < 100;
+          return (
+            <DataTableRow
+              key={row.material_name}
+              cells={[row.material_name, pct]}
+              cellColors={[
+                isBelow100 ? '#2563eb' : undefined,
+                isBelow100 ? '#dc2626' : '#059669',
+              ]}
+              cellWeights={[undefined, '700']}
+            />
+          );
+        })}
       </DataTable>
 
       {/* WIP */}
@@ -1099,27 +913,20 @@ function DispatchWipTab({
         headerGradient={gradients.tableBlue}
         headers={['Material Name', 'WIP Value']}
         pageSize={15}
+        isLoading={isLoadingWip}
       >
-        {wipRows.length > 0
-          ? wipRows.map((row) => (
-              <DataTableRow
-                key={row['item desc']}
-                cells={[
-                  row['item desc'],
-                  Number(row.Wip_total ?? 0).toLocaleString('en-US', {
-                    maximumFractionDigits: 0,
-                  }),
-                ]}
-                cellWeights={[undefined, '600']}
-              />
-            ))
-          : WIP_DATA.map((row) => (
-              <DataTableRow
-                key={row.material}
-                cells={[row.material, row.value]}
-                cellWeights={[undefined, '600']}
-              />
-            ))}
+        {wipRows.map((row) => (
+          <DataTableRow
+            key={row['item desc']}
+            cells={[
+              row['item desc'],
+              Number(row.Wip_total ?? 0).toLocaleString('en-US', {
+                maximumFractionDigits: 0,
+              }),
+            ]}
+            cellWeights={[undefined, '600']}
+          />
+        ))}
       </DataTable>
 
       {/* RPM */}
@@ -1128,27 +935,20 @@ function DispatchWipTab({
         headerGradient={gradients.tableIndigo}
         headers={['Material Name', 'RPM Value']}
         pageSize={15}
+        isLoading={isLoadingRpm}
       >
-        {rpmRows.length > 0
-          ? rpmRows.map((row) => (
-              <DataTableRow
-                key={row.materialname}
-                cells={[
-                  row.materialname,
-                  Number(row.total_value ?? 0).toLocaleString('en-US', {
-                    maximumFractionDigits: 0,
-                  }),
-                ]}
-                cellWeights={[undefined, '600']}
-              />
-            ))
-          : RPM_DATA.map((row) => (
-              <DataTableRow
-                key={row.material}
-                cells={[row.material, row.value]}
-                cellWeights={[undefined, '600']}
-              />
-            ))}
+        {rpmRows.map((row) => (
+          <DataTableRow
+            key={row.materialname}
+            cells={[
+              row.materialname,
+              Number(row.total_value ?? 0).toLocaleString('en-US', {
+                maximumFractionDigits: 0,
+              }),
+            ]}
+            cellWeights={[undefined, '600']}
+          />
+        ))}
       </DataTable>
     </Grid>
   );
@@ -1167,8 +967,10 @@ export default function ScorecardDashboard() {
     ...(filters.dateTo && { endDate: filters.dateTo }),
   };
 
-  const { data: salesSummaryData } = useGetSalesSummary(params);
-  const { data: coverDaysData } = useGetCoverDays(params);
+  const { data: salesSummaryData, isLoading: isLoadingSales } =
+    useGetSalesSummary(params);
+  const { data: coverDaysData, isLoading: isLoadingCoverDays } =
+    useGetCoverDays(params);
   const { data: coverDaysDataA } = useGetCoverDays({
     ...params,
     classification: 'A',
@@ -1183,31 +985,41 @@ export default function ScorecardDashboard() {
   });
   const { data: forecastAccuracyMonthlyData } =
     useGetForecastAccuracyMonthly(params);
-  const { data: forecastAccuracyCategoryMonthlyData } =
-    useGetForecastAccuracyCategoryMonthly({
-      ...params,
-      date: new Date().toISOString().slice(0, 10),
-    });
+  const {
+    data: forecastAccuracyCategoryMonthlyData,
+    isLoading: isLoadingForecastTscl,
+  } = useGetForecastAccuracyCategoryMonthly({
+    ...params,
+    date: new Date().toISOString().slice(0, 10),
+  });
 
   const { data: forecastAccuracyYearlyData } = useGetForecastAccuracyYearly({
     ...params,
     date: new Date().toISOString().slice(0, 10),
   });
-  const { data: forecastAccuracyCategoryYearlyData } =
-    useGetForecastAccuracyCategoryYearly({
-      ...params,
-      date: new Date().toISOString().slice(0, 10),
-    });
+  const {
+    data: forecastAccuracyCategoryYearlyData,
+    isLoading: isLoadingForecastIbl,
+  } = useGetForecastAccuracyCategoryYearly({
+    ...params,
+    date: new Date().toISOString().slice(0, 10),
+  });
 
-  const { data: inventoryDaysData } = useGetInventoryDays(params);
-  const { data: aboveBelowThresholdData } = useGetAboveBelowThreshold(params);
-  const { data: iblVsTsclData } = useGetIblVsTscl(params);
-  const { data: dispatchVsOrderData } = useGetDispatchVsOrder(params);
+  const { data: inventoryDaysData, isLoading: isLoadingInventoryDays } =
+    useGetInventoryDays(params);
+  const { data: aboveBelowThresholdData, isLoading: isLoadingThreshold } =
+    useGetAboveBelowThreshold(params);
+  const { data: iblVsTsclData, isLoading: isLoadingIblVsTscl } =
+    useGetIblVsTscl(params);
+  const { data: dispatchVsOrderData, isLoading: isLoadingDispatch } =
+    useGetDispatchVsOrder(params);
 
-  const { data: wipData } = useGetWip(params);
-  const { data: rpmData } = useGetRpm(params);
-  const { data: serviceMeasureData } = useGetServiceMeasure(params);
-  const { data: tgtVsActualData } = useGetTgtVsActual(params);
+  const { data: wipData, isLoading: isLoadingWip } = useGetWip(params);
+  const { data: rpmData, isLoading: isLoadingRpm } = useGetRpm(params);
+  const { data: serviceMeasureData, isLoading: isLoadingServiceMeasure } =
+    useGetServiceMeasure(params);
+  const { data: tgtVsActualData, isLoading: isLoadingTgtVsActual } =
+    useGetTgtVsActual(params);
 
   const apiRows = salesSummaryData?.data as
     | { classification: string; sku: number; new_total_all_sales: number }[]
@@ -1241,12 +1053,12 @@ export default function ScorecardDashboard() {
             up: UP_MAP[item.classification] ?? null,
           };
         })
-      : SALES_SUMMARY;
+      : [];
 
   const salesTotal = {
     sales: totalSales
       ? totalSales.toLocaleString('en-US', { maximumFractionDigits: 0 })
-      : '5,081,000',
+      : '—',
     pct: '100%',
   };
 
@@ -1412,26 +1224,6 @@ export default function ScorecardDashboard() {
     }, {})
   );
 
-  console.log('salesSummaryData', salesSummaryData);
-  console.log('coverDaysData', coverDaysData);
-  console.log('coverDaysDataA', coverDaysDataA);
-  console.log('coverDaysDataB', coverDaysDataB);
-  console.log('coverDaysDataC', coverDaysDataC);
-  console.log('forecastAccuracyMonthlyData', forecastAccuracyMonthlyData);
-  console.log('forecastAccuracyYearlyData', forecastAccuracyYearlyData);
-  console.log('inventoryDaysData', inventoryDaysData);
-  console.log('aboveBelowThresholdData', aboveBelowThresholdData);
-  console.log(
-    'forecastAccuracyCategoryMonthlyData',
-    forecastAccuracyCategoryMonthlyData
-  );
-  console.log(
-    'forecastAccuracyCategoryYearlyData',
-    forecastAccuracyCategoryYearlyData
-  );
-  console.log('iblVsTsclData', iblVsTsclData);
-  console.log('dispatchVsOrderData', dispatchVsOrderData);
-
   return (
     <Flex direction="column" minH="100vh" bg={colors.pageBg}>
       {/* Header */}
@@ -1509,6 +1301,10 @@ export default function ScorecardDashboard() {
             iblSalesDisplay={iblSalesDisplay}
             iblBarData={iblBarData}
             iblMonths={iblMonths}
+            isLoadingSales={isLoadingSales}
+            isLoadingCoverDays={isLoadingCoverDays}
+            isLoadingForecastTscl={isLoadingForecastTscl}
+            isLoadingForecastIbl={isLoadingForecastIbl}
           />
         )}
         {mainTab === 'serviceMeasure' && (
@@ -1519,6 +1315,11 @@ export default function ScorecardDashboard() {
             serviceMeasureData={serviceMeasureData}
             tgtVsActualData={tgtVsActualData}
             classification={filters.classification}
+            isLoadingInventoryDays={isLoadingInventoryDays}
+            isLoadingServiceMeasure={isLoadingServiceMeasure}
+            isLoadingTgtVsActual={isLoadingTgtVsActual}
+            isLoadingThreshold={isLoadingThreshold}
+            isLoadingPctSkus={isLoadingIblVsTscl}
           />
         )}
         {mainTab === 'dispatchWip' && (
@@ -1526,6 +1327,9 @@ export default function ScorecardDashboard() {
             dispatchVsOrderData={dispatchVsOrderData}
             wipData={wipData}
             rpmData={rpmData}
+            isLoadingDispatch={isLoadingDispatch}
+            isLoadingWip={isLoadingWip}
+            isLoadingRpm={isLoadingRpm}
           />
         )}
       </Box>

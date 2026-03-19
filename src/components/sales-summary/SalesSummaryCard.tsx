@@ -1,4 +1,4 @@
-import { Box, Flex, Text } from '@chakra-ui/react';
+import { Box, Flex, Skeleton, Text } from '@chakra-ui/react';
 import { clsColors } from '@/constants/theme';
 
 interface SalesRow {
@@ -12,6 +12,7 @@ interface SalesRow {
 interface SalesSummaryCardProps {
   rows: SalesRow[];
   total?: { sales: string; pct: string };
+  isLoading?: boolean;
 }
 
 function pctColor(_up: boolean | null) {
@@ -53,7 +54,7 @@ function Pill({
   );
 }
 
-export function SalesSummaryCard({ rows, total }: SalesSummaryCardProps) {
+export function SalesSummaryCard({ rows, total, isLoading = false }: SalesSummaryCardProps) {
   const totalSku = rows.reduce((sum, r) => sum + (Number(r.sku) || 0), 0);
 
   return (
@@ -121,7 +122,16 @@ export function SalesSummaryCard({ rows, total }: SalesSummaryCardProps) {
       </Flex>
 
       {/* Rows */}
-      {rows.map((row, idx) => {
+      {isLoading
+        ? Array.from({ length: 4 }).map((_, i) => (
+            <Flex key={i} align="center" py={2} borderBottom="1px solid" borderColor="gray.100" gap={3}>
+              <Skeleton flex={1} height="14px" borderRadius="sm" />
+              <Skeleton w="120px" height="14px" borderRadius="sm" />
+              <Skeleton w="90px" height="22px" borderRadius="sm" />
+              <Skeleton w="70px" height="22px" borderRadius="sm" />
+            </Flex>
+          ))
+        : rows.map((row, idx) => {
         const lc = labelColor(row.label);
         const pc = pctColor(row.up);
         const isLast = idx === rows.length - 1;
