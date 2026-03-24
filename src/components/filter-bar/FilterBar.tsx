@@ -2,6 +2,7 @@ import { useAppDispatch } from '@/app/hooks';
 import { useGetFilters } from '@/api/filters';
 import { DatePicker } from '@/components/date-picker';
 import { Select } from '@/components/select';
+import { MultiSelect } from '@/components/select/MultiSelect';
 import { colors } from '@/constants/theme';
 import {
   resetFilters,
@@ -13,8 +14,8 @@ import { FiX } from 'react-icons/fi';
 
 interface Filters {
   classification: string;
-  branch: string;
-  sku: string;
+  branch: string[];
+  sku: string[];
   dateFrom: string;
   dateTo: string;
 }
@@ -37,17 +38,11 @@ const CLS_LABEL: Record<string, string> = {
   C: 'C — Low Velocity',
 };
 
-const SELECT_FILTERS: { label: string; key: keyof Filters }[] = [
-  { label: 'Classification', key: 'classification' },
-  { label: 'Branches', key: 'branch' },
-  { label: 'SKU', key: 'sku' },
-];
-
 export function FilterBar({ initialFilters }: FilterBarProps) {
   const dispatch = useAppDispatch();
   const { data: filtersData } = useGetFilters({
     ...(initialFilters.classification && { classification: initialFilters.classification }),
-    ...(initialFilters.sku && { sku: initialFilters.sku }),
+    ...(initialFilters.sku.length > 0 && { sku: initialFilters.sku.join(',') }),
   });
   const rows: FilterRow[] = (filtersData as { data?: FilterRow[] })?.data ?? [];
 
@@ -73,16 +68,12 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
       .map((r) => ({ value: String(r.sap_mapping_code), label: r.sku }));
   }, [rows]);
 
-  const optionsMap: Record<
-    'classification' | 'branch' | 'sku',
-    { value: string; label: string }[]
-  > = {
-    classification: classificationOptions,
-    branch: branchOptions,
-    sku: skuOptions,
-  };
-
-  const hasActiveFilters = Object.values(initialFilters).some(Boolean);
+  const hasActiveFilters =
+    !!initialFilters.classification ||
+    initialFilters.branch.length > 0 ||
+    initialFilters.sku.length > 0 ||
+    !!initialFilters.dateFrom ||
+    !!initialFilters.dateTo;
 
   return (
     <Flex align="center" gap={2} w="100%">
@@ -101,25 +92,35 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
       >
         {/* Select filters */}
         <Grid gap={3} flex={1} templateColumns="repeat(3, 1fr)">
-          {SELECT_FILTERS.map((filter) => (
-            <Select
-              key={filter.key}
-              label={filter.label}
-              value={
-                initialFilters[
-                  filter.key as 'classification' | 'branch' | 'sku'
-                ]
-              }
-              options={
-                optionsMap[filter.key as 'classification' | 'branch' | 'sku']
-              }
-              onChange={(v) =>
-                dispatch(setFilter({ key: filter.key, value: v }))
-              }
-              isClearable
-              placeholder="Select..."
-            />
-          ))}
+          {/* Classification — single select */}
+          <Select
+            label="Classification"
+            value={initialFilters.classification}
+            options={classificationOptions}
+            onChange={(v) => dispatch(setFilter({ key: 'classification', value: v }))}
+            isClearable
+            placeholder="Select..."
+          />
+
+          {/* Branches — multi select */}
+          <MultiSelect
+            label="Branches"
+            value={initialFilters.branch}
+            options={branchOptions}
+            onChange={(v) => dispatch(setFilter({ key: 'branch', value: v }))}
+            isClearable
+            placeholder="Select..."
+          />
+
+          {/* SKU — multi select */}
+          <MultiSelect
+            label="SKU"
+            value={initialFilters.sku}
+            options={skuOptions}
+            onChange={(v) => dispatch(setFilter({ key: 'sku', value: v }))}
+            isClearable
+            placeholder="Select..."
+          />
         </Grid>
 
         {/* Date range */}

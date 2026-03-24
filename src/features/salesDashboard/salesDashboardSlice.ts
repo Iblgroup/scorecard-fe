@@ -6,8 +6,8 @@ type DisplayMode = 'TP' | 'EFP'
 
 interface Filters {
     classification: string
-    branch: string
-    sku: string
+    branch: string[]
+    sku: string[]
     dateFrom: string
     dateTo: string
 }
@@ -31,8 +31,8 @@ const initialState: SalesDashboardState = {
     displayMode: 'TP',
     filters: {
         classification: '',
-        branch: '',
-        sku: '',
+        branch: [],
+        sku: [],
         dateFrom: fromDate,
         dateTo: toDate,
     },
@@ -51,15 +51,16 @@ export const salesDashboardSlice = createSlice({
         setDisplayMode: (state, action: PayloadAction<DisplayMode>) => {
             state.displayMode = action.payload
         },
-        setFilter: (state, action: PayloadAction<{ key: keyof Filters; value: string }>) => {
-            state.filters[action.payload.key] = action.payload.value
+        setFilter: (state, action: PayloadAction<{ key: keyof Filters; value: string | string[] }>) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (state.filters as any)[action.payload.key] = action.payload.value
         },
         resetFilters: (state) => {
             const now = new Date()
             state.filters = {
                 classification: '',
-                branch: '',
-                sku: '',
+                branch: [],
+                sku: [],
                 dateFrom: new Date(now.getFullYear(), now.getMonth() - 1, now.getDate())
                     .toISOString()
                     .slice(0, 10),

@@ -963,8 +963,8 @@ export default function ScorecardDashboard() {
 
   const params = {
     ...(filters.classification && { classification: filters.classification }),
-    ...(filters.branch && { branch: filters.branch }),
-    ...(filters.sku && { sku: filters.sku }),
+    ...(filters.branch.length > 0 && { branch: filters.branch }),
+    ...(filters.sku.length > 0 && { sku: filters.sku }),
     ...(filters.dateFrom && { startDate: filters.dateFrom }),
     ...(filters.dateTo && { endDate: filters.dateTo }),
   };
