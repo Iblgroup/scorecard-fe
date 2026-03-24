@@ -1,4 +1,4 @@
-import { useAppDispatch } from '@/app/hooks';
+import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { useGetFilters } from '@/api/filters';
 import { DatePicker } from '@/components/date-picker';
 import { Select } from '@/components/select';
@@ -40,8 +40,12 @@ const CLS_LABEL: Record<string, string> = {
 
 export function FilterBar({ initialFilters }: FilterBarProps) {
   const dispatch = useAppDispatch();
+  const mainTab = useAppSelector((state) => state.salesDashboard.mainTab);
+  const isBranchDisabled = mainTab === 'dispatchWip';
   const { data: filtersData } = useGetFilters({
-    ...(initialFilters.classification && { classification: initialFilters.classification }),
+    ...(initialFilters.classification && {
+      classification: initialFilters.classification,
+    }),
     ...(initialFilters.sku.length > 0 && { sku: initialFilters.sku.join(',') }),
   });
   const rows: FilterRow[] = (filtersData as { data?: FilterRow[] })?.data ?? [];
@@ -49,22 +53,38 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
   const classificationOptions = useMemo(() => {
     const seen = new Set<string>();
     return rows
-      .filter((r) => r.classification && !seen.has(r.classification) && seen.add(r.classification))
+      .filter(
+        (r) =>
+          r.classification &&
+          !seen.has(r.classification) &&
+          seen.add(r.classification)
+      )
       .sort((a, b) => a.classification.localeCompare(b.classification))
-      .map((r) => ({ value: r.classification, label: CLS_LABEL[r.classification] ?? r.classification }));
+      .map((r) => ({
+        value: r.classification,
+        label: CLS_LABEL[r.classification] ?? r.classification,
+      }));
   }, [rows]);
 
   const branchOptions = useMemo(() => {
     const seen = new Set<string>();
     return rows
-      .filter((r) => r.branch_code && !seen.has(r.branch_code) && seen.add(r.branch_code))
+      .filter(
+        (r) =>
+          r.branch_code && !seen.has(r.branch_code) && seen.add(r.branch_code)
+      )
       .map((r) => ({ value: r.branch_code, label: r.branch_desc }));
   }, [rows]);
 
   const skuOptions = useMemo(() => {
     const seen = new Set<number>();
     return rows
-      .filter((r) => r.sap_mapping_code && !seen.has(r.sap_mapping_code) && seen.add(r.sap_mapping_code))
+      .filter(
+        (r) =>
+          r.sap_mapping_code &&
+          !seen.has(r.sap_mapping_code) &&
+          seen.add(r.sap_mapping_code)
+      )
       .map((r) => ({ value: String(r.sap_mapping_code), label: r.sku }));
   }, [rows]);
 
@@ -97,17 +117,9 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
             label="Classification"
             value={initialFilters.classification}
             options={classificationOptions}
-            onChange={(v) => dispatch(setFilter({ key: 'classification', value: v }))}
-            isClearable
-            placeholder="Select..."
-          />
-
-          {/* Branches — multi select */}
-          <MultiSelect
-            label="Branches"
-            value={initialFilters.branch}
-            options={branchOptions}
-            onChange={(v) => dispatch(setFilter({ key: 'branch', value: v }))}
+            onChange={(v) =>
+              dispatch(setFilter({ key: 'classification', value: v }))
+            }
             isClearable
             placeholder="Select..."
           />
@@ -120,6 +132,17 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
             onChange={(v) => dispatch(setFilter({ key: 'sku', value: v }))}
             isClearable
             placeholder="Select..."
+          />
+
+          {/* Branches — multi select */}
+          <MultiSelect
+            label="Branches"
+            value={initialFilters.branch}
+            options={branchOptions}
+            onChange={(v) => dispatch(setFilter({ key: 'branch', value: v }))}
+            isClearable
+            placeholder="Select..."
+            isDisabled={isBranchDisabled}
           />
         </Grid>
 

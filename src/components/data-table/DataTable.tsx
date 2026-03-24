@@ -46,6 +46,7 @@ export interface DataTableProps {
   collapsible?: boolean;
   rowCollapsible?: boolean;
   maxHeight?: string;
+  colAligns?: ('left' | 'right' | 'center')[];
 }
 
 function getCellValue(child: ReactNode, col: number): string {
@@ -76,6 +77,7 @@ export function DataTable({
   collapsible = false,
   rowCollapsible = false,
   maxHeight,
+  colAligns,
 }: DataTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortCol, setSortCol] = useState<number | null>(null);
@@ -125,16 +127,15 @@ export function DataTable({
   const pageRows = allRows.slice(startIndex, startIndex + pageSize);
   const showPagination = totalCount > pageSize;
 
-  const renderedRows = rowCollapsible
-    ? pageRows.map((row, i) =>
-        isValidElement(row)
-          ? cloneElement(row as ReactElement<DataTableRowProps>, {
-              showToggleCol: true,
-              key: i,
-            })
-          : row
-      )
-    : pageRows;
+  const renderedRows = pageRows.map((row, i) =>
+    isValidElement(row)
+      ? cloneElement(row as ReactElement<DataTableRowProps>, {
+          ...(rowCollapsible && { showToggleCol: true }),
+          ...(colAligns && { colAligns }),
+          key: i,
+        })
+      : row
+  );
 
   const handleExport = () => {
     const data = allRows.map((row) =>
@@ -239,8 +240,9 @@ export function DataTable({
                   cursor="pointer"
                   userSelect="none"
                   _hover={{ opacity: 0.8 }}
+                  textAlign={colAligns?.[i] ?? 'left'}
                 >
-                  <HStack gap={1} display="inline-flex">
+                  <HStack gap={1} display="inline-flex" justifyContent={colAligns?.[i] === 'right' ? 'flex-end' : colAligns?.[i] === 'center' ? 'center' : 'flex-start'}>
                     <span>{h}</span>
                     {sortCol === i ? (
                       sortDir === 'asc' ? (
@@ -281,6 +283,19 @@ export function DataTable({
                     ))}
                   </Table.Row>
                 ))
+              ) : renderedRows.length === 0 && pinnedRows.length === 0 ? (
+                <Table.Row>
+                  <Table.Cell
+                    colSpan={headers.length + (rowCollapsible ? 1 : 0)}
+                    textAlign="center"
+                    py={8}
+                    color="gray.400"
+                    fontSize="sm"
+                    fontWeight="500"
+                  >
+                    No data found
+                  </Table.Cell>
+                </Table.Row>
               ) : (
                 <>
                   {renderedRows}
@@ -329,6 +344,8 @@ export interface DataTableRowProps {
   subRows?: SubRowData[];
   /** Injected by DataTable when rowCollapsible={true} */
   showToggleCol?: boolean;
+  /** Injected by DataTable from colAligns prop */
+  colAligns?: ('left' | 'right' | 'center')[];
 }
 
 export function DataTableRow({
@@ -339,8 +356,9 @@ export function DataTableRow({
   cellNodes,
   subRows,
   showToggleCol = false,
+  colAligns,
 }: DataTableRowProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const hasSubRows = showToggleCol && subRows && subRows.length > 0;
 
   return (
@@ -381,6 +399,7 @@ export function DataTableRow({
             key={i}
             color={cellNodes?.[i] ? undefined : cellColors?.[i]}
             fontWeight={cellWeights?.[i]}
+            textAlign={colAligns?.[i] ?? 'left'}
           >
             {cellNodes?.[i] ?? cell}
           </Table.Cell>

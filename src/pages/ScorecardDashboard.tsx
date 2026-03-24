@@ -475,7 +475,7 @@ function SupplyChainTab({
                 target={100}
                 title=""
                 subtitle="Total Supply Chain Level"
-                color={clsColors.A}
+                color={'#726A95'}
                 displayAchieved={tsclSalesDisplay?.achieved}
                 displayTarget={tsclSalesDisplay?.target}
                 isLoading={isLoadingForecastTscl}
@@ -502,8 +502,8 @@ function SupplyChainTab({
                       ]
                 }
                 height={260}
-                yTickFormatter={(v) => `${v}%`}
-                labelFormatter={(v) => `${v}%`}
+                yTickFormatter={(v) => `${Number(v).toFixed(2)}%`}
+                labelFormatter={(v) => `${Number(v).toFixed(2)}%`}
                 showLabels
                 xTickMargin={4}
                 xLabelColors={{
@@ -536,7 +536,7 @@ function SupplyChainTab({
                 target={100}
                 title=""
                 subtitle="Item Branch Level"
-                color={clsColors.B}
+                color={'#726A95'}
                 displayAchieved={iblSalesDisplay?.achieved}
                 displayTarget={iblSalesDisplay?.target}
                 isLoading={isLoadingForecastIbl}
@@ -563,8 +563,8 @@ function SupplyChainTab({
                       ]
                 }
                 height={260}
-                yTickFormatter={(v) => `${v}%`}
-                labelFormatter={(v) => `${v}%`}
+                yTickFormatter={(v) => `${Number(v).toFixed(2)}%`}
+                labelFormatter={(v) => `${Number(v).toFixed(2)}%`}
                 showLabels
                 xTickMargin={4}
                 xLabelColors={{
@@ -875,7 +875,12 @@ function DispatchWipTab({
   isLoadingWip: boolean;
   isLoadingRpm: boolean;
 }) {
-  type DispatchRow = { material_name: string; delivery_pct: string };
+  type DispatchRow = {
+    material_name: string;
+    delivery_pct: string;
+    total_order_qty: string;
+    total_delivery_qty: string;
+  };
   type WipRow = { 'item desc': string; Wip_total: string };
   type RpmRow = { materialname: string; total_value: string };
   const dispatchRows =
@@ -884,74 +889,92 @@ function DispatchWipTab({
   const rpmRows = (rpmData as { data?: RpmRow[] })?.data ?? [];
 
   return (
-    <Grid templateColumns="repeat(3, 1fr)" gap={4}>
-      <DataTable
-        title="Dispatch Vs Order"
-        headerGradient={gradients.tableBlue}
-        headers={['Material Name', '%']}
-        pageSize={15}
-        isLoading={isLoadingDispatch}
-      >
-        {dispatchRows.map((row) => {
-          const pct = `${parseFloat(row.delivery_pct).toFixed(2)}%`;
-          const isBelow100 = parseFloat(row.delivery_pct) < 100;
-          return (
-            <DataTableRow
-              key={row.material_name}
-              cells={[row.material_name, pct]}
-              cellColors={[
-                isBelow100 ? '#2563eb' : undefined,
-                isBelow100 ? '#dc2626' : '#059669',
-              ]}
-              cellWeights={[undefined, '700']}
-            />
-          );
-        })}
-      </DataTable>
+    <Grid templateColumns="repeat(10, 1fr)" gap={4}>
+      <GridItem colSpan={4}>
+        <DataTable
+          title="Dispatch Vs Order"
+          headerGradient={gradients.tableBlue}
+          headers={['Material Name', 'Order Qty', 'Delivery Qty', '%']}
+          colAligns={['left', 'left', 'left', 'right']}
+          pageSize={15}
+          isLoading={isLoadingDispatch}
+        >
+          {dispatchRows.map((row) => {
+            const pct = `${parseFloat(row.delivery_pct).toFixed(2)}%`;
+            const isBelow100 = parseFloat(row.delivery_pct) < 100;
+            const orderQty = Number(row.total_order_qty ?? 0).toLocaleString(
+              'en-US',
+              { maximumFractionDigits: 0 }
+            );
+            const deliveryQty = Number(
+              row.total_delivery_qty ?? 0
+            ).toLocaleString('en-US', { maximumFractionDigits: 0 });
+            return (
+              <DataTableRow
+                key={row.material_name}
+                cells={[row.material_name, orderQty, deliveryQty, pct]}
+                cellColors={[
+                  undefined,
+                  undefined,
+                  undefined,
+                  isBelow100 ? '#dc2626' : '#059669',
+                ]}
+                cellWeights={[undefined, undefined, undefined, '700']}
+              />
+            );
+          })}
+        </DataTable>
+      </GridItem>
 
       {/* WIP */}
-      <DataTable
-        title="WIP"
-        headerGradient={gradients.tableBlue}
-        headers={['Material Name', 'WIP Value']}
-        pageSize={15}
-        isLoading={isLoadingWip}
-      >
-        {wipRows.map((row) => (
-          <DataTableRow
-            key={row['item desc']}
-            cells={[
-              row['item desc'],
-              Number(row.Wip_total ?? 0).toLocaleString('en-US', {
-                maximumFractionDigits: 0,
-              }),
-            ]}
-            cellWeights={[undefined, '600']}
-          />
-        ))}
-      </DataTable>
+      <GridItem colSpan={3}>
+        <DataTable
+          title="WIP"
+          headerGradient={gradients.tableBlue}
+          headers={['Material Name', 'WIP Value']}
+          colAligns={['left', 'right']}
+          pageSize={15}
+          isLoading={isLoadingWip}
+        >
+          {wipRows.map((row) => (
+            <DataTableRow
+              key={row['item desc']}
+              cells={[
+                row['item desc'],
+                Number(row.Wip_total ?? 0).toLocaleString('en-US', {
+                  maximumFractionDigits: 0,
+                }),
+              ]}
+              cellWeights={[undefined, '600']}
+            />
+          ))}
+        </DataTable>
+      </GridItem>
 
       {/* RPM */}
-      <DataTable
-        title="RPM"
-        headerGradient={gradients.tableIndigo}
-        headers={['Material Name', 'RPM Value']}
-        pageSize={15}
-        isLoading={isLoadingRpm}
-      >
-        {rpmRows.map((row) => (
-          <DataTableRow
-            key={row.materialname}
-            cells={[
-              row.materialname,
-              Number(row.total_value ?? 0).toLocaleString('en-US', {
-                maximumFractionDigits: 0,
-              }),
-            ]}
-            cellWeights={[undefined, '600']}
-          />
-        ))}
-      </DataTable>
+      <GridItem colSpan={3}>
+        <DataTable
+          title="RPM"
+          headerGradient={gradients.tableIndigo}
+          headers={['Material Name', 'RPM Value']}
+          colAligns={['left', 'right']}
+          pageSize={15}
+          isLoading={isLoadingRpm}
+        >
+          {rpmRows.map((row) => (
+            <DataTableRow
+              key={row.materialname}
+              cells={[
+                row.materialname,
+                Number(row.total_value ?? 0).toLocaleString('en-US', {
+                  maximumFractionDigits: 0,
+                }),
+              ]}
+              cellWeights={[undefined, '600']}
+            />
+          ))}
+        </DataTable>
+      </GridItem>
     </Grid>
   );
 }
@@ -973,19 +996,26 @@ export default function ScorecardDashboard() {
     useGetSalesSummary(params);
   const { data: coverDaysData, isFetching: isFetchingCoverDays } =
     useGetCoverDays(params);
-  const { data: coverDaysDataA, isFetching: isFetchingCoverDaysA } = useGetCoverDays({
-    ...params,
-    classification: 'A',
-  });
-  const { data: coverDaysDataB, isFetching: isFetchingCoverDaysB } = useGetCoverDays({
-    ...params,
-    classification: 'B',
-  });
-  const { data: coverDaysDataC, isFetching: isFetchingCoverDaysC } = useGetCoverDays({
-    ...params,
-    classification: 'C',
-  });
-  const isLoadingCoverDays = isFetchingCoverDays || isFetchingCoverDaysA || isFetchingCoverDaysB || isFetchingCoverDaysC;
+  const { data: coverDaysDataA, isFetching: isFetchingCoverDaysA } =
+    useGetCoverDays({
+      ...params,
+      classification: 'A',
+    });
+  const { data: coverDaysDataB, isFetching: isFetchingCoverDaysB } =
+    useGetCoverDays({
+      ...params,
+      classification: 'B',
+    });
+  const { data: coverDaysDataC, isFetching: isFetchingCoverDaysC } =
+    useGetCoverDays({
+      ...params,
+      classification: 'C',
+    });
+  const isLoadingCoverDays =
+    isFetchingCoverDays ||
+    isFetchingCoverDaysA ||
+    isFetchingCoverDaysB ||
+    isFetchingCoverDaysC;
   const { data: forecastAccuracyMonthlyData } =
     useGetForecastAccuracyMonthly(params);
   const {

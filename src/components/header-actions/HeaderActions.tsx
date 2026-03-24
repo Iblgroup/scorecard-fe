@@ -5,6 +5,7 @@ import {
   setActiveTab,
   // setDisplayMode,
   setMainTab,
+  setFilter,
 } from '@/features/salesDashboard/salesDashboardSlice';
 import { Flex, HStack } from '@chakra-ui/react';
 // import { FiBarChart2, FiGrid } from 'react-icons/fi';
@@ -50,6 +51,9 @@ export function HeaderActions() {
                 )
               );
               dispatch(setActiveTab('visualizations'));
+              if (tab.value === 'dispatchWip') {
+                dispatch(setFilter({ key: 'branch', value: [] }));
+              }
             }}
           >
             {tab.label}
