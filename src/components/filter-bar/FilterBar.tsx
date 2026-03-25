@@ -9,8 +9,8 @@ import {
   setFilter,
 } from '@/features/salesDashboard/salesDashboardSlice';
 import { Flex, Grid, IconButton } from '@chakra-ui/react';
-import { useMemo } from 'react';
-import { FiX } from 'react-icons/fi';
+import { useEffect, useMemo, useState } from 'react';
+import { FiCheck, FiX } from 'react-icons/fi';
 
 interface Filters {
   classification: string;
@@ -42,6 +42,26 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
   const dispatch = useAppDispatch();
   const mainTab = useAppSelector((state) => state.salesDashboard.mainTab);
   const isBranchDisabled = mainTab === 'dispatchWip';
+
+  // Local date state — only flushed to Redux on Apply
+  const [localDateFrom, setLocalDateFrom] = useState(initialFilters.dateFrom);
+  const [localDateTo, setLocalDateTo] = useState(initialFilters.dateTo);
+
+  // Sync local state when Redux is reset externally (e.g. clear button)
+  useEffect(() => {
+    setLocalDateFrom(initialFilters.dateFrom);
+    setLocalDateTo(initialFilters.dateTo);
+  }, [initialFilters.dateFrom, initialFilters.dateTo]);
+
+  const datesDirty =
+    localDateFrom !== initialFilters.dateFrom ||
+    localDateTo !== initialFilters.dateTo;
+
+  const handleApplyDates = () => {
+    dispatch(setFilter({ key: 'dateFrom', value: localDateFrom }));
+    dispatch(setFilter({ key: 'dateTo', value: localDateTo }));
+  };
+
   const { data: filtersData } = useGetFilters({
     ...(initialFilters.classification && {
       classification: initialFilters.classification,
@@ -110,7 +130,6 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
         zIndex={10}
         gap={3}
       >
-        {/* Select filters */}
         <Grid gap={3} flex={1} templateColumns="repeat(3, 1fr)">
           {/* Classification — single select */}
           <Select
@@ -146,21 +165,37 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
           />
         </Grid>
 
-        {/* Date range */}
         <Flex align="center" flexShrink={0}>
           <DatePicker
-            value={initialFilters.dateFrom}
-            onChange={(v) => dispatch(setFilter({ key: 'dateFrom', value: v }))}
+            value={localDateFrom}
+            onChange={setLocalDateFrom}
             placeholder="From"
             variant="range-start"
           />
           <DatePicker
-            value={initialFilters.dateTo}
-            onChange={(v) => dispatch(setFilter({ key: 'dateTo', value: v }))}
+            value={localDateTo}
+            onChange={setLocalDateTo}
             placeholder="To"
             variant="range-end"
-            minDate={initialFilters.dateFrom || undefined}
+            minDate={localDateFrom || undefined}
           />
+          <IconButton
+            aria-label="Apply date filter"
+            title="Apply date filter"
+            size="sm"
+            borderRadius="md"
+            flexShrink={0}
+            ml={2}
+            bg={datesDirty ? 'blue.500' : 'white'}
+            color={datesDirty ? 'white' : 'gray.400'}
+            border="1px solid"
+            borderColor={datesDirty ? 'blue.500' : 'gray.300'}
+            disabled={!datesDirty}
+            _hover={{ bg: 'blue.600', color: 'white', borderColor: 'blue.600' }}
+            onClick={handleApplyDates}
+          >
+            <FiCheck />
+          </IconButton>
         </Flex>
 
         {/* Clear button */}

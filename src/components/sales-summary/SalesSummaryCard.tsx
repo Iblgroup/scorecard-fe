@@ -160,7 +160,7 @@ export function SalesSummaryCard({ rows, total, isLoading = false }: SalesSummar
             </Box>
             <Box w="70px" display="flex" justifyContent="center">
               <Pill
-                label={row.pct}
+                label={`${Math.round(parseFloat(row.pct))}%`}
                 color={pc}
                 bg={`${pc}12`}
                 border={`${pc}35`}

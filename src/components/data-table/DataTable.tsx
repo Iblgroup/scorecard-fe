@@ -338,6 +338,7 @@ export function DataTable({
 export interface DataTableRowProps {
   cells: string[];
   isTotal?: boolean;
+  rowBg?: string;
   cellColors?: (string | undefined)[];
   cellWeights?: (string | undefined)[];
   cellNodes?: (ReactNode | undefined)[];
@@ -351,6 +352,7 @@ export interface DataTableRowProps {
 export function DataTableRow({
   cells,
   isTotal = false,
+  rowBg,
   cellColors,
   cellWeights,
   cellNodes,
@@ -361,14 +363,14 @@ export function DataTableRow({
   const [isExpanded, setIsExpanded] = useState(false);
   const hasSubRows = showToggleCol && subRows && subRows.length > 0;
 
+  const resolvedBg = isTotal ? gradients.totalRow : rowBg;
+
   return (
     <>
       <Table.Row
-        bg={isTotal ? gradients.totalRow : undefined}
+        style={resolvedBg ? { background: resolvedBg } : undefined}
         fontWeight={isTotal ? 'bold' : undefined}
-        _odd={isTotal ? { bg: gradients.totalRow } : undefined}
-        _even={isTotal ? { bg: gradients.totalRow } : undefined}
-        _hover={isTotal ? { bg: gradients.totalRow } : undefined}
+        _hover={resolvedBg ? { bg: resolvedBg } : undefined}
       >
         {showToggleCol && (
           <Table.Cell w="32px" px={1} py={0} verticalAlign="middle">
@@ -409,7 +411,7 @@ export function DataTableRow({
       {hasSubRows &&
         isExpanded &&
         subRows!.map((sub, i) => (
-          <Table.Row key={i} bg="gray.50" _hover={{ bg: 'gray.100' }}>
+          <Table.Row key={i} style={{ background: i % 2 === 0 ? '#f9fafb' : '#ffffff' }} css={{ '&:hover': { background: '#e5e7eb !important' } }}>
             {/* indent spacer */}
             <Table.Cell w="32px" px={1} />
             {sub.cells.map((cell, j) => (

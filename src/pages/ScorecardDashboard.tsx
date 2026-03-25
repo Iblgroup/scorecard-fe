@@ -103,6 +103,7 @@ const CHART_COLORS = ['#646ECB', '#5AC8D8', '#16476A'] as const;
 
 const INV_API_BRANCHES = [
   { key: 'bahawalpur', label: 'Bahawalpur' },
+  { key: 'dss_korangi', label: 'DSS Korangi' },
   { key: 'faisalabad', label: 'Faisalabad' },
   { key: 'gujranwala', label: 'Gujranwala' },
   { key: 'hyderabad', label: 'Hyderabad' },
@@ -457,68 +458,7 @@ function SupplyChainTab({
       <Grid templateColumns="repeat(12, 1fr)" gap={4}>
         <ChartCard
           colSpan={6}
-          title="Forecast Accuracy TSCL"
-          height="280px"
-          isLoading={isLoadingForecastTscl}
-          variant="gauge-bar"
-        >
-          <Flex h="100%" gap={0}>
-            <Box
-              w="160px"
-              flexShrink={0}
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-            >
-              <GaugeChart
-                value={tsclAccuracy ?? 0}
-                target={100}
-                title=""
-                subtitle="Total Supply Chain Level"
-                color={'#726A95'}
-                displayAchieved={tsclSalesDisplay?.achieved}
-                displayTarget={tsclSalesDisplay?.target}
-                isLoading={isLoadingForecastTscl}
-              />
-            </Box>
-            <Box w="1px" bg="gray.100" mx={3} flexShrink={0} />
-            <Box flex={1} minW={0}>
-              <BarChart
-                data={forecastBarData}
-                xKey="classification"
-                bars={
-                  forecastMonths.length
-                    ? forecastMonths.map((m, i) => ({
-                        key: m,
-                        label: m,
-                        color: CHART_COLORS[i] ?? CHART_COLORS[0],
-                      }))
-                    : [
-                        {
-                          key: 'accuracy',
-                          label: 'Forecast Accuracy',
-                          color: CHART_COLORS[0],
-                        },
-                      ]
-                }
-                height={260}
-                yTickFormatter={(v) => `${Number(v).toFixed(2)}%`}
-                labelFormatter={(v) => `${Number(v).toFixed(2)}%`}
-                showLabels
-                xTickMargin={4}
-                xLabelColors={{
-                  A: clsColors.A,
-                  B: clsColors.B,
-                  C: clsColors.C,
-                }}
-              />
-            </Box>
-          </Flex>
-        </ChartCard>
-
-        <ChartCard
-          colSpan={6}
-          title="Forecast Accuracy IBL"
+          title="Budget Accuracy TSCL"
           height="280px"
           isLoading={isLoadingForecastIbl}
           variant="gauge-bar"
@@ -545,6 +485,67 @@ function SupplyChainTab({
             <Box w="1px" bg="gray.100" mx={3} flexShrink={0} />
             <Box flex={1} minW={0}>
               <BarChart
+                data={forecastBarData}
+                xKey="classification"
+                bars={
+                  forecastMonths.length
+                    ? forecastMonths.map((m, i) => ({
+                        key: m,
+                        label: m,
+                        color: CHART_COLORS[i] ?? CHART_COLORS[0],
+                      }))
+                    : [
+                        {
+                          key: 'accuracy',
+                          label: 'Forecast Accuracy',
+                          color: CHART_COLORS[0],
+                        },
+                      ]
+                }
+                height={260}
+                yTickFormatter={(v) => `${Math.round(Number(v))}%`}
+                labelFormatter={(v) => `${Math.round(Number(v))}%`}
+                showLabels
+                xTickMargin={4}
+                xLabelColors={{
+                  A: clsColors.A,
+                  B: clsColors.B,
+                  C: clsColors.C,
+                }}
+              />
+            </Box>
+          </Flex>
+        </ChartCard>
+
+        <ChartCard
+          colSpan={6}
+          title="Forecast Accuracy IBL"
+          height="280px"
+          isLoading={isLoadingForecastTscl}
+          variant="gauge-bar"
+        >
+          <Flex h="100%" gap={0}>
+            <Box
+              w="160px"
+              flexShrink={0}
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <GaugeChart
+                value={tsclAccuracy ?? 0}
+                target={100}
+                title=""
+                subtitle="Total Supply Chain Level"
+                color={'#726A95'}
+                displayAchieved={tsclSalesDisplay?.achieved}
+                displayTarget={tsclSalesDisplay?.target}
+                isLoading={isLoadingForecastTscl}
+              />
+            </Box>
+            <Box w="1px" bg="gray.100" mx={3} flexShrink={0} />
+            <Box flex={1} minW={0}>
+              <BarChart
                 data={iblBarData}
                 xKey="classification"
                 bars={
@@ -563,8 +564,8 @@ function SupplyChainTab({
                       ]
                 }
                 height={260}
-                yTickFormatter={(v) => `${Number(v).toFixed(2)}%`}
-                labelFormatter={(v) => `${Number(v).toFixed(2)}%`}
+                yTickFormatter={(v) => `${Math.round(Number(v))}%`}
+                labelFormatter={(v) => `${Math.round(Number(v))}%`}
                 showLabels
                 xTickMargin={4}
                 xLabelColors={{
@@ -650,18 +651,13 @@ function ServiceMeasureTab({
   const branchKeys = INV_API_BRANCHES.map((b) => b.key);
   const invApiRows = (inventoryDaysData as { data?: InvApiRow[] })?.data ?? [];
 
-  const avgVals = (rows: InvApiRow[]) =>
-    branchKeys.map((key) => {
-      const vals = rows
-        .map((r) => Number(r[key] ?? 0))
-        .filter((v) => !isNaN(v));
-      return vals.length
-        ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length)
-        : 0;
-    });
+  const sumVals = (rows: InvApiRow[]) =>
+    branchKeys.map((key) =>
+      rows.reduce((s, r) => s + Number(r[key] ?? 0), 0)
+    );
 
   const grouped = invApiRows.reduce<Record<string, InvApiRow[]>>((acc, row) => {
-    const key = (row.category as string) || 'Other';
+    const key = (row.classification as string) || 'Other';
     if (!acc[key]) acc[key] = [];
     acc[key].push(row);
     return acc;
@@ -671,7 +667,7 @@ function ServiceMeasureTab({
     .filter((c) => grouped[c]?.length)
     .map((cls) => ({
       cls,
-      vals: avgVals(grouped[cls]),
+      vals: sumVals(grouped[cls]),
       bold: false,
       subRows: grouped[cls].map((r: InvApiRow) => ({
         sku: (r.item_desc as string) ?? '',
@@ -703,6 +699,14 @@ function ServiceMeasureTab({
                     : row.cls === 'C'
                       ? clsColors.C
                       : undefined;
+              const clsRowBg =
+                row.cls === 'A'
+                  ? clsColors.Abg
+                  : row.cls === 'B'
+                    ? clsColors.Bbg
+                    : row.cls === 'C'
+                      ? clsColors.Cbg
+                      : undefined;
               const clsBadge = clsColor ? (
                 <Box
                   display="inline-flex"
@@ -724,6 +728,7 @@ function ServiceMeasureTab({
                   key={row.cls}
                   cells={[row.cls, ...row.vals.map(String)]}
                   isTotal={row.bold}
+                  rowBg={clsRowBg}
                   cellColors={[clsColor]}
                   cellNodes={[clsBadge]}
                   cellWeights={['700', ...row.vals.map(() => '600')]}
@@ -781,6 +786,8 @@ function ServiceMeasureTab({
               },
             ]}
             showLabels
+            labelFormatter={(v) => `${Math.round(Number(v))}`}
+            yTickFormatter={(v) => `${Math.round(Number(v))}`}
             xLabelColors={{ A: clsColors.A, B: clsColors.B, C: clsColors.C }}
           />
         </ChartCard>
@@ -1023,19 +1030,19 @@ export default function ScorecardDashboard() {
     isFetching: isLoadingForecastTscl,
   } = useGetForecastAccuracyCategoryMonthly({
     ...params,
-    date: new Date().toISOString().slice(0, 10),
+    date: filters.dateTo || new Date().toISOString().slice(0, 10),
   });
 
   const { data: forecastAccuracyYearlyData } = useGetForecastAccuracyYearly({
     ...params,
-    date: new Date().toISOString().slice(0, 10),
+    date: filters.dateTo || new Date().toISOString().slice(0, 10),
   });
   const {
     data: forecastAccuracyCategoryYearlyData,
     isFetching: isLoadingForecastIbl,
   } = useGetForecastAccuracyCategoryYearly({
     ...params,
-    date: new Date().toISOString().slice(0, 10),
+    date: filters.dateTo || new Date().toISOString().slice(0, 10),
   });
 
   const { data: inventoryDaysData, isFetching: isLoadingInventoryDays } =
@@ -1146,13 +1153,13 @@ export default function ScorecardDashboard() {
       below: Number(r['No Of SKUs < Threshold']) ?? 0,
     }));
 
-  type IblVsTsclRow = { category: string; forecast_vs_budget_pct: number };
+  type IblVsTsclRow = { classification: string; forecast_vs_budget_pct: number };
   const iblVsTsclRows =
     (iblVsTsclData as { data?: IblVsTsclRow[] })?.data ?? [];
   const pctSkusData = (['A', 'B', 'C'] as const)
     .filter((cls) => !filters.classification || cls === filters.classification)
     .map((cls) => {
-      const row = iblVsTsclRows.find((r) => r.category === cls);
+      const row = iblVsTsclRows.find((r) => r.classification === cls);
       return {
         class: cls,
         pct: row ? Math.round(row.forecast_vs_budget_pct) : 0,

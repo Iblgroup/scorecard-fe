@@ -196,11 +196,11 @@ const multiSelectStyles: StylesConfig<SelectOption, true> = {
     ...base,
     fontSize: '14px',
     fontWeight: 500,
-    backgroundColor: state.isSelected ? colors.selectActive : 'white',
-    color: state.isSelected ? 'white' : colors.bodyText,
+    backgroundColor: state.isSelected ? `${colors.selectActive}20` : 'white',
+    color: state.isSelected ? colors.selectActive : colors.bodyText,
     '&:hover': {
       backgroundColor: state.isSelected
-        ? colors.selectActive
+        ? `${colors.selectActive}30`
         : colors.selectOptionHover,
     },
   }),
@@ -266,6 +266,7 @@ export function MultiSelect({
           components={customComponents}
           isSearchable
           closeMenuOnSelect={false}
+          hideSelectedOptions={false}
           {...rest}
         />
       </Box>

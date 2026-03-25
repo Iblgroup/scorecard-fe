@@ -75,7 +75,7 @@ export function Select({
       )}
       <Box flex={1} w="100%">
         <ReactSelect<SelectOption, false>
-          value={options.find((o) => o.value === value)}
+          value={options.find((o) => o.value === value) ?? null}
           onChange={(selected) => onChange(selected?.value ?? '')}
           options={options}
           styles={selectStyles}

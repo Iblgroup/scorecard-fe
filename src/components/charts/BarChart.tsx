@@ -333,11 +333,25 @@ export function BarChart({
                       <LabelList
                         dataKey={bar.key}
                         position={isStacked ? 'inside' : 'top'}
-                        formatter={(v) => labelFormatter(Number(v))}
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 700,
-                          fill: isStacked ? '#fff' : bar.color,
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        content={(props: any) => {
+                          const { x, y, width, value, index } = props;
+                          const color = isStacked
+                            ? '#fff'
+                            : bar.cellColor && index !== undefined
+                              ? bar.cellColor(data[index] as Record<string, unknown>)
+                              : bar.color;
+                          return (
+                            <text
+                              x={Number(x) + Number(width) / 2}
+                              y={Number(y) - 4}
+                              textAnchor="middle"
+                              fill={color}
+                              style={{ fontSize: 11, fontWeight: 700 }}
+                            >
+                              {labelFormatter(Number(value))}
+                            </text>
+                          );
                         }}
                       />
                     )}
