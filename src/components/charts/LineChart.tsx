@@ -74,7 +74,7 @@ function renderXTick(tickWidth: number) {
             y={i * 13}
             textAnchor="middle"
             fill="#000"
-            style={{ fontSize: '11px', fontWeight: 600 }}
+            style={{ fontSize: '12px', fontWeight: 600 }}
           >
             {t}
           </text>
@@ -216,57 +216,59 @@ export function LineChart({
             >
               {sharedChildren}
               {lines.map((line) => (
-                  <Area
-                    key={line.key}
-                    type="monotone"
+                <Area
+                  key={line.key}
+                  type="monotone"
+                  dataKey={line.key}
+                  name={line.label}
+                  stroke={line.color}
+                  strokeWidth={2}
+                  strokeDasharray={line.dashed ? '5 5' : undefined}
+                  fill={`url(#fill-${line.key})`}
+                  dot={{ r: 3, fill: line.color, strokeWidth: 0 }}
+                  activeDot={{ r: 5 }}
+                >
+                  <LabelList
                     dataKey={line.key}
-                    name={line.label}
-                    stroke={line.color}
-                    strokeWidth={2}
-                    strokeDasharray={line.dashed ? '5 5' : undefined}
-                    fill={`url(#fill-${line.key})`}
-                    dot={{ r: 3, fill: line.color, strokeWidth: 0 }}
-                    activeDot={{ r: 5 }}
-                  >
-                    <LabelList
-                      dataKey={line.key}
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      content={(props: any) => {
-                        const { x, y, value, index } = props;
-                        if (value === undefined || value === null) return null;
-                        // rank all lines at this index by value (descending)
-                        const vals = lines.map((l) => Number(data[index]?.[l.key] ?? 0));
-                        const sorted = [...vals].sort((a, b) => b - a);
-                        const myVal = Number(value);
-                        const rank = sorted.indexOf(myVal); // 0=top, 1=mid, 2=bot
-                        let yOffset: number;
-                        if (rank === 0) {
-                          yOffset = -8; // highest → above
-                        } else if (rank === sorted.length - 1) {
-                          yOffset = 14; // lowest → below
-                        } else {
-                          // middle → go toward the side with more space
-                          const topVal = sorted[0];
-                          const botVal = sorted[sorted.length - 1];
-                          yOffset = (myVal - botVal) < (topVal - myVal) ? -8 : 14;
-                        }
-                        return (
-                          <text
-                            x={x}
-                            y={y + yOffset}
-                            textAnchor="middle"
-                            style={{
-                              fontSize: 10,
-                              fontWeight: 700,
-                              fill: line.color,
-                            }}
-                          >
-                            {labelFormatter(Math.round(Number(value)))}
-                          </text>
-                        );
-                      }}
-                    />
-                  </Area>
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    content={(props: any) => {
+                      const { x, y, value, index } = props;
+                      if (value === undefined || value === null) return null;
+                      // rank all lines at this index by value (descending)
+                      const vals = lines.map((l) =>
+                        Number(data[index]?.[l.key] ?? 0)
+                      );
+                      const sorted = [...vals].sort((a, b) => b - a);
+                      const myVal = Number(value);
+                      const rank = sorted.indexOf(myVal); // 0=top, 1=mid, 2=bot
+                      let yOffset: number;
+                      if (rank === 0) {
+                        yOffset = -8; // highest → above
+                      } else if (rank === sorted.length - 1) {
+                        yOffset = 14; // lowest → below
+                      } else {
+                        // middle → go toward the side with more space
+                        const topVal = sorted[0];
+                        const botVal = sorted[sorted.length - 1];
+                        yOffset = myVal - botVal < topVal - myVal ? -8 : 14;
+                      }
+                      return (
+                        <text
+                          x={x}
+                          y={y + yOffset}
+                          textAnchor="middle"
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 700,
+                            fill: line.color,
+                          }}
+                        >
+                          {labelFormatter(Math.round(Number(value)))}
+                        </text>
+                      );
+                    }}
+                  />
+                </Area>
               ))}
             </RechartsAreaChart>
           ) : (

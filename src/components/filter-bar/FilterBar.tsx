@@ -8,9 +8,8 @@ import {
   resetFilters,
   setFilter,
 } from '@/features/salesDashboard/salesDashboardSlice';
-import { Flex, Grid, IconButton } from '@chakra-ui/react';
+import { Button, Flex, Grid } from '@chakra-ui/react';
 import { useEffect, useMemo, useState } from 'react';
-import { FiCheck, FiX } from 'react-icons/fi';
 
 interface Filters {
   classification: string;
@@ -43,23 +42,57 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
   const mainTab = useAppSelector((state) => state.salesDashboard.mainTab);
   const isBranchDisabled = mainTab === 'dispatchWip';
 
-  // Local date state — only flushed to Redux on Apply
+  // All filters staged locally — only flushed to Redux on Apply
+  const [localClassification, setLocalClassification] = useState(initialFilters.classification);
+  const [localBranch, setLocalBranch] = useState(initialFilters.branch);
+  const [localSku, setLocalSku] = useState(initialFilters.sku);
   const [localDateFrom, setLocalDateFrom] = useState(initialFilters.dateFrom);
   const [localDateTo, setLocalDateTo] = useState(initialFilters.dateTo);
 
   // Sync local state when Redux is reset externally (e.g. clear button)
   useEffect(() => {
+    setLocalClassification(initialFilters.classification);
+    setLocalBranch(initialFilters.branch);
+    setLocalSku(initialFilters.sku);
     setLocalDateFrom(initialFilters.dateFrom);
     setLocalDateTo(initialFilters.dateTo);
-  }, [initialFilters.dateFrom, initialFilters.dateTo]);
+  }, [
+    initialFilters.classification,
+    initialFilters.branch,
+    initialFilters.sku,
+    initialFilters.dateFrom,
+    initialFilters.dateTo,
+  ]);
 
-  const datesDirty =
+  const isDirty =
+    localClassification !== initialFilters.classification ||
     localDateFrom !== initialFilters.dateFrom ||
-    localDateTo !== initialFilters.dateTo;
+    localDateTo !== initialFilters.dateTo ||
+    localBranch.join(',') !== initialFilters.branch.join(',') ||
+    localSku.join(',') !== initialFilters.sku.join(',');
 
-  const handleApplyDates = () => {
+  const hasActiveFilters =
+    !!localClassification ||
+    localBranch.length > 0 ||
+    localSku.length > 0 ||
+    !!localDateFrom ||
+    !!localDateTo;
+
+  const handleApply = () => {
+    dispatch(setFilter({ key: 'classification', value: localClassification }));
+    dispatch(setFilter({ key: 'branch', value: localBranch }));
+    dispatch(setFilter({ key: 'sku', value: localSku }));
     dispatch(setFilter({ key: 'dateFrom', value: localDateFrom }));
     dispatch(setFilter({ key: 'dateTo', value: localDateTo }));
+  };
+
+  const handleClear = () => {
+    setLocalClassification('');
+    setLocalBranch([]);
+    setLocalSku([]);
+    setLocalDateFrom('');
+    setLocalDateTo('');
+    dispatch(resetFilters());
   };
 
   const { data: filtersData } = useGetFilters({
@@ -108,13 +141,6 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
       .map((r) => ({ value: String(r.sap_mapping_code), label: r.sku }));
   }, [rows]);
 
-  const hasActiveFilters =
-    !!initialFilters.classification ||
-    initialFilters.branch.length > 0 ||
-    initialFilters.sku.length > 0 ||
-    !!initialFilters.dateFrom ||
-    !!initialFilters.dateTo;
-
   return (
     <Flex align="center" gap={2} w="100%">
       <Flex
@@ -134,11 +160,9 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
           {/* Classification — single select */}
           <Select
             label="Classification"
-            value={initialFilters.classification}
+            value={localClassification}
             options={classificationOptions}
-            onChange={(v) =>
-              dispatch(setFilter({ key: 'classification', value: v }))
-            }
+            onChange={(v) => setLocalClassification(v)}
             isClearable
             placeholder="Select..."
           />
@@ -146,9 +170,9 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
           {/* SKU — multi select */}
           <MultiSelect
             label="SKU"
-            value={initialFilters.sku}
+            value={localSku}
             options={skuOptions}
-            onChange={(v) => dispatch(setFilter({ key: 'sku', value: v }))}
+            onChange={(v) => setLocalSku(v)}
             isClearable
             placeholder="Select..."
           />
@@ -156,9 +180,9 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
           {/* Branches — multi select */}
           <MultiSelect
             label="Branches"
-            value={initialFilters.branch}
+            value={localBranch}
             options={branchOptions}
-            onChange={(v) => dispatch(setFilter({ key: 'branch', value: v }))}
+            onChange={(v) => setLocalBranch(v)}
             isClearable
             placeholder="Select..."
             isDisabled={isBranchDisabled}
@@ -179,42 +203,36 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
             variant="range-end"
             minDate={localDateFrom || undefined}
           />
-          <IconButton
-            aria-label="Apply date filter"
-            title="Apply date filter"
-            size="sm"
-            borderRadius="md"
-            flexShrink={0}
-            ml={2}
-            bg={datesDirty ? 'blue.500' : 'white'}
-            color={datesDirty ? 'white' : 'gray.400'}
-            border="1px solid"
-            borderColor={datesDirty ? 'blue.500' : 'gray.300'}
-            disabled={!datesDirty}
-            _hover={{ bg: 'blue.600', color: 'white', borderColor: 'blue.600' }}
-            onClick={handleApplyDates}
-          >
-            <FiCheck />
-          </IconButton>
         </Flex>
 
-        {/* Clear button */}
-        <IconButton
-          aria-label="Clear filters"
-          title="Clear all filters"
-          size="sm"
-          borderRadius="md"
-          flexShrink={0}
-          bg="white"
-          border="1px solid"
-          borderColor="gray.300"
-          color={hasActiveFilters ? 'red.500' : 'gray.400'}
-          disabled={!hasActiveFilters}
-          _hover={{ borderColor: 'red.400', color: 'red.500' }}
-          onClick={() => dispatch(resetFilters())}
-        >
-          <FiX />
-        </IconButton>
+        <Flex align="center" gap={2} flexShrink={0}>
+          <Button
+            size="sm"
+            borderRadius="md"
+            bg={isDirty ? 'blue.500' : 'white'}
+            color={isDirty ? 'white' : 'gray.400'}
+            border="1px solid"
+            borderColor={isDirty ? 'blue.500' : 'gray.300'}
+            disabled={!isDirty}
+            _hover={{ bg: 'blue.600', color: 'white', borderColor: 'blue.600' }}
+            onClick={handleApply}
+          >
+            Apply
+          </Button>
+          <Button
+            size="sm"
+            borderRadius="md"
+            bg="white"
+            border="1px solid"
+            borderColor={hasActiveFilters ? 'red.400' : 'gray.300'}
+            color={hasActiveFilters ? 'red.500' : 'gray.400'}
+            disabled={!hasActiveFilters}
+            _hover={{ borderColor: 'red.400', color: 'red.500' }}
+            onClick={handleClear}
+          >
+            Clear
+          </Button>
+        </Flex>
       </Flex>
     </Flex>
   );

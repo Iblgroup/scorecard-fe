@@ -99,7 +99,7 @@ function renderXTick(
             y={textBaseY + i * 13}
             textAnchor="middle"
             fill="#000"
-            style={{ fontSize: '11px', fontWeight: 600 }}
+            style={{ fontSize: '12px', fontWeight: 600 }}
           >
             {line}
           </text>
@@ -131,7 +131,7 @@ function renderXTickVertical() {
           textAnchor="end" // "end" = top of rotated text sits at y=0 (near bar)
           transform="rotate(-90)" // text extends downward into the 100px axis area
           fill="#000"
-          style={{ fontSize: '11px', fontWeight: 600 }}
+          style={{ fontSize: '12px', fontWeight: 600 }}
         >
           {text}
         </text>
@@ -225,7 +225,11 @@ export function BarChart({
     innerWidth && data.length ? innerWidth / data.length - 10 : 50;
   const ticks = computeYTicks(data, bars, isStacked);
 
-  const xAxisHeight = verticalXLabels ? VERT_AXIS_HEIGHT : xLabelColors ? 44 : undefined;
+  const xAxisHeight = verticalXLabels
+    ? VERT_AXIS_HEIGHT
+    : xLabelColors
+      ? 44
+      : undefined;
 
   return (
     <Flex w="100%" h={height} direction="column" position={'relative'}>
@@ -339,7 +343,9 @@ export function BarChart({
                           const color = isStacked
                             ? '#fff'
                             : bar.cellColor && index !== undefined
-                              ? bar.cellColor(data[index] as Record<string, unknown>)
+                              ? bar.cellColor(
+                                  data[index] as Record<string, unknown>
+                                )
                               : bar.color;
                           return (
                             <text

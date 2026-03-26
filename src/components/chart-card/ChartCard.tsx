@@ -14,7 +14,7 @@ export interface ChartCardProps {
 }
 
 const BAR_HEIGHTS = [55, 80, 40, 90, 65, 75, 50, 85, 60, 70];
-const LINE_DOTS   = [45, 65, 30, 70, 50, 80, 38, 60, 55, 75];
+const LINE_DOTS = [45, 65, 30, 70, 50, 80, 38, 60, 55, 75];
 
 // SVG polyline points for the line skeleton (viewBox 0 0 100 100)
 const LINE_SVG_POINTS = LINE_DOTS.map((bottom, i) => {
@@ -45,7 +45,12 @@ export function ChartCard({
         boxShadow="md"
         h="full"
       >
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={3}
+        >
           <Text
             fontSize="14px"
             fontWeight="bold"
@@ -62,13 +67,31 @@ export function ChartCard({
             variant === 'gauge-bar' ? (
               /* ── Gauge + Bar skeleton: circle on left, bars on right ── */
               <Flex h={skeletonH} gap={0}>
-                <Box w="160px" flexShrink={0} display="flex" alignItems="center" justifyContent="center">
+                <Box
+                  w="175px"
+                  flexShrink={0}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                >
                   <Skeleton height="140px" width="140px" borderRadius="full" />
                 </Box>
                 <Box w="1px" bg="gray.100" mx={3} flexShrink={0} />
-                <Box flex={1} display="flex" alignItems="flex-end" justifyContent="space-between" gap="6px" px={2}>
+                <Box
+                  flex={1}
+                  display="flex"
+                  alignItems="flex-end"
+                  justifyContent="space-between"
+                  gap="6px"
+                  px={2}
+                >
                   {BAR_HEIGHTS.map((pct, i) => (
-                    <Skeleton key={i} flex={1} height={`${pct}%`} borderRadius="sm" />
+                    <Skeleton
+                      key={i}
+                      flex={1}
+                      height={`${pct}%`}
+                      borderRadius="sm"
+                    />
                   ))}
                 </Box>
               </Flex>
@@ -92,7 +115,13 @@ export function ChartCard({
                 <svg
                   viewBox="0 0 100 100"
                   preserveAspectRatio="none"
-                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible' }}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    overflow: 'visible',
+                  }}
                 >
                   <polyline
                     points={LINE_SVG_POINTS}
@@ -101,7 +130,10 @@ export function ChartCard({
                     strokeWidth="1"
                     strokeLinejoin="round"
                     vectorEffect="non-scaling-stroke"
-                    style={{ animation: 'chakra-skeleton-loading 1.4s ease-in-out infinite' }}
+                    style={{
+                      animation:
+                        'chakra-skeleton-loading 1.4s ease-in-out infinite',
+                    }}
                   />
                 </svg>
                 {/* Dots centered on each data point */}

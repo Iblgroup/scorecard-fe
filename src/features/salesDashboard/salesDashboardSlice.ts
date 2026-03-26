@@ -19,11 +19,12 @@ interface SalesDashboardState {
     filters: Filters
 }
 
+const pad = (n: number) => String(n).padStart(2, '0')
+const formatLocal = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+
 const today = new Date()
-const toDate = today.toISOString().slice(0, 10)
-const fromDate = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate())
-    .toISOString()
-    .slice(0, 10)
+const toDate = formatLocal(today)
+const fromDate = formatLocal(new Date(today.getFullYear(), today.getMonth(), 1))
 
 const initialState: SalesDashboardState = {
     mainTab: 'supplyChain',
@@ -61,10 +62,8 @@ export const salesDashboardSlice = createSlice({
                 classification: '',
                 branch: [],
                 sku: [],
-                dateFrom: new Date(now.getFullYear(), now.getMonth() - 1, now.getDate())
-                    .toISOString()
-                    .slice(0, 10),
-                dateTo: now.toISOString().slice(0, 10),
+                dateFrom: formatLocal(new Date(now.getFullYear(), now.getMonth(), 1)),
+                dateTo: formatLocal(now),
             }
         },
     },

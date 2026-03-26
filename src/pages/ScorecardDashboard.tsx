@@ -155,7 +155,7 @@ function BenchmarkBanner({
             {days}
           </Text>
           <Text
-            fontSize="11px"
+            fontSize="12px"
             fontWeight="500"
             color="gray.500"
             lineHeight={1}
@@ -171,7 +171,7 @@ function BenchmarkBanner({
             border="1px solid"
             borderColor={`${color}35`}
           >
-            <Text fontSize="11px" fontWeight="700" color={color}>
+            <Text fontSize="12px" fontWeight="700" color={color}>
               BM {bm}
             </Text>
           </Box> */}
@@ -181,14 +181,14 @@ function BenchmarkBanner({
         <Box>
           <HStack justify="space-between" mb="4px">
             <Text
-              fontSize="11px"
+              fontSize="12px"
               fontWeight="600"
               color="gray.500"
               letterSpacing="wide"
             >
               RD
             </Text>
-            <Text fontSize="11px" fontWeight="700" color={color}>
+            <Text fontSize="12px" fontWeight="700" color={color}>
               {rd}%
             </Text>
           </HStack>
@@ -237,7 +237,7 @@ function CoverDaysCard({
           borderTopRadius="xl"
         />
         <Text
-          fontSize="11px"
+          fontSize="12px"
           fontWeight="700"
           color="gray.400"
           textTransform="uppercase"
@@ -256,7 +256,7 @@ function CoverDaysCard({
           {value}
         </Text>
         <Box mt={2} pt={2} borderTop="1px solid" borderColor="gray.100">
-          <Text fontSize="11px" color="gray.400">
+          <Text fontSize="12px" color="gray.400">
             Inventory:{' '}
             <Box as="span" fontWeight="600" color="gray.600">
               {inv}
@@ -303,7 +303,7 @@ function CoverDaysCard({
               {value}
             </Text>
             <Text
-              fontSize="11px"
+              fontSize="12px"
               fontWeight="600"
               color={color}
               textTransform="uppercase"
@@ -312,7 +312,7 @@ function CoverDaysCard({
               Cover Days
             </Text>
           </Flex>
-          <Text fontSize="11px" color="gray.500" mt={0.5}>
+          <Text fontSize="12px" color="gray.500" mt={0.5}>
             Inventory:{' '}
             <Box as="span" fontWeight="600" color="gray.600">
               {inv}
@@ -465,7 +465,7 @@ function SupplyChainTab({
         >
           <Flex h="100%" gap={0}>
             <Box
-              w="160px"
+              w="175px"
               flexShrink={0}
               display="flex"
               alignItems="center"
@@ -526,7 +526,7 @@ function SupplyChainTab({
         >
           <Flex h="100%" gap={0}>
             <Box
-              w="160px"
+              w="175px"
               flexShrink={0}
               display="flex"
               alignItems="center"
@@ -652,9 +652,7 @@ function ServiceMeasureTab({
   const invApiRows = (inventoryDaysData as { data?: InvApiRow[] })?.data ?? [];
 
   const sumVals = (rows: InvApiRow[]) =>
-    branchKeys.map((key) =>
-      rows.reduce((s, r) => s + Number(r[key] ?? 0), 0)
-    );
+    branchKeys.map((key) => rows.reduce((s, r) => s + Number(r[key] ?? 0), 0));
 
   const grouped = invApiRows.reduce<Record<string, InvApiRow[]>>((acc, row) => {
     const key = (row.classification as string) || 'Other';
@@ -907,7 +905,7 @@ function DispatchWipTab({
           isLoading={isLoadingDispatch}
         >
           {dispatchRows.map((row) => {
-            const pct = `${parseFloat(row.delivery_pct).toFixed(2)}%`;
+            const pct = `${parseInt(row.delivery_pct)}%`;
             const isBelow100 = parseFloat(row.delivery_pct) < 100;
             const orderQty = Number(row.total_order_qty ?? 0).toLocaleString(
               'en-US',
@@ -1153,7 +1151,10 @@ export default function ScorecardDashboard() {
       below: Number(r['No Of SKUs < Threshold']) ?? 0,
     }));
 
-  type IblVsTsclRow = { classification: string; forecast_vs_budget_pct: number };
+  type IblVsTsclRow = {
+    classification: string;
+    forecast_vs_budget_pct: number;
+  };
   const iblVsTsclRows =
     (iblVsTsclData as { data?: IblVsTsclRow[] })?.data ?? [];
   const pctSkusData = (['A', 'B', 'C'] as const)

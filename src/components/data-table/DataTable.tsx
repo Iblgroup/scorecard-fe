@@ -138,9 +138,16 @@ export function DataTable({
   );
 
   const handleExport = () => {
-    const data = allRows.map((row) =>
-      Object.fromEntries(headers.map((h, col) => [h, getCellValue(row, col)]))
-    );
+    const data: Record<string, string>[] = [];
+    allRows.forEach((row) => {
+      data.push(Object.fromEntries(headers.map((h, col) => [h, getCellValue(row, col)])));
+      if (isValidElement(row)) {
+        const subRows = (row.props as { subRows?: SubRowData[] }).subRows;
+        subRows?.forEach((sub) => {
+          data.push(Object.fromEntries(headers.map((h, col) => [h, sub.cells[col] ?? ''])));
+        });
+      }
+    });
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
