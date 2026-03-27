@@ -608,32 +608,19 @@ function ServiceMeasureTab({
   isLoadingPctSkus: boolean;
 }) {
   type ServiceRow = {
-    branch_desc: string;
+    branch: string;
     'SKU-A%': string;
     'SKU-B%': string;
     'SKU-C%': string;
   };
   const serviceMeasureChartData = (
     (serviceMeasureData as { data?: ServiceRow[] })?.data ?? []
-  )
-    .filter(
-      (r) =>
-        Number(r['SKU-A%']) !== 0 ||
-        Number(r['SKU-B%']) !== 0 ||
-        Number(r['SKU-C%']) !== 0
-    )
-    .map((r) => ({
-      branch: r.branch_desc,
-      skuA: !isNaN(parseFloat(r['SKU-A%']))
-        ? parseFloat(r['SKU-A%'])
-        : undefined,
-      skuB: !isNaN(parseFloat(r['SKU-B%']))
-        ? parseFloat(r['SKU-B%'])
-        : undefined,
-      skuC: !isNaN(parseFloat(r['SKU-C%']))
-        ? parseFloat(r['SKU-C%'])
-        : undefined,
-    }));
+  ).map((r) => ({
+    branch: r.branch,
+    skuA: !isNaN(parseFloat(r['SKU-A%'])) ? parseFloat(r['SKU-A%']) : undefined,
+    skuB: !isNaN(parseFloat(r['SKU-B%'])) ? parseFloat(r['SKU-B%']) : undefined,
+    skuC: !isNaN(parseFloat(r['SKU-C%'])) ? parseFloat(r['SKU-C%']) : undefined,
+  }));
   type TgtVsActualRow = {
     classification: string;
     cover_days_tgt: string;
@@ -811,12 +798,12 @@ function ServiceMeasureTab({
               {
                 key: 'above',
                 label: 'Above',
-                color: CHART_COLORS[0],
+                color: '#067242',
               },
               {
                 key: 'below',
                 label: 'Below',
-                color: CHART_COLORS[1],
+                color: '#E52020',
               },
             ]}
             showLabels

@@ -66,7 +66,7 @@ function renderXTick(tickWidth: number) {
     }
     const textLines = line2 ? [line1, line2] : [line1];
     return (
-      <g transform={`translate(${x},${y + 16})`}>
+      <g transform={`translate(${x},${y + 20})`}>
         {textLines.map((t, i) => (
           <text
             key={i}
@@ -159,7 +159,7 @@ export function LineChart({
         axisLine={false}
         tick={renderXTick(tickWidth)}
         interval={0}
-        height={48}
+        height={60}
       />
       <YAxis
         tick={(props) => renderYTick(props, labelFormatter)}
@@ -212,7 +212,7 @@ export function LineChart({
           {variant === 'filled' ? (
             <RechartsAreaChart
               data={data}
-              margin={{ top: 24, right: 20, left: 0, bottom: 20 }}
+              margin={{ top: 24, right: 20, left: 0, bottom: 10 }}
             >
               {sharedChildren}
               {lines.map((line) => (
