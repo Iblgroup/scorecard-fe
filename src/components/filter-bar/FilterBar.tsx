@@ -137,11 +137,12 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
       .filter(
         (r) =>
           r.sap_mapping_code &&
+          (!localClassification || r.classification === localClassification) &&
           !seen.has(r.sap_mapping_code) &&
           seen.add(r.sap_mapping_code)
       )
       .map((r) => ({ value: String(r.sap_mapping_code), label: r.sku }));
-  }, [rows]);
+  }, [rows, localClassification]);
 
   return (
     <Flex align="center" gap={2} w="100%">
