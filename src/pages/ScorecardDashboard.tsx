@@ -62,7 +62,7 @@ const BENCHMARKS = [
 
 const COVER_DAYS = [
   {
-    label: 'Total Cover Days',
+    label: 'Total Days',
     value: 54,
     inv: '54,188',
     color: '#0891b2',
@@ -186,7 +186,7 @@ function BenchmarkBanner({
               color="gray.500"
               letterSpacing="wide"
             >
-              RD
+              {/* RD */}
             </Text>
             <Text fontSize="12px" fontWeight="700" color={color}>
               {rd}%
@@ -309,7 +309,7 @@ function CoverDaysCard({
               textTransform="uppercase"
               letterSpacing="wide"
             >
-              Cover Days
+              Days
             </Text>
           </Flex>
           <Text fontSize="12px" color="gray.500" mt={0.5}>
@@ -325,9 +325,9 @@ function CoverDaysCard({
 }
 
 const LABEL_MAP: Record<string, string> = {
-  A: 'A  —  High Velocity',
-  B: 'B  —  Medium Velocity',
-  C: 'C  —  Low Velocity',
+  A: 'A',
+  B: 'B',
+  C: 'C',
   Other: 'Other',
 };
 
@@ -359,6 +359,8 @@ interface SupplyChainTabProps {
   isLoadingCoverDays: boolean;
   isLoadingForecastTscl: boolean;
   isLoadingForecastIbl: boolean;
+  pctSkusData: { class: string; pct: number }[];
+  isLoadingPctSkus: boolean;
 }
 
 function SupplyChainTab({
@@ -377,6 +379,8 @@ function SupplyChainTab({
   isLoadingCoverDays,
   isLoadingForecastTscl,
   isLoadingForecastIbl,
+  pctSkusData,
+  isLoadingPctSkus,
 }: SupplyChainTabProps) {
   return (
     <Flex direction="column" gap={4}>
@@ -455,7 +459,7 @@ function SupplyChainTab({
       </Grid>
 
       {/* Forecast Accuracy Charts */}
-      <Grid templateColumns="repeat(12, 1fr)" gap={4}>
+      <Grid templateColumns="repeat(15, 1fr)" gap={4}>
         <ChartCard
           colSpan={6}
           title="Budget Accuracy TSCL"
@@ -487,6 +491,7 @@ function SupplyChainTab({
               <BarChart
                 data={forecastBarData}
                 xKey="classification"
+                barSize={35}
                 bars={
                   forecastMonths.length
                     ? forecastMonths.map((m, i) => ({
@@ -548,6 +553,7 @@ function SupplyChainTab({
               <BarChart
                 data={iblBarData}
                 xKey="classification"
+                barSize={35}
                 bars={
                   iblMonths.length
                     ? iblMonths.map((m, i) => ({
@@ -576,6 +582,38 @@ function SupplyChainTab({
               />
             </Box>
           </Flex>
+        </ChartCard>
+        <ChartCard
+          colSpan={3}
+          title="IBL Vs TSCL %"
+          height="280px"
+          isLoading={isLoadingPctSkus}
+        >
+          <Box pt="20px">
+            <BarChart
+              data={pctSkusData}
+              xKey="class"
+              barSize={48}
+              height={226}
+              bars={[
+                {
+                  key: 'pct',
+                  label: '% SKUs',
+                  color: clsColors.A,
+                  cellColor: (e) =>
+                    String(e.class) === 'A'
+                      ? clsColors.A
+                      : String(e.class) === 'B'
+                        ? clsColors.B
+                        : clsColors.C,
+                },
+              ]}
+              showLabels
+              yTickFormatter={(v) => `${v}%`}
+              labelFormatter={(v) => `${v}%`}
+              xLabelColors={{ A: clsColors.A, B: clsColors.B, C: clsColors.C }}
+            />
+          </Box>
         </ChartCard>
       </Grid>
     </Flex>
@@ -708,6 +746,14 @@ function ServiceMeasureTab({
                   {row.cls}
                 </Box>
               ) : undefined;
+              const threshold =
+                row.cls === 'A'
+                  ? 30
+                  : row.cls === 'B'
+                    ? 20
+                    : row.cls === 'C'
+                      ? 15
+                      : null;
               return (
                 <DataTableRow
                   key={row.cls}
@@ -719,6 +765,14 @@ function ServiceMeasureTab({
                   cellWeights={['700', ...row.vals.map(() => '600')]}
                   subRows={row.subRows.map((s) => ({
                     cells: [s.sku, ...s.vals.map(String)],
+                    cellColors: [
+                      undefined,
+                      ...s.vals.map((v) =>
+                        threshold !== null && v >= threshold
+                          ? '#067242'
+                          : undefined
+                      ),
+                    ],
                   }))}
                 />
               );
@@ -744,7 +798,7 @@ function ServiceMeasureTab({
             ].filter(
               (l) => !classification || l.key === `sku${classification}`
             )}
-            height={310}
+            height={340}
             labelFormatter={(v) => `${v}%`}
           />
         </ChartCard>
@@ -752,7 +806,7 @@ function ServiceMeasureTab({
 
       <Grid templateColumns="repeat(12, 1fr)" gap={4}>
         <ChartCard
-          colSpan={4}
+          colSpan={6}
           title="Cover Days TGT vs Actual"
           height="220px"
           isLoading={isLoadingTgtVsActual}
@@ -760,7 +814,6 @@ function ServiceMeasureTab({
           <BarChart
             data={coverDaysChartData}
             xKey="class"
-            barSize={32}
             height={200}
             bars={[
               { key: 'tgt', label: 'TGT', color: CHART_COLORS[0] },
@@ -778,7 +831,7 @@ function ServiceMeasureTab({
         </ChartCard>
 
         <ChartCard
-          colSpan={4}
+          colSpan={6}
           title="SKUs Against Threshold"
           titleNode={
             <>
@@ -792,7 +845,6 @@ function ServiceMeasureTab({
           <BarChart
             data={skusThresholdData}
             xKey="class"
-            barSize={32}
             height={200}
             bars={[
               {
@@ -807,43 +859,6 @@ function ServiceMeasureTab({
               },
             ]}
             showLabels
-            xLabelColors={{ A: clsColors.A, B: clsColors.B, C: clsColors.C }}
-          />
-        </ChartCard>
-
-        <ChartCard
-          colSpan={4}
-          title="IBL Vs TSCL %"
-          // titleNode={
-          //   <>
-          //     % SKU<span style={{ textTransform: 'lowercase' }}>s</span> vs
-          //     Threshold
-          //   </>
-          // }
-          height="220px"
-          isLoading={isLoadingPctSkus}
-        >
-          <BarChart
-            data={pctSkusData}
-            xKey="class"
-            barSize={48}
-            height={200}
-            bars={[
-              {
-                key: 'pct',
-                label: '% SKUs',
-                color: clsColors.A,
-                cellColor: (e) =>
-                  String(e.class) === 'A'
-                    ? clsColors.A
-                    : String(e.class) === 'B'
-                      ? clsColors.B
-                      : clsColors.C,
-              },
-            ]}
-            showLabels
-            yTickFormatter={(v) => `${v}%`}
-            labelFormatter={(v) => `${v}%`}
             xLabelColors={{ A: clsColors.A, B: clsColors.B, C: clsColors.C }}
           />
         </ChartCard>
@@ -892,8 +907,9 @@ function DispatchWipTab({
           isLoading={isLoadingDispatch}
         >
           {dispatchRows.map((row) => {
-            const pct = `${parseInt(row.delivery_pct)}%`;
-            const isBelow100 = parseFloat(row.delivery_pct) < 100;
+            const rawPct = parseInt(row.delivery_pct);
+            const pct = `${rawPct < 0 ? 0 : rawPct}%`;
+            const isBelow95 = parseFloat(row.delivery_pct) < 95;
             const orderQty = Number(row.total_order_qty ?? 0).toLocaleString(
               'en-US',
               { maximumFractionDigits: 0 }
@@ -909,7 +925,7 @@ function DispatchWipTab({
                   undefined,
                   undefined,
                   undefined,
-                  isBelow100 ? '#dc2626' : '#059669',
+                  isBelow95 ? '#dc2626' : '#067242',
                 ]}
                 cellWeights={[undefined, undefined, undefined, '700']}
               />
@@ -928,6 +944,16 @@ function DispatchWipTab({
           pageSize={15}
           isLoading={isLoadingWip}
         >
+          <DataTableRow
+            key="__wip_total__"
+            cells={[
+              'Total',
+              wipRows
+                .reduce((s, r) => s + Number(r.Wip_total ?? 0), 0)
+                .toLocaleString('en-US', { maximumFractionDigits: 0 }),
+            ]}
+            cellWeights={['700', '700']}
+          />
           {wipRows.map((row) => (
             <DataTableRow
               key={row['item desc']}
@@ -953,6 +979,16 @@ function DispatchWipTab({
           pageSize={15}
           isLoading={isLoadingRpm}
         >
+          <DataTableRow
+            key="__rpm_total__"
+            cells={[
+              'Total',
+              rpmRows
+                .reduce((s, r) => s + Number(r.total_value ?? 0), 0)
+                .toLocaleString('en-US', { maximumFractionDigits: 0 }),
+            ]}
+            cellWeights={['700', '700']}
+          />
           {rpmRows.map((row) => (
             <DataTableRow
               key={row.materialname}
@@ -1333,6 +1369,8 @@ export default function ScorecardDashboard() {
             isLoadingCoverDays={isLoadingCoverDays}
             isLoadingForecastTscl={isLoadingForecastTscl}
             isLoadingForecastIbl={isLoadingForecastIbl}
+            pctSkusData={pctSkusData}
+            isLoadingPctSkus={isLoadingIblVsTscl}
           />
         )}
         {mainTab === 'serviceMeasure' && (

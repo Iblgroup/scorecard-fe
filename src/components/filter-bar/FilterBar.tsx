@@ -32,9 +32,9 @@ type FilterRow = {
 };
 
 const CLS_LABEL: Record<string, string> = {
-  A: 'A — High Velocity',
-  B: 'B — Medium Velocity',
-  C: 'C — Low Velocity',
+  A: 'A',
+  B: 'B',
+  C: 'C',
 };
 
 export function FilterBar({ initialFilters }: FilterBarProps) {
@@ -43,7 +43,9 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
   const isBranchDisabled = mainTab === 'dispatchWip';
 
   // All filters staged locally — only flushed to Redux on Apply
-  const [localClassification, setLocalClassification] = useState(initialFilters.classification);
+  const [localClassification, setLocalClassification] = useState(
+    initialFilters.classification
+  );
   const [localBranch, setLocalBranch] = useState(initialFilters.branch);
   const [localSku, setLocalSku] = useState(initialFilters.sku);
   const [localDateFrom, setLocalDateFrom] = useState(initialFilters.dateFrom);

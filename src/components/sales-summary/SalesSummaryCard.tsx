@@ -54,7 +54,11 @@ function Pill({
   );
 }
 
-export function SalesSummaryCard({ rows, total, isLoading = false }: SalesSummaryCardProps) {
+export function SalesSummaryCard({
+  rows,
+  total,
+  isLoading = false,
+}: SalesSummaryCardProps) {
   const totalSku = rows.reduce((sum, r) => sum + (Number(r.sku) || 0), 0);
 
   return (
@@ -124,7 +128,14 @@ export function SalesSummaryCard({ rows, total, isLoading = false }: SalesSummar
       {/* Rows */}
       {isLoading
         ? Array.from({ length: 4 }).map((_, i) => (
-            <Flex key={i} align="center" py={2} borderBottom="1px solid" borderColor="gray.100" gap={3}>
+            <Flex
+              key={i}
+              align="center"
+              py={2}
+              borderBottom="1px solid"
+              borderColor="gray.100"
+              gap={3}
+            >
               <Skeleton flex={1} height="14px" borderRadius="sm" />
               <Skeleton w="120px" height="14px" borderRadius="sm" />
               <Skeleton w="90px" height="22px" borderRadius="sm" />
@@ -132,43 +143,68 @@ export function SalesSummaryCard({ rows, total, isLoading = false }: SalesSummar
             </Flex>
           ))
         : rows.map((row, idx) => {
-        const lc = labelColor(row.label);
-        const pc = pctColor(row.up);
-        const isLast = idx === rows.length - 1;
-        return (
-          <Flex
-            key={row.label}
-            align="center"
-            py={2}
-            borderBottom={isLast ? 'none' : '1px solid'}
-            borderColor="gray.100"
-            gap={3}
-          >
-            <Text flex={1} fontSize="13px" fontWeight="500" color={lc}>
-              {row.label}
-            </Text>
-            <Text w="120px" fontSize="12px" fontWeight="500" color="gray.600">
-              {row.sku}
-            </Text>
-            <Box w="90px" display="flex" justifyContent="center">
-              <Pill
-                label={row.sales}
-                color="#374151"
-                bg="#f9fafb"
-                border="#e5e7eb"
-              />
-            </Box>
-            <Box w="70px" display="flex" justifyContent="center">
-              <Pill
-                label={`${Math.round(parseFloat(row.pct))}%`}
-                color={pc}
-                bg={`${pc}12`}
-                border={`${pc}35`}
-              />
-            </Box>
-          </Flex>
-        );
-      })}
+            const lc = labelColor(row.label);
+            const pc = pctColor(row.up);
+            const isLast = idx === rows.length - 1;
+            const isCls = ['A', 'B', 'C'].includes(row.label);
+            return (
+              <Flex
+                key={row.label}
+                align="center"
+                py={2}
+                borderBottom={isLast ? 'none' : '1px solid'}
+                borderColor="gray.100"
+                gap={3}
+              >
+                <Box flex={1}>
+                  {isCls ? (
+                    <Box
+                      display="inline-flex"
+                      alignItems="center"
+                      justifyContent="center"
+                      w="24px"
+                      h="24px"
+                      borderRadius="4px"
+                      bg={lc}
+                      color="white"
+                      fontSize="12px"
+                      fontWeight="700"
+                    >
+                      {row.label}
+                    </Box>
+                  ) : (
+                    <Text fontSize="13px" fontWeight="500" color={lc}>
+                      {row.label}
+                    </Text>
+                  )}
+                </Box>
+                <Text
+                  w="120px"
+                  fontSize="12px"
+                  fontWeight="500"
+                  color="gray.600"
+                >
+                  {row.sku}
+                </Text>
+                <Box w="90px" display="flex" justifyContent="center">
+                  <Pill
+                    label={row.sales}
+                    color="#374151"
+                    bg="#f9fafb"
+                    border="#e5e7eb"
+                  />
+                </Box>
+                <Box w="70px" display="flex" justifyContent="center">
+                  <Pill
+                    label={`${Math.round(parseFloat(row.pct))}%`}
+                    color={pc}
+                    bg={`${pc}12`}
+                    border={`${pc}35`}
+                  />
+                </Box>
+              </Flex>
+            );
+          })}
 
       {/* Total */}
       {total && (
