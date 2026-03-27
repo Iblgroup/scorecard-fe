@@ -623,7 +623,6 @@ function SupplyChainTab({
 function ServiceMeasureTab({
   inventoryDaysData,
   skusThresholdData,
-  pctSkusData,
   serviceMeasureData,
   tgtVsActualData,
   classification,
@@ -631,7 +630,6 @@ function ServiceMeasureTab({
   isLoadingServiceMeasure,
   isLoadingTgtVsActual,
   isLoadingThreshold,
-  isLoadingPctSkus,
 }: {
   inventoryDaysData: unknown;
   skusThresholdData: { class: string; above: number; below: number }[];
