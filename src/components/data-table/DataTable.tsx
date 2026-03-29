@@ -46,6 +46,7 @@ export interface DataTableProps {
   collapsible?: boolean;
   rowCollapsible?: boolean;
   maxHeight?: string;
+  height?: string;
   colAligns?: ('left' | 'right' | 'center')[];
 }
 
@@ -77,6 +78,7 @@ export function DataTable({
   collapsible = false,
   rowCollapsible = false,
   maxHeight,
+  height,
   colAligns,
 }: DataTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
@@ -222,10 +224,11 @@ export function DataTable({
       )}
       <Box
         overflowX="auto"
-        overflowY={maxHeight ? 'auto' : undefined}
+        overflowY={maxHeight || height ? 'auto' : undefined}
         maxH={maxHeight}
+        h={height}
         css={
-          maxHeight
+          maxHeight || height
             ? {
                 '& thead tr th': {
                   position: 'sticky',

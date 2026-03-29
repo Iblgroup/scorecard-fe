@@ -177,7 +177,7 @@ export function CustomDatePicker({
           color: '#4a5568',
           fontSize: '0.75rem',
           borderRadius: '9999px',
-          padding: '0.1rem 0.35rem',
+          padding: '0.1rem',
         },
       }}
     >

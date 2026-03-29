@@ -97,12 +97,7 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
     dispatch(resetFilters());
   };
 
-  const { data: filtersData } = useGetFilters({
-    ...(initialFilters.classification && {
-      classification: initialFilters.classification,
-    }),
-    ...(initialFilters.sku.length > 0 && { sku: initialFilters.sku.join(',') }),
-  });
+  const { data: filtersData } = useGetFilters({});
   const rows: FilterRow[] = (filtersData as { data?: FilterRow[] })?.data ?? [];
 
   const classificationOptions = useMemo(() => {

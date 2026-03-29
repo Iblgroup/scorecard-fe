@@ -33,6 +33,8 @@ export interface BarChartProps {
   variant?: 'grouped' | 'stacked-bar';
   xTickMargin?: number;
   xLabelColors?: Record<string, string>;
+  barCategoryGap?: number | string;
+  compact?: boolean;
 }
 
 function formatCompact(value: number): string {
@@ -201,6 +203,8 @@ export function BarChart({
   variant = 'grouped',
   xTickMargin = 6,
   xLabelColors,
+  barCategoryGap = '20%',
+  compact = false,
 }: BarChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -216,7 +220,7 @@ export function BarChart({
     return () => ro.disconnect();
   }, []);
 
-  const itemSlotWidth = barSize * bars.length + 40;
+  const itemSlotWidth = barSize * bars.length + (compact ? 10 : 40);
   const yAxisWidth = 50;
   const neededWidth = data.length * itemSlotWidth + yAxisWidth;
   const innerWidth = Math.max(containerWidth, neededWidth);
@@ -268,7 +272,7 @@ export function BarChart({
                 left: 0,
                 bottom: 0,
               }}
-              barCategoryGap="20%"
+              barCategoryGap={barCategoryGap}
               barSize={barSize}
             >
               <CartesianGrid

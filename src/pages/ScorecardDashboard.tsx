@@ -121,83 +121,61 @@ const INV_API_BRANCHES = [
 function BenchmarkBanner({
   cls,
   days,
-  // bm,
-  rd,
   color,
-  isLast,
-}: (typeof BENCHMARKS)[0] & { isLast?: boolean }) {
+  bg,
+  border,
+}: Omit<(typeof BENCHMARKS)[0], 'rd' | 'bm'> & { isLast?: boolean }) {
   return (
-    <Flex
-      pb={isLast ? 0 : 3}
-      mb={isLast ? 0 : 3}
-      borderBottom={isLast ? 'none' : '1px solid'}
-      borderColor="gray.300"
-      gap={3}
+    <Box
+      bg={bg}
+      borderRadius="md"
+      px={3}
+      py={2}
+      border="1.5px dashed"
+      borderColor={border}
+      opacity={0.9}
     >
-      <Flex
-        w={10}
-        h={10}
-        borderRadius="sm"
-        bg={color}
-        color="white"
-        align="center"
-        justify="center"
-        fontWeight="900"
-        fontSize="xl"
-        flexShrink={0}
-      >
-        {cls}
-      </Flex>
-      <Box w="100%">
-        {/* Class + days row */}
-        <HStack gap={2} mb={2}>
-          <Text fontSize="18px" fontWeight="900" color={color} lineHeight={1}>
-            {days}
-          </Text>
-          <Text
-            fontSize="12px"
-            fontWeight="500"
-            color="gray.500"
-            lineHeight={1}
-          >
-            days
-          </Text>
-          <Box flex={1} />
-          {/* <Box
-            px={2}
-            py="2px"
-            borderRadius="4px"
-            bg={`${color}15`}
-            border="1px solid"
-            borderColor={`${color}35`}
-          >
-            <Text fontSize="12px" fontWeight="700" color={color}>
-              BM {bm}
-            </Text>
-          </Box> */}
-        </HStack>
-
-        {/* RD progress bar */}
+      <Flex align="center" gap={3}>
+        <Flex
+          w={10}
+          h={10}
+          borderRadius="sm"
+          bg={color}
+          color="white"
+          align="center"
+          justify="center"
+          fontWeight="900"
+          fontSize="xl"
+          flexShrink={0}
+        >
+          {cls}
+        </Flex>
         <Box>
-          <HStack justify="space-between" mb="4px">
+          <Flex align="center" gap={2}>
+            <Text
+              fontSize="1.6rem"
+              fontWeight="900"
+              color={color}
+              lineHeight="1"
+            >
+              {days}
+            </Text>
             <Text
               fontSize="12px"
               fontWeight="600"
-              color="gray.500"
+              color={color}
+              textTransform="uppercase"
               letterSpacing="wide"
             >
-              {/* RD */}
+              Days
             </Text>
-            <Text fontSize="12px" fontWeight="700" color={color}>
-              {rd}%
-            </Text>
-          </HStack>
-          <Box h="6px" borderRadius="full" bg={`${color}18`} overflow="hidden">
-            <Box h="100%" w={`${rd}%`} borderRadius="full" bg={color} />
-          </Box>
+          </Flex>
+          <Text fontSize="12px" color="gray.500" mt={0.5}>
+            Min. Cover Threshold
+          </Text>
         </Box>
-      </Box>
-    </Flex>
+      </Flex>
+    </Box>
   );
 }
 
@@ -332,8 +310,9 @@ const LABEL_MAP: Record<string, string> = {
 };
 
 interface ForecastCategoryRow {
-  category: string;
-  month_label: string;
+  classification?: string | null;
+  category?: string | null;
+  month: string;
   forecast_accuracy_pct: number;
 }
 
@@ -386,35 +365,8 @@ function SupplyChainTab({
     <Flex direction="column" gap={4}>
       {/* Benchmarks + Sales Summary */}
       <Grid templateColumns="repeat(12, 1fr)" gap={4} alignItems="stretch">
-        {/* Benchmark — 3 cols */}
-        <GridItem colSpan={{ base: 12, lg: 3 }}>
-          <Box bg="gray.200" borderRadius="xl" p={4} boxShadow="md" h="full">
-            <HStack mb={4} gap={2}>
-              <Box w={1} h={5} bg="gray.700" borderRadius="full" />
-              <Text
-                fontSize="13px"
-                fontWeight="800"
-                color="gray.700"
-                textTransform="uppercase"
-                letterSpacing="wide"
-              >
-                Days Benchmark
-              </Text>
-            </HStack>
-            <Box>
-              {BENCHMARKS.map((b, i) => (
-                <BenchmarkBanner
-                  key={b.cls}
-                  {...b}
-                  isLast={i === BENCHMARKS.length - 1}
-                />
-              ))}
-            </Box>
-          </Box>
-        </GridItem>
-
         {/* Sales Summary — 6 cols */}
-        <GridItem colSpan={{ base: 12, lg: 5 }}>
+        <GridItem colSpan={{ base: 12, lg: 7 }}>
           <SalesSummaryCard
             rows={salesRows}
             total={salesTotal}
@@ -423,7 +375,7 @@ function SupplyChainTab({
         </GridItem>
 
         {/* Cover Days — 3 cols */}
-        <GridItem colSpan={{ base: 12, lg: 4 }}>
+        <GridItem colSpan={{ base: 12, lg: 5 }}>
           <Box bg="white" borderRadius="xl" p={4} boxShadow="md" h="full">
             <Text
               fontSize="13px"
@@ -483,6 +435,7 @@ function SupplyChainTab({
                 color={'#726A95'}
                 displayAchieved={iblSalesDisplay?.achieved}
                 displayTarget={iblSalesDisplay?.target}
+                targetLabel="Budget"
                 isLoading={isLoadingForecastIbl}
               />
             </Box>
@@ -585,7 +538,7 @@ function SupplyChainTab({
         </ChartCard>
         <ChartCard
           colSpan={3}
-          title="IBL Vs TSCL %"
+          title="Forecast Vs Budget %"
           height="280px"
           isLoading={isLoadingPctSkus}
         >
@@ -701,14 +654,60 @@ function ServiceMeasureTab({
   return (
     <Flex direction="column" gap={4}>
       <Grid templateColumns="repeat(12, 1fr)" gap={4}>
-        <GridItem colSpan={{ base: 12, lg: 6 }}>
+        {/* Benchmark */}
+        <GridItem colSpan={{ base: 12, lg: 4 }}>
+          <Box
+            bg="gray.50"
+            borderRadius="xl"
+            p={4}
+            border="1.5px dashed"
+            borderColor="gray.300"
+            h="full"
+          >
+            <HStack mb={4} gap={2} justify="space-between">
+              <HStack gap={2}>
+                <Box w={1} h={5} bg="gray.700" borderRadius="full" />
+                <Text
+                  fontSize="13px"
+                  fontWeight="800"
+                  color="gray.700"
+                  textTransform="uppercase"
+                  letterSpacing="wide"
+                >
+                  Inventory Days Benchmark
+                </Text>
+              </HStack>
+              <Box px={2} py="3px" borderRadius="md" bg="gray.700">
+                <Text
+                  fontSize="11px"
+                  fontWeight="800"
+                  color="white"
+                  textTransform="uppercase"
+                  letterSpacing="widest"
+                >
+                  LEGENDS
+                </Text>
+              </Box>
+            </HStack>
+            <Flex direction="column" gap={3}>
+              {BENCHMARKS.map((b, i) => (
+                <BenchmarkBanner
+                  key={b.cls}
+                  {...b}
+                  isLast={i === BENCHMARKS.length - 1}
+                />
+              ))}
+            </Flex>
+          </Box>
+        </GridItem>
+        <GridItem colSpan={{ base: 12, lg: 8 }}>
           <DataTable
             title="Inventory Days"
             headerGradient={gradients.tableBlue}
             headers={tableHeaders}
             searchable={false}
             rowCollapsible
-            maxHeight="340px"
+            height="270px"
             isLoading={isLoadingInventoryDays}
           >
             {computedRows.map((row) => {
@@ -755,14 +754,14 @@ function ServiceMeasureTab({
               return (
                 <DataTableRow
                   key={row.cls}
-                  cells={[row.cls, ...row.vals.map(String)]}
+                  cells={[row.cls, ...row.vals.map((v) => String(Math.trunc(v)))]}
                   isTotal={row.bold}
                   rowBg={clsRowBg}
                   cellColors={[clsColor]}
                   cellNodes={[clsBadge]}
                   cellWeights={['700', ...row.vals.map(() => '600')]}
                   subRows={row.subRows.map((s) => ({
-                    cells: [s.sku, ...s.vals.map(String)],
+                    cells: [s.sku, ...s.vals.map((v) => String(Math.trunc(v)))],
                     cellColors: [
                       undefined,
                       ...s.vals.map((v) =>
@@ -777,7 +776,9 @@ function ServiceMeasureTab({
             })}
           </DataTable>
         </GridItem>
+      </Grid>
 
+      <Grid templateColumns="repeat(12, 1fr)" gap={4}>
         <ChartCard
           colSpan={6}
           title="Service Measure by Branch"
@@ -800,19 +801,16 @@ function ServiceMeasureTab({
             labelFormatter={(v) => `${v}%`}
           />
         </ChartCard>
-      </Grid>
-
-      <Grid templateColumns="repeat(12, 1fr)" gap={4}>
         <ChartCard
-          colSpan={6}
-          title="Cover Days TGT vs Actual"
-          height="220px"
+          colSpan={3}
+          title="Cover Days Threshold vs Actual"
+          height="321px"
           isLoading={isLoadingTgtVsActual}
         >
           <BarChart
             data={coverDaysChartData}
             xKey="class"
-            height={200}
+            height={'100%'}
             bars={[
               { key: 'tgt', label: 'TGT', color: CHART_COLORS[0] },
               {
@@ -829,7 +827,7 @@ function ServiceMeasureTab({
         </ChartCard>
 
         <ChartCard
-          colSpan={6}
+          colSpan={3}
           title="SKUs Against Threshold"
           titleNode={
             <>
@@ -837,13 +835,15 @@ function ServiceMeasureTab({
               Threshold
             </>
           }
-          height="220px"
+          height="321px"
           isLoading={isLoadingThreshold}
         >
           <BarChart
             data={skusThresholdData}
             xKey="class"
-            height={200}
+            height={'100%'}
+            compact
+            barCategoryGap="10%"
             bars={[
               {
                 key: 'above',
@@ -1049,7 +1049,7 @@ export default function ScorecardDashboard() {
     isFetching: isLoadingForecastTscl,
   } = useGetForecastAccuracyCategoryMonthly({
     ...params,
-    date: filters.dateTo || new Date().toISOString().slice(0, 10),
+    endDate: filters.dateTo || new Date().toISOString().slice(0, 10),
   });
 
   const { data: forecastAccuracyYearlyData } = useGetForecastAccuracyYearly({
@@ -1061,7 +1061,7 @@ export default function ScorecardDashboard() {
     isFetching: isLoadingForecastIbl,
   } = useGetForecastAccuracyCategoryYearly({
     ...params,
-    date: filters.dateTo || new Date().toISOString().slice(0, 10),
+    endDate: filters.dateTo || new Date().toISOString().slice(0, 10),
   });
 
   const { data: inventoryDaysData, isFetching: isLoadingInventoryDays } =
@@ -1123,12 +1123,12 @@ export default function ScorecardDashboard() {
 
   const extractCoverDay = (data: unknown) => {
     const row = (
-      data as { data?: { cover_days: number; closing_inventory_ibl: string }[] }
+      data as { data?: { cover_days: string; inv_value: string }[] }
     )?.data?.[0];
     return row
       ? {
           value: Math.round(Number(row.cover_days)),
-          inv: Number(row.closing_inventory_ibl).toLocaleString('en-US', {
+          inv: Number(row.inv_value).toLocaleString('en-US', {
             maximumFractionDigits: 0,
           }),
         }
@@ -1251,19 +1251,21 @@ export default function ScorecardDashboard() {
     (forecastAccuracyCategoryYearlyData as { data?: ForecastCategoryRow[] })
       ?.data ?? [];
 
-  const iblMonths = [...new Set(iblCategoryRows.map((r) => r.month_label))];
+  const iblMonths = [...new Set(iblCategoryRows.map((r) => r.month))];
 
   const iblBarData: Record<string, string | number>[] = Object.values(
-    iblCategoryRows.reduce<Record<string, Record<string, string | number>>>(
-      (acc, r) => {
-        const key = r.category;
-        if (!acc[key]) acc[key] = { classification: key };
-        acc[key][r.month_label] =
-          Math.round(r.forecast_accuracy_pct * 100 * 10) / 10;
-        return acc;
-      },
-      {}
-    )
+    iblCategoryRows
+      .filter((r) => r.category && r.category !== 'Others')
+      .reduce<Record<string, Record<string, string | number>>>(
+        (acc, r) => {
+          const key = r.category!;
+          if (!acc[key]) acc[key] = { classification: key };
+          acc[key][r.month] =
+            Math.round(r.forecast_accuracy_pct * 100 * 10) / 10;
+          return acc;
+        },
+        {}
+      )
   );
 
   const forecastCategoryRows: ForecastCategoryRow[] =
@@ -1271,19 +1273,22 @@ export default function ScorecardDashboard() {
       ?.data ?? [];
 
   const forecastMonths = [
-    ...new Set(forecastCategoryRows.map((r) => r.month_label)),
+    ...new Set(forecastCategoryRows.map((r) => r.month)),
   ];
 
   const forecastBarData: Record<string, string | number>[] = Object.values(
-    forecastCategoryRows.reduce<
-      Record<string, Record<string, string | number>>
-    >((acc, r) => {
-      const key = r.category;
-      if (!acc[key]) acc[key] = { classification: key };
-      acc[key][r.month_label] =
-        Math.round(r.forecast_accuracy_pct * 100 * 10) / 10;
-      return acc;
-    }, {})
+    forecastCategoryRows
+      .filter((r) => r.classification)
+      .reduce<Record<string, Record<string, string | number>>>(
+        (acc, r) => {
+          const key = r.classification!;
+          if (!acc[key]) acc[key] = { classification: key };
+          acc[key][r.month] =
+            Math.round(r.forecast_accuracy_pct * 100 * 10) / 10;
+          return acc;
+        },
+        {}
+      )
   );
 
   return (

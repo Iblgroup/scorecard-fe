@@ -9,6 +9,7 @@ export interface GaugeChartProps {
   color?: string;
   displayTarget?: string; // optional override for target in bottom line
   displayAchieved?: string; // optional override for achieved in bottom line
+  targetLabel?: string; // optional override for "Target" label text
   isLoading?: boolean;
 }
 
@@ -20,6 +21,7 @@ export function GaugeChart({
   color = '#2563eb',
   displayTarget,
   displayAchieved,
+  targetLabel = 'Target',
   isLoading = false,
 }: GaugeChartProps) {
   if (isLoading) {
@@ -100,7 +102,7 @@ export function GaugeChart({
             textTransform="uppercase"
             letterSpacing="wide"
           >
-            Target
+            {targetLabel}
           </Text>
           <Text fontSize="12px" color="gray.600" fontWeight="700">
             {displayTarget ?? `${target}%`}
