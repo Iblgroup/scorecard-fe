@@ -50,6 +50,9 @@ export function ChartCard({
           justifyContent="space-between"
           alignItems="center"
           mb={3}
+          pb={2}
+          borderBottom="1px solid"
+          borderColor="gray.200"
         >
           <Text
             fontSize="14px"

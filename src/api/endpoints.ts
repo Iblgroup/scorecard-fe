@@ -25,6 +25,7 @@ export const ApiEndpoints = {
   serviceMeasure: '/service-measure',
   dispatchVsOrder: '/dispatch-vs-order',
   tgtVsActual: '/tgt-vs-actual',
+  totalSku: '/total-sku',
 } as const;
 
 export type ApiEndpoints = typeof ApiEndpoints;

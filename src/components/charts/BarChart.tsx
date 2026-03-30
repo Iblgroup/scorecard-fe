@@ -244,7 +244,7 @@ export function BarChart({
           flexShrink={0}
           pos="relative"
           zIndex={1}
-          top={'-32px'}
+          top={'-43px'}
           right={0}
         >
           {bars.map((bar) => (
@@ -309,8 +309,10 @@ export function BarChart({
                   fontSize: 13,
                 }}
                 formatter={(value) => formatCompact(Number(value))}
-                // itemStyle={{ fontSize: 12, fontWeight: 500 }}
                 labelStyle={{ fontSize: 13, fontWeight: 500 }}
+                itemSorter={(item) =>
+                  bars.findIndex((b) => b.label === item.name)
+                }
               />
               {bars.map((bar, barIdx) => {
                 const isTopBar = isStacked && barIdx === bars.length - 1;

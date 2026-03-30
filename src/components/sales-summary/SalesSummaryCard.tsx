@@ -124,7 +124,6 @@ export function SalesSummaryCard({
           %
         </Text>
       </Flex>
-
       {/* Rows */}
       {isLoading
         ? Array.from({ length: 4 }).map((_, i) => (

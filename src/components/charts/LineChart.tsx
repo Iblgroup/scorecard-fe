@@ -190,7 +190,7 @@ export function LineChart({
           flexShrink={0}
           pos="relative"
           zIndex={1}
-          top="-32px"
+          top="-43px"
           right={0}
         >
           {lines.map((line) => (

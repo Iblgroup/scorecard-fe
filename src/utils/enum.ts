@@ -8,6 +8,7 @@ export enum ApiKey {
   forecastAccuracyCategoryMonthly = 'forecastAccuracyCategoryMonthly',
   forecastAccuracyCategoryYearly = 'forecastAccuracyCategoryYearly',
   iblVsTscl = 'iblVsTscl',
+  totalSku = 'totalSku',
   dispatchVsOrder = 'dispatchVsOrder',
   serviceMeasure = 'serviceMeasure',
   tgtVsActual = 'tgtVsActual',

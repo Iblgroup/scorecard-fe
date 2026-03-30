@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useGetSalesSummary } from '@/api/salesSummary';
 import { useGetCoverDays } from '@/api/coverDays';
 import { useGetForecastAccuracyMonthly } from '@/api/forecastAccuracyMonthly';
@@ -29,8 +30,15 @@ import { useGetWip } from '@/api/wip';
 import { useGetRpm } from '@/api/rpm';
 import { useGetServiceMeasure } from '@/api/serviceMeasure';
 import { useGetTgtVsActual } from '@/api/tgtVsActual';
+import { useGetTotalSku } from '@/api/totalSku';
 
-const BENCHMARKS = [
+const INVENTORY_THRESHOLD_DAYS: Record<string, number> = {
+  A: 30,
+  B: 20,
+  C: 15,
+};
+
+const DAYS_BENCHMARKS = [
   {
     cls: 'A',
     days: 35,
@@ -52,6 +60,36 @@ const BENCHMARKS = [
   {
     cls: 'C',
     days: 20,
+    bm: 70,
+    rd: 90,
+    color: clsColors.C,
+    bg: '#fffbeb',
+    border: '#fde68a',
+  },
+];
+
+const INV_BENCHMARKS = [
+  {
+    cls: 'A',
+    days: 30,
+    bm: 92,
+    rd: 99,
+    color: clsColors.A,
+    bg: '#eff6ff',
+    border: '#bfdbfe',
+  },
+  {
+    cls: 'B',
+    days: 20,
+    bm: 80,
+    rd: 95,
+    color: clsColors.B,
+    bg: '#f0fdf4',
+    border: '#a7f3d0',
+  },
+  {
+    cls: 'C',
+    days: 15,
     bm: 70,
     rd: 90,
     color: clsColors.C,
@@ -97,6 +135,15 @@ const COVER_DAYS = [
     border: clsColors.Cborder,
     dot: '●',
   },
+  {
+    label: 'Others – Cover Days',
+    value: 0,
+    inv: '0',
+    color: '#64748b',
+    bg: '#64748b15',
+    border: '#64748b35',
+    dot: '●',
+  },
 ];
 
 const CHART_COLORS = ['#646ECB', '#5AC8D8', '#16476A'] as const;
@@ -124,36 +171,38 @@ function BenchmarkBanner({
   color,
   bg,
   border,
-}: Omit<(typeof BENCHMARKS)[0], 'rd' | 'bm'> & { isLast?: boolean }) {
+  sku,
+}: Omit<(typeof INV_BENCHMARKS)[0], 'rd' | 'bm'> & {
+  isLast?: boolean;
+  sku?: string;
+}) {
   return (
     <Box
-      bg={bg}
-      borderRadius="md"
-      px={3}
-      py={2}
       border="1.5px dashed"
       borderColor={border}
+      borderRadius="md"
+      overflow="hidden"
       opacity={0.9}
     >
-      <Flex align="center" gap={3}>
-        <Flex
-          w={10}
-          h={10}
-          borderRadius="sm"
-          bg={color}
-          color="white"
-          align="center"
-          justify="center"
-          fontWeight="900"
-          fontSize="xl"
-          flexShrink={0}
-        >
-          {cls}
-        </Flex>
-        <Box>
-          <Flex align="center" gap={2}>
+      <Flex>
+        <Flex flex={1} align="center" gap={3} bg={bg} px={3} py={2}>
+          <Flex
+            w={9}
+            h={9}
+            borderRadius="sm"
+            bg={color}
+            color="white"
+            align="center"
+            justify="center"
+            fontWeight="900"
+            fontSize="lg"
+            flexShrink={0}
+          >
+            {cls}
+          </Flex>
+          <Flex align="center" gap={1}>
             <Text
-              fontSize="1.6rem"
+              fontSize="1.4rem"
               fontWeight="900"
               color={color}
               lineHeight="1"
@@ -161,7 +210,7 @@ function BenchmarkBanner({
               {days}
             </Text>
             <Text
-              fontSize="12px"
+              fontSize="11px"
               fontWeight="600"
               color={color}
               textTransform="uppercase"
@@ -170,10 +219,41 @@ function BenchmarkBanner({
               Days
             </Text>
           </Flex>
-          <Text fontSize="12px" color="gray.500" mt={0.5}>
-            Min. Cover Threshold
-          </Text>
-        </Box>
+        </Flex>
+        {/* Divider + SKU cell — only when sku is provided */}
+        {sku !== undefined && (
+          <>
+            <Box w="1.5px" bg={border} />
+            <Flex
+              flex={1}
+              align="center"
+              bg={bg}
+              px={3}
+              py={2}
+              gap={0}
+            >
+              <Text
+                fontSize="12px"
+                fontWeight="700"
+                color="gray.400"
+                textTransform="uppercase"
+                letterSpacing="wide"
+                mt={0.5}
+              >
+                SKUs :
+              </Text>
+              <Text
+                ml={2}
+                fontSize="1.4rem"
+                fontWeight="900"
+                color={color}
+                lineHeight="1"
+              >
+                {sku}
+              </Text>
+            </Flex>
+          </>
+        )}
       </Flex>
     </Box>
   );
@@ -192,16 +272,18 @@ function CoverDaysCard({
   const letter = label.charAt(0);
 
   if (!isClassified) {
-    // Total Cover Days — original design
     return (
-      <Box
+      <Flex
+        align="center"
+        gap={4}
         bg="white"
         borderRadius="lg"
-        p={3}
+        px={4}
+        py={3}
         border="1px solid"
         borderColor="gray.100"
         boxShadow="sm"
-        h="full"
+        w="full"
         position="relative"
         overflow="hidden"
       >
@@ -209,39 +291,32 @@ function CoverDaysCard({
           position="absolute"
           top={0}
           left={0}
-          right={0}
-          h="3px"
+          bottom={0}
+          w="3px"
           bg={color}
-          borderTopRadius="xl"
+          borderLeftRadius="lg"
         />
         <Text
-          fontSize="12px"
-          fontWeight="700"
-          color="gray.400"
-          textTransform="uppercase"
-          letterSpacing="widest"
-          mt={1}
-        >
-          {label}
-        </Text>
-        <Text
-          fontSize="2.5rem"
+          fontSize="2.8rem"
           fontWeight="900"
           color={color}
-          lineHeight="1.1"
-          mt={2}
+          lineHeight="1"
+          pl={1}
         >
           {value}
         </Text>
-        <Box mt={2} pt={2} borderTop="1px solid" borderColor="gray.100">
-          <Text fontSize="12px" color="gray.400">
+        <Box>
+          <Text fontSize="13px" fontWeight="700" color="gray.600">
+            Total
+          </Text>
+          <Text fontSize="12px" color="gray.400" mt={0.5}>
             Inventory:{' '}
             <Box as="span" fontWeight="600" color="gray.600">
               {inv}
             </Box>
           </Text>
         </Box>
-      </Box>
+      </Flex>
     );
   }
 
@@ -271,25 +346,27 @@ function CoverDaysCard({
           {letter}
         </Flex>
         <Box>
-          <Flex align="center" gap={2}>
-            <Text
-              fontSize="1.6rem"
-              fontWeight="900"
-              color={color}
-              lineHeight="1"
-            >
-              {value}
-            </Text>
-            <Text
-              fontSize="12px"
-              fontWeight="600"
-              color={color}
-              textTransform="uppercase"
-              letterSpacing="wide"
-            >
-              Days
-            </Text>
-          </Flex>
+          {!label.startsWith('Others') && (
+            <Flex align="center" gap={2}>
+              <Text
+                fontSize="1.6rem"
+                fontWeight="900"
+                color={color}
+                lineHeight="1"
+              >
+                {value}
+              </Text>
+              <Text
+                fontSize="12px"
+                fontWeight="600"
+                color={color}
+                textTransform="uppercase"
+                letterSpacing="wide"
+              >
+                Days
+              </Text>
+            </Flex>
+          )}
           <Text fontSize="12px" color="gray.500" mt={0.5}>
             Inventory:{' '}
             <Box as="span" fontWeight="600" color="gray.600">
@@ -340,6 +417,7 @@ interface SupplyChainTabProps {
   isLoadingForecastIbl: boolean;
   pctSkusData: { class: string; pct: number }[];
   isLoadingPctSkus: boolean;
+  skuCounts: Record<string, number>;
 }
 
 function SupplyChainTab({
@@ -360,22 +438,150 @@ function SupplyChainTab({
   isLoadingForecastIbl,
   pctSkusData,
   isLoadingPctSkus,
+  skuCounts,
 }: SupplyChainTabProps) {
   return (
     <Flex direction="column" gap={4}>
       {/* Benchmarks + Sales Summary */}
       <Grid templateColumns="repeat(12, 1fr)" gap={4} alignItems="stretch">
         {/* Sales Summary — 6 cols */}
-        <GridItem colSpan={{ base: 12, lg: 7 }}>
+        <GridItem colSpan={{ base: 12, lg: 3 }}>
+          <Box bg="gray.200" borderRadius="xl" p={4} boxShadow="md" h="full">
+            <HStack mb={4} gap={2} justify="space-between">
+              <HStack gap={2}>
+                <Box w={1} h={5} bg="gray.700" borderRadius="full" />
+                <Text
+                  fontSize="13px"
+                  fontWeight="800"
+                  color="gray.700"
+                  textTransform="uppercase"
+                  letterSpacing="wide"
+                >
+                  Benchmark
+                </Text>
+              </HStack>
+              <Box px={2} py="2px" borderRadius="md" bg="gray.700">
+                <Text
+                  fontSize="12px"
+                  fontWeight="800"
+                  color="white"
+                  textTransform="uppercase"
+                  letterSpacing="widest"
+                >
+                  LEGEND
+                </Text>
+              </Box>
+            </HStack>
+            <Box>
+              {/* Header row */}
+              <Flex mb={1} px={1}>
+                <Box w={10} flexShrink={0} />
+                <Flex flex={1} justify="center">
+                  <Text
+                    fontSize="14px"
+                    fontWeight="700"
+                    color="gray.400"
+                    textTransform="uppercase"
+                    letterSpacing="wide"
+                  >
+                    Cover Days
+                  </Text>
+                </Flex>
+                <Flex flex={1} justify="center">
+                  <Text
+                    fontSize="14px"
+                    fontWeight="700"
+                    color="gray.400"
+                    textTransform="uppercase"
+                    letterSpacing="wide"
+                  >
+                    No of SKUs
+                  </Text>
+                </Flex>
+              </Flex>
+              {/* Data rows */}
+              <Flex direction="column" gap={2}>
+                {DAYS_BENCHMARKS.map((b) => {
+                  const dayVal = b.days;
+                  const skuVal =
+                    skuCounts[b.cls] !== undefined
+                      ? skuCounts[b.cls]
+                      : undefined;
+                  return (
+                    <Box
+                      key={b.cls}
+                      border="1.5px dashed"
+                      borderColor={b.border}
+                      borderRadius="md"
+                      overflow="hidden"
+                    >
+                      <Flex align="stretch">
+                        <Flex
+                          w={10}
+                          flexShrink={0}
+                          bg={b.color}
+                          color="white"
+                          align="center"
+                          justify="center"
+                          fontWeight="900"
+                          fontSize="lg"
+                        >
+                          {b.cls}
+                        </Flex>
+                        <Flex
+                          flex={1}
+                          align="center"
+                          justify="center"
+                          bg={b.bg}
+                          py={4}
+                          borderLeft="1.5px dashed"
+                          borderColor={b.border}
+                        >
+                          <Text
+                            fontSize="1.4rem"
+                            fontWeight="900"
+                            color={b.color}
+                            lineHeight="1"
+                          >
+                            {dayVal}
+                          </Text>
+                        </Flex>
+                        {/* SKUs cell */}
+                        <Flex
+                          flex={1}
+                          align="center"
+                          justify="center"
+                          bg={b.bg}
+                          py={2}
+                          borderLeft="1.5px dashed"
+                          borderColor={b.border}
+                        >
+                          <Text
+                            fontSize="1.4rem"
+                            fontWeight="900"
+                            color={b.color}
+                            lineHeight="1"
+                          >
+                            {skuVal ?? '—'}
+                          </Text>
+                        </Flex>
+                      </Flex>
+                    </Box>
+                  );
+                })}
+              </Flex>
+            </Box>
+          </Box>
+        </GridItem>
+        <GridItem colSpan={{ base: 12, lg: 5 }}>
           <SalesSummaryCard
             rows={salesRows}
             total={salesTotal}
             isLoading={isLoadingSales}
           />
         </GridItem>
-
         {/* Cover Days — 3 cols */}
-        <GridItem colSpan={{ base: 12, lg: 5 }}>
+        <GridItem colSpan={{ base: 12, lg: 4 }}>
           <Box bg="white" borderRadius="xl" p={4} boxShadow="md" h="full">
             <Text
               fontSize="13px"
@@ -388,23 +594,24 @@ function SupplyChainTab({
               Cover Days
             </Text>
             {isLoadingCoverDays ? (
-              <Grid templateColumns="1fr 1fr" gap={3} alignItems="start">
-                <Skeleton height="120px" borderRadius="lg" />
-                <Flex direction="column" gap={2}>
-                  <Skeleton height="52px" borderRadius="lg" />
-                  <Skeleton height="52px" borderRadius="lg" />
-                  <Skeleton height="52px" borderRadius="lg" />
-                </Flex>
-              </Grid>
+              <Flex direction="column" gap={2}>
+                <Skeleton height="60px" borderRadius="lg" />
+                <Grid templateColumns="1fr 1fr" gap={2}>
+                  <Skeleton height="72px" borderRadius="md" />
+                  <Skeleton height="72px" borderRadius="md" />
+                  <Skeleton height="72px" borderRadius="md" />
+                  <Skeleton height="72px" borderRadius="md" />
+                </Grid>
+              </Flex>
             ) : (
-              <Grid templateColumns="1fr 1fr" gap={3} alignItems="start">
+              <Flex direction="column" gap={2}>
                 <CoverDaysCard {...coverDaysRows[0]} />
-                <Flex direction="column" gap={2}>
+                <Grid templateColumns="1fr 1fr" gap={2}>
                   {coverDaysRows.slice(1).map((c) => (
                     <CoverDaysCard key={c.label} {...c} />
                   ))}
-                </Flex>
-              </Grid>
+                </Grid>
+              </Flex>
             )}
           </Box>
         </GridItem>
@@ -627,8 +834,12 @@ function ServiceMeasureTab({
   const branchKeys = INV_API_BRANCHES.map((b) => b.key);
   const invApiRows = (inventoryDaysData as { data?: InvApiRow[] })?.data ?? [];
 
-  const sumVals = (rows: InvApiRow[]) =>
-    branchKeys.map((key) => rows.reduce((s, r) => s + Number(r[key] ?? 0), 0));
+  const avgVals = (rows: InvApiRow[]) =>
+    branchKeys.map((key) =>
+      rows.length > 0
+        ? rows.reduce((s, r) => s + Number(r[key] ?? 0), 0) / rows.length
+        : 0
+    );
 
   const grouped = invApiRows.reduce<Record<string, InvApiRow[]>>((acc, row) => {
     const key = (row.classification as string) || 'Other';
@@ -641,7 +852,7 @@ function ServiceMeasureTab({
     .filter((c) => grouped[c]?.length)
     .map((cls) => ({
       cls,
-      vals: sumVals(grouped[cls]),
+      vals: avgVals(grouped[cls]),
       bold: false,
       subRows: grouped[cls].map((r: InvApiRow) => ({
         sku: (r.item_desc as string) ?? '',
@@ -655,7 +866,7 @@ function ServiceMeasureTab({
     <Flex direction="column" gap={4}>
       <Grid templateColumns="repeat(12, 1fr)" gap={4}>
         {/* Benchmark */}
-        <GridItem colSpan={{ base: 12, lg: 4 }}>
+        <GridItem colSpan={{ base: 12, lg: 3 }}>
           <Box
             bg="gray.50"
             borderRadius="xl"
@@ -674,33 +885,34 @@ function ServiceMeasureTab({
                   textTransform="uppercase"
                   letterSpacing="wide"
                 >
-                  Inventory Days Benchmark
+                  Inventory Days Threshold
                 </Text>
               </HStack>
-              <Box px={2} py="3px" borderRadius="md" bg="gray.700">
+              <Box px={2} py="2px" borderRadius="md" bg="gray.700">
                 <Text
-                  fontSize="11px"
+                  fontSize="12px"
                   fontWeight="800"
                   color="white"
                   textTransform="uppercase"
                   letterSpacing="widest"
                 >
-                  LEGENDS
+                  LEGEND
                 </Text>
               </Box>
             </HStack>
             <Flex direction="column" gap={3}>
-              {BENCHMARKS.map((b, i) => (
+              {INV_BENCHMARKS.map((b, i) => (
                 <BenchmarkBanner
                   key={b.cls}
                   {...b}
-                  isLast={i === BENCHMARKS.length - 1}
+                  days={INVENTORY_THRESHOLD_DAYS[b.cls] ?? b.days}
+                  isLast={i === INV_BENCHMARKS.length - 1}
                 />
               ))}
             </Flex>
           </Box>
         </GridItem>
-        <GridItem colSpan={{ base: 12, lg: 8 }}>
+        <GridItem colSpan={{ base: 12, lg: 9 }}>
           <DataTable
             title="Inventory Days"
             headerGradient={gradients.tableBlue}
@@ -754,7 +966,10 @@ function ServiceMeasureTab({
               return (
                 <DataTableRow
                   key={row.cls}
-                  cells={[row.cls, ...row.vals.map((v) => String(Math.trunc(v)))]}
+                  cells={[
+                    row.cls,
+                    ...row.vals.map((v) => String(Math.trunc(v))),
+                  ]}
                   isTotal={row.bold}
                   rowBg={clsRowBg}
                   cellColors={[clsColor]}
@@ -887,11 +1102,22 @@ function DispatchWipTab({
     total_delivery_qty: string;
   };
   type WipRow = { 'item desc': string; Wip_total: string };
-  type RpmRow = { materialname: string; total_value: string };
+  type RpmRow = {
+    materialname: string;
+    total_value: string;
+    producttype?: string;
+  };
   const dispatchRows =
     (dispatchVsOrderData as { data?: DispatchRow[] })?.data ?? [];
   const wipRows = (wipData as { data?: WipRow[] })?.data ?? [];
-  const rpmRows = (rpmData as { data?: RpmRow[] })?.data ?? [];
+  const allRpmRows = (rpmData as { data?: RpmRow[] })?.data ?? [];
+  const [rpmTypeFilter, setRpmTypeFilter] = useState<'All' | 'TPKG' | 'TRAW'>(
+    'All'
+  );
+  const rpmRows =
+    rpmTypeFilter === 'All'
+      ? allRpmRows
+      : allRpmRows.filter((r) => r.producttype === rpmTypeFilter);
 
   return (
     <Grid templateColumns="repeat(10, 1fr)" gap={4}>
@@ -976,6 +1202,44 @@ function DispatchWipTab({
           colAligns={['left', 'right']}
           pageSize={15}
           isLoading={isLoadingRpm}
+          headerActions={
+            <HStack
+              gap={0}
+              borderRadius="md"
+              overflow="hidden"
+              border="1px solid"
+              borderColor="gray.200"
+            >
+              {(
+                [
+                  ['All', 'All'],
+                  ['PM', 'TPKG'],
+                  ['RM', 'TRAW'],
+                ] as const
+              ).map(([label, value]) => (
+                <Box
+                  key={value}
+                  as="button"
+                  px={3}
+                  py="5px"
+                  cursor={'pointer'}
+                  fontSize="12px"
+                  fontWeight="700"
+                  bg={rpmTypeFilter === value ? 'blue.600' : 'white'}
+                  color={rpmTypeFilter === value ? 'white' : 'gray.600'}
+                  _hover={{
+                    bg: rpmTypeFilter === value ? 'blue.600' : 'gray.50',
+                  }}
+                  onClick={() => setRpmTypeFilter(value)}
+                  borderRight={value !== 'TRAW' ? '1px solid' : undefined}
+                  borderColor="gray.200"
+                  transition="all 0.15s"
+                >
+                  {label}
+                </Box>
+              ))}
+            </HStack>
+          }
         >
           <DataTableRow
             key="__rpm_total__"
@@ -1018,30 +1282,22 @@ export default function ScorecardDashboard() {
     ...(filters.dateTo && { endDate: filters.dateTo }),
   };
 
+  const { data: totalSkuData } = useGetTotalSku({
+    ...(filters.classification && { classification: filters.classification }),
+    ...(filters.sku.length > 0 && { sku: filters.sku }),
+  });
+  type TotalSkuRow = { classification: string; count: number };
+  const skuCounts = (
+    (totalSkuData as { data?: TotalSkuRow[] })?.data ?? []
+  ).reduce<Record<string, number>>((acc, r) => {
+    if (r.classification) acc[r.classification] = r.count;
+    return acc;
+  }, {});
+
   const { data: salesSummaryData, isFetching: isLoadingSales } =
     useGetSalesSummary(params);
-  const { data: coverDaysData, isFetching: isFetchingCoverDays } =
+  const { data: coverDaysData, isFetching: isLoadingCoverDays } =
     useGetCoverDays(params);
-  const { data: coverDaysDataA, isFetching: isFetchingCoverDaysA } =
-    useGetCoverDays({
-      ...params,
-      classification: 'A',
-    });
-  const { data: coverDaysDataB, isFetching: isFetchingCoverDaysB } =
-    useGetCoverDays({
-      ...params,
-      classification: 'B',
-    });
-  const { data: coverDaysDataC, isFetching: isFetchingCoverDaysC } =
-    useGetCoverDays({
-      ...params,
-      classification: 'C',
-    });
-  const isLoadingCoverDays =
-    isFetchingCoverDays ||
-    isFetchingCoverDaysA ||
-    isFetchingCoverDaysB ||
-    isFetchingCoverDaysC;
   const { data: forecastAccuracyMonthlyData } =
     useGetForecastAccuracyMonthly(params);
   const {
@@ -1079,6 +1335,7 @@ export default function ScorecardDashboard() {
     useGetServiceMeasure(params);
   const { data: tgtVsActualData, isFetching: isLoadingTgtVsActual } =
     useGetTgtVsActual(params);
+
 
   const apiRows = salesSummaryData?.data as
     | { classification: string; sku: number; new_total_all_sales: number }[]
@@ -1121,36 +1378,57 @@ export default function ScorecardDashboard() {
     pct: '100%',
   };
 
-  const extractCoverDay = (data: unknown) => {
-    const row = (
-      data as { data?: { cover_days: string; inv_value: string }[] }
-    )?.data?.[0];
-    return row
-      ? {
-          value: Math.round(Number(row.cover_days)),
-          inv: Number(row.inv_value).toLocaleString('en-US', {
-            maximumFractionDigits: 0,
-          }),
-        }
-      : null;
+  type CoverDayRow = {
+    classification: string;
+    inv_value: string;
+    cover_days: string;
+    daily_target: string;
   };
+  const coverDayApiRows =
+    (coverDaysData as { data?: CoverDayRow[] })?.data ?? [];
+
+  const findCls = (cls: string) =>
+    coverDayApiRows.find((r) => r.classification === cls);
+
+  const fmtInv = (v: string | undefined) =>
+    Number(v ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+
+  const totalInv = coverDayApiRows.reduce(
+    (s, r) => s + Number(r.inv_value ?? 0),
+    0
+  );
+  const totalDailyTarget = coverDayApiRows.reduce(
+    (s, r) => s + Number(r.daily_target ?? 0),
+    0
+  );
+  const totalCoverDays =
+    totalDailyTarget > 0 ? Math.round(totalInv / totalDailyTarget) : 0;
 
   const coverDaysRows: typeof COVER_DAYS = [
     {
       ...COVER_DAYS[0],
-      ...(extractCoverDay(coverDaysData) ?? {}),
+      value: totalCoverDays,
+      inv: fmtInv(String(totalInv)),
     },
     {
       ...COVER_DAYS[1],
-      ...(extractCoverDay(coverDaysDataA) ?? {}),
+      value: Math.round(Number(findCls('A')?.cover_days ?? 0)),
+      inv: fmtInv(findCls('A')?.inv_value),
     },
     {
       ...COVER_DAYS[2],
-      ...(extractCoverDay(coverDaysDataB) ?? {}),
+      value: Math.round(Number(findCls('B')?.cover_days ?? 0)),
+      inv: fmtInv(findCls('B')?.inv_value),
     },
     {
       ...COVER_DAYS[3],
-      ...(extractCoverDay(coverDaysDataC) ?? {}),
+      value: Math.round(Number(findCls('C')?.cover_days ?? 0)),
+      inv: fmtInv(findCls('C')?.inv_value),
+    },
+    {
+      ...COVER_DAYS[4],
+      value: Math.round(Number(findCls('Others')?.cover_days ?? 0)),
+      inv: fmtInv(findCls('Others')?.inv_value),
     },
   ];
 
@@ -1251,21 +1529,19 @@ export default function ScorecardDashboard() {
     (forecastAccuracyCategoryYearlyData as { data?: ForecastCategoryRow[] })
       ?.data ?? [];
 
-  const iblMonths = [...new Set(iblCategoryRows.map((r) => r.month))];
+  const iblMonths = [...new Set(iblCategoryRows.map((r) => r.month))].sort(
+    (a, b) => new Date(`1 ${a}`).getTime() - new Date(`1 ${b}`).getTime()
+  );
 
   const iblBarData: Record<string, string | number>[] = Object.values(
     iblCategoryRows
       .filter((r) => r.category && r.category !== 'Others')
-      .reduce<Record<string, Record<string, string | number>>>(
-        (acc, r) => {
-          const key = r.category!;
-          if (!acc[key]) acc[key] = { classification: key };
-          acc[key][r.month] =
-            Math.round(r.forecast_accuracy_pct * 100 * 10) / 10;
-          return acc;
-        },
-        {}
-      )
+      .reduce<Record<string, Record<string, string | number>>>((acc, r) => {
+        const key = r.category!;
+        if (!acc[key]) acc[key] = { classification: key };
+        acc[key][r.month] = Math.round(r.forecast_accuracy_pct * 100 * 10) / 10;
+        return acc;
+      }, {})
   );
 
   const forecastCategoryRows: ForecastCategoryRow[] =
@@ -1274,21 +1550,17 @@ export default function ScorecardDashboard() {
 
   const forecastMonths = [
     ...new Set(forecastCategoryRows.map((r) => r.month)),
-  ];
+  ].sort((a, b) => new Date(`1 ${a}`).getTime() - new Date(`1 ${b}`).getTime());
 
   const forecastBarData: Record<string, string | number>[] = Object.values(
     forecastCategoryRows
       .filter((r) => r.classification)
-      .reduce<Record<string, Record<string, string | number>>>(
-        (acc, r) => {
-          const key = r.classification!;
-          if (!acc[key]) acc[key] = { classification: key };
-          acc[key][r.month] =
-            Math.round(r.forecast_accuracy_pct * 100 * 10) / 10;
-          return acc;
-        },
-        {}
-      )
+      .reduce<Record<string, Record<string, string | number>>>((acc, r) => {
+        const key = r.classification!;
+        if (!acc[key]) acc[key] = { classification: key };
+        acc[key][r.month] = Math.round(r.forecast_accuracy_pct * 100 * 10) / 10;
+        return acc;
+      }, {})
   );
 
   return (
@@ -1374,6 +1646,7 @@ export default function ScorecardDashboard() {
             isLoadingForecastIbl={isLoadingForecastIbl}
             pctSkusData={pctSkusData}
             isLoadingPctSkus={isLoadingIblVsTscl}
+            skuCounts={skuCounts}
           />
         )}
         {mainTab === 'serviceMeasure' && (

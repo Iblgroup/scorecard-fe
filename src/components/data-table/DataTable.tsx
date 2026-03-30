@@ -48,6 +48,7 @@ export interface DataTableProps {
   maxHeight?: string;
   height?: string;
   colAligns?: ('left' | 'right' | 'center')[];
+  headerActions?: ReactNode;
 }
 
 function getCellValue(child: ReactNode, col: number): string {
@@ -80,6 +81,7 @@ export function DataTable({
   maxHeight,
   height,
   colAligns,
+  headerActions,
 }: DataTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortCol, setSortCol] = useState<number | null>(null);
@@ -142,11 +144,17 @@ export function DataTable({
   const handleExport = () => {
     const data: Record<string, string>[] = [];
     allRows.forEach((row) => {
-      data.push(Object.fromEntries(headers.map((h, col) => [h, getCellValue(row, col)])));
+      data.push(
+        Object.fromEntries(headers.map((h, col) => [h, getCellValue(row, col)]))
+      );
       if (isValidElement(row)) {
         const subRows = (row.props as { subRows?: SubRowData[] }).subRows;
         subRows?.forEach((sub) => {
-          data.push(Object.fromEntries(headers.map((h, col) => [h, sub.cells[col] ?? ''])));
+          data.push(
+            Object.fromEntries(
+              headers.map((h, col) => [h, sub.cells[col] ?? ''])
+            )
+          );
         });
       }
     });
@@ -197,7 +205,8 @@ export function DataTable({
               </Text>
             )}
           </HStack>
-          <HStack gap={2} ml="auto">
+          <HStack gap={2} w="100%" justifyContent={'flex-end'} ml="auto">
+            {headerActions}
             {searchable && (
               <Input
                 size="sm"
@@ -207,7 +216,7 @@ export function DataTable({
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                maxW="240px"
+                maxW="170px"
                 borderRadius="md"
               />
             )}
@@ -252,7 +261,17 @@ export function DataTable({
                   _hover={{ opacity: 0.8 }}
                   textAlign={colAligns?.[i] ?? 'left'}
                 >
-                  <HStack gap={1} display="inline-flex" justifyContent={colAligns?.[i] === 'right' ? 'flex-end' : colAligns?.[i] === 'center' ? 'center' : 'flex-start'}>
+                  <HStack
+                    gap={1}
+                    display="inline-flex"
+                    justifyContent={
+                      colAligns?.[i] === 'right'
+                        ? 'flex-end'
+                        : colAligns?.[i] === 'center'
+                          ? 'center'
+                          : 'flex-start'
+                    }
+                  >
                     <span>{h}</span>
                     {sortCol === i ? (
                       sortDir === 'asc' ? (
@@ -421,7 +440,11 @@ export function DataTableRow({
       {hasSubRows &&
         isExpanded &&
         subRows!.map((sub, i) => (
-          <Table.Row key={i} style={{ background: i % 2 === 0 ? '#f9fafb' : '#ffffff' }} css={{ '&:hover': { background: '#e5e7eb !important' } }}>
+          <Table.Row
+            key={i}
+            style={{ background: i % 2 === 0 ? '#f9fafb' : '#ffffff' }}
+            css={{ '&:hover': { background: '#e5e7eb !important' } }}
+          >
             {/* indent spacer */}
             <Table.Cell w="32px" px={1} />
             {sub.cells.map((cell, j) => (
