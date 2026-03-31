@@ -224,14 +224,7 @@ function BenchmarkBanner({
         {sku !== undefined && (
           <>
             <Box w="1.5px" bg={border} />
-            <Flex
-              flex={1}
-              align="center"
-              bg={bg}
-              px={3}
-              py={2}
-              gap={0}
-            >
+            <Flex flex={1} align="center" bg={bg} px={3} py={2} gap={0}>
               <Text
                 fontSize="12px"
                 fontWeight="700"
@@ -267,7 +260,8 @@ function CoverDaysCard({
   bg,
   border,
   dot,
-}: (typeof COVER_DAYS)[0]) {
+  endDate,
+}: (typeof COVER_DAYS)[0] & { endDate?: string }) {
   const isClassified = dot === '●';
   const letter = label.charAt(0);
 
@@ -307,12 +301,18 @@ function CoverDaysCard({
         </Text>
         <Box>
           <Text fontSize="13px" fontWeight="700" color="gray.600">
-            Total
+            Total as of{' '}
+            {endDate
+              ? new Date(endDate).toLocaleDateString('en-US', {
+                  month: 'short',
+                  year: 'numeric',
+                })
+              : 'selected'}
           </Text>
           <Text fontSize="12px" color="gray.400" mt={0.5}>
             Inventory:{' '}
             <Box as="span" fontWeight="600" color="gray.600">
-              {inv}
+              {`${inv} (ibl inventory)`}
             </Box>
           </Text>
         </Box>
@@ -418,6 +418,7 @@ interface SupplyChainTabProps {
   pctSkusData: { class: string; pct: number }[];
   isLoadingPctSkus: boolean;
   skuCounts: Record<string, number>;
+  endDate?: string;
 }
 
 function SupplyChainTab({
@@ -439,6 +440,7 @@ function SupplyChainTab({
   pctSkusData,
   isLoadingPctSkus,
   skuCounts,
+  endDate,
 }: SupplyChainTabProps) {
   return (
     <Flex direction="column" gap={4}>
@@ -605,10 +607,10 @@ function SupplyChainTab({
               </Flex>
             ) : (
               <Flex direction="column" gap={2}>
-                <CoverDaysCard {...coverDaysRows[0]} />
+                <CoverDaysCard {...coverDaysRows[0]} endDate={endDate} />
                 <Grid templateColumns="1fr 1fr" gap={2}>
                   {coverDaysRows.slice(1).map((c) => (
-                    <CoverDaysCard key={c.label} {...c} />
+                    <CoverDaysCard key={c.label} {...c} endDate={endDate} />
                   ))}
                 </Grid>
               </Flex>
@@ -638,7 +640,7 @@ function SupplyChainTab({
                 value={iblAccuracy ?? 0}
                 target={100}
                 title=""
-                subtitle="Item Branch Level"
+                subtitle=""
                 color={'#726A95'}
                 displayAchieved={iblSalesDisplay?.achieved}
                 displayTarget={iblSalesDisplay?.target}
@@ -701,7 +703,7 @@ function SupplyChainTab({
                 value={tsclAccuracy ?? 0}
                 target={100}
                 title=""
-                subtitle="Total Supply Chain Level"
+                subtitle=""
                 color={'#726A95'}
                 displayAchieved={tsclSalesDisplay?.achieved}
                 displayTarget={tsclSalesDisplay?.target}
@@ -765,13 +767,19 @@ function SupplyChainTab({
                       ? clsColors.A
                       : String(e.class) === 'B'
                         ? clsColors.B
-                        : clsColors.C,
+                        : String(e.class) === 'C'
+                          ? clsColors.C
+                          : '#6b7280',
                 },
               ]}
               showLabels
               yTickFormatter={(v) => `${v}%`}
               labelFormatter={(v) => `${v}%`}
-              xLabelColors={{ A: clsColors.A, B: clsColors.B, C: clsColors.C }}
+              xLabelColors={{
+                A: clsColors.A,
+                B: clsColors.B,
+                C: clsColors.C,
+              }}
             />
           </Box>
         </ChartCard>
@@ -1336,7 +1344,6 @@ export default function ScorecardDashboard() {
   const { data: tgtVsActualData, isFetching: isLoadingTgtVsActual } =
     useGetTgtVsActual(params);
 
-
   const apiRows = salesSummaryData?.data as
     | { classification: string; sku: number; new_total_all_sales: number }[]
     | undefined;
@@ -1456,10 +1463,12 @@ export default function ScorecardDashboard() {
   };
   const iblVsTsclRows =
     (iblVsTsclData as { data?: IblVsTsclRow[] })?.data ?? [];
-  const pctSkusData = (['A', 'B', 'C'] as const)
+  const pctSkusData = (['A', 'B', 'C', 'Others'] as const)
     .filter((cls) => !filters.classification || cls === filters.classification)
     .map((cls) => {
-      const row = iblVsTsclRows.find((r) => r.classification === cls);
+      const row = iblVsTsclRows.find(
+        (r) => (r.classification ?? 'Others') === cls
+      );
       return {
         class: cls,
         pct: row ? Math.round(row.forecast_vs_budget_pct) : 0,
@@ -1534,14 +1543,17 @@ export default function ScorecardDashboard() {
   );
 
   const iblBarData: Record<string, string | number>[] = Object.values(
-    iblCategoryRows
-      .filter((r) => r.category && r.category !== 'Others')
-      .reduce<Record<string, Record<string, string | number>>>((acc, r) => {
-        const key = r.category!;
-        if (!acc[key]) acc[key] = { classification: key };
-        acc[key][r.month] = Math.round(r.forecast_accuracy_pct * 100 * 10) / 10;
+    iblCategoryRows.reduce<Record<string, Record<string, string | number>>>(
+      (acc, r) => {
+        const key = r.category ?? r.classification ?? 'Others';
+        const label = key === '' || key === null ? 'Others' : key;
+        if (!acc[label]) acc[label] = { classification: label };
+        acc[label][r.month] =
+          Math.round(r.forecast_accuracy_pct * 100 * 10) / 10;
         return acc;
-      }, {})
+      },
+      {}
+    )
   );
 
   const forecastCategoryRows: ForecastCategoryRow[] =
@@ -1553,14 +1565,15 @@ export default function ScorecardDashboard() {
   ].sort((a, b) => new Date(`1 ${a}`).getTime() - new Date(`1 ${b}`).getTime());
 
   const forecastBarData: Record<string, string | number>[] = Object.values(
-    forecastCategoryRows
-      .filter((r) => r.classification)
-      .reduce<Record<string, Record<string, string | number>>>((acc, r) => {
-        const key = r.classification!;
-        if (!acc[key]) acc[key] = { classification: key };
-        acc[key][r.month] = Math.round(r.forecast_accuracy_pct * 100 * 10) / 10;
-        return acc;
-      }, {})
+    forecastCategoryRows.reduce<
+      Record<string, Record<string, string | number>>
+    >((acc, r) => {
+      const key = r.classification ?? r.category ?? 'Others';
+      const label = key === '' ? 'Others' : key;
+      if (!acc[label]) acc[label] = { classification: label };
+      acc[label][r.month] = Math.round(r.forecast_accuracy_pct * 100 * 10) / 10;
+      return acc;
+    }, {})
   );
 
   return (
@@ -1647,6 +1660,7 @@ export default function ScorecardDashboard() {
             pctSkusData={pctSkusData}
             isLoadingPctSkus={isLoadingIblVsTscl}
             skuCounts={skuCounts}
+            endDate={filters.dateTo}
           />
         )}
         {mainTab === 'serviceMeasure' && (
