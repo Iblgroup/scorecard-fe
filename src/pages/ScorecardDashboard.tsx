@@ -773,6 +773,8 @@ function SupplyChainTab({
                 },
               ]}
               showLabels
+              // showOthers
+              showTotal
               yTickFormatter={(v) => `${v}%`}
               labelFormatter={(v) => `${v}%`}
               xLabelColors={{
@@ -1463,15 +1465,20 @@ export default function ScorecardDashboard() {
   };
   const iblVsTsclRows =
     (iblVsTsclData as { data?: IblVsTsclRow[] })?.data ?? [];
-  const pctSkusData = (['A', 'B', 'C', 'Others'] as const)
-    .filter((cls) => !filters.classification || cls === filters.classification)
+  const pctSkusData = (['A', 'B', 'C', 'Others', 'Total'] as const)
+    .filter(
+      (cls) =>
+        cls === 'Total' ||
+        !filters.classification ||
+        cls === filters.classification
+    )
     .map((cls) => {
       const row = iblVsTsclRows.find(
         (r) => (r.classification ?? 'Others') === cls
       );
       return {
         class: cls,
-        pct: row ? Math.round(row.forecast_vs_budget_pct) : 0,
+        pct: row ? Math.round(Number(row.forecast_vs_budget_pct)) : 0,
       };
     });
 

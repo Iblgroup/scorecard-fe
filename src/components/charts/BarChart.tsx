@@ -35,6 +35,8 @@ export interface BarChartProps {
   xLabelColors?: Record<string, string>;
   barCategoryGap?: number | string;
   compact?: boolean;
+  showOthers?: boolean;
+  showTotal?: boolean;
 }
 
 function formatCompact(value: number): string {
@@ -205,10 +207,15 @@ export function BarChart({
   xLabelColors,
   barCategoryGap = '20%',
   compact = false,
+  showOthers = false,
+  showTotal = false,
 }: BarChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const isStacked = variant === 'stacked-bar';
+  const filteredData = data
+    .filter((d) => showOthers || String(d[xKey]) !== 'Others')
+    .filter((d) => showTotal || String(d[xKey]) !== 'Total');
   const showLegend = bars.length > 1;
 
   useEffect(() => {
@@ -222,12 +229,12 @@ export function BarChart({
 
   const itemSlotWidth = barSize * bars.length + (compact ? 10 : 40);
   const yAxisWidth = 50;
-  const neededWidth = data.length * itemSlotWidth + yAxisWidth;
+  const neededWidth = filteredData.length * itemSlotWidth + yAxisWidth;
   const innerWidth = Math.max(containerWidth, neededWidth);
 
   const tickWidth =
-    innerWidth && data.length ? innerWidth / data.length - 10 : 50;
-  const ticks = computeYTicks(data, bars, isStacked);
+    innerWidth && filteredData.length ? innerWidth / filteredData.length - 10 : 50;
+  const ticks = computeYTicks(filteredData, bars, isStacked);
 
   const xAxisHeight = verticalXLabels
     ? VERT_AXIS_HEIGHT
@@ -265,7 +272,7 @@ export function BarChart({
         <Box style={{ width: innerWidth }} h="100%" minW="100%">
           <ResponsiveContainer width="100%" height="100%">
             <RechartsBarChart
-              data={data}
+              data={filteredData}
               margin={{
                 top: showLabels ? 18 : 0,
                 right: 0,
@@ -331,7 +338,7 @@ export function BarChart({
                     stackId={isStacked ? 'stack' : undefined}
                   >
                     {bar.cellColor &&
-                      data.map((entry, index) => (
+                      filteredData.map((entry, index) => (
                         <Cell
                           key={index}
                           fill={bar.cellColor!(
@@ -350,7 +357,7 @@ export function BarChart({
                             ? '#fff'
                             : bar.cellColor && index !== undefined
                               ? bar.cellColor(
-                                  data[index] as Record<string, unknown>
+                                  filteredData[index] as Record<string, unknown>
                                 )
                               : bar.color;
                           return (
