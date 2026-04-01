@@ -301,18 +301,28 @@ function CoverDaysCard({
         </Text>
         <Box>
           <Text fontSize="13px" fontWeight="700" color="gray.600">
-            Total as of{' '}
             {endDate
-              ? new Date(endDate).toLocaleDateString('en-US', {
-                  month: 'short',
-                  year: 'numeric',
-                })
-              : 'selected'}
+              ? (() => {
+                  const d = new Date(endDate);
+                  const day = d.getDate();
+                  const ord =
+                    day % 10 === 1 && day !== 11
+                      ? 'st'
+                      : day % 10 === 2 && day !== 12
+                        ? 'nd'
+                        : day % 10 === 3 && day !== 13
+                          ? 'rd'
+                          : 'th';
+                  const mon = d.toLocaleDateString('en-US', { month: 'short' });
+                  const yr = String(d.getFullYear()).slice(-2);
+                  return `As of ${day}${ord} ${mon}'${yr}`;
+                })()
+              : 'As of selected'}
           </Text>
           <Text fontSize="12px" color="gray.400" mt={0.5}>
             Inventory:{' '}
             <Box as="span" fontWeight="600" color="gray.600">
-              {`${inv} (ibl inventory)`}
+              {`${inv} (IBL inventory)`}
             </Box>
           </Text>
         </Box>
@@ -755,8 +765,10 @@ function SupplyChainTab({
             <BarChart
               data={pctSkusData}
               xKey="class"
-              barSize={48}
+              barSize={28}
               height={226}
+              barCategoryGap="3%"
+              compact
               bars={[
                 {
                   key: 'pct',
@@ -864,13 +876,28 @@ function ServiceMeasureTab({
       cls,
       vals: avgVals(grouped[cls]),
       bold: false,
+      isOther: cls === 'Other',
       subRows: grouped[cls].map((r: InvApiRow) => ({
         sku: (r.item_desc as string) ?? '',
         vals: branchKeys.map((k) => Number(r[k] ?? 0)),
       })),
     }));
 
-  const tableHeaders = ['Class', ...INV_API_BRANCHES.map((b) => b.label)];
+  const tableHeaders = [
+    'Class',
+    ...INV_API_BRANCHES.map((b) => b.label),
+    'Total',
+  ];
+
+  // Average of A, B, C only (divided by 3) per branch
+  const abcRows = computedRows.filter((r) => ['A', 'B', 'C'].includes(r.cls));
+  const totalVals = branchKeys.map((_, i) =>
+    abcRows.length > 0
+      ? abcRows.reduce((s, row) => s + row.vals[i], 0) / abcRows.length
+      : 0
+  );
+  const totalRowTotal =
+    totalVals.reduce((s, v) => s + v, 0) / branchKeys.length;
 
   return (
     <Flex direction="column" gap={4}>
@@ -932,73 +959,111 @@ function ServiceMeasureTab({
             height="270px"
             isLoading={isLoadingInventoryDays}
           >
-            {computedRows.map((row) => {
-              const clsColor =
-                row.cls === 'A'
-                  ? clsColors.A
-                  : row.cls === 'B'
-                    ? clsColors.B
-                    : row.cls === 'C'
-                      ? clsColors.C
-                      : undefined;
-              const clsRowBg =
-                row.cls === 'A'
-                  ? clsColors.Abg
-                  : row.cls === 'B'
-                    ? clsColors.Bbg
-                    : row.cls === 'C'
-                      ? clsColors.Cbg
-                      : undefined;
-              const clsBadge = clsColor ? (
-                <Box
-                  display="inline-flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  w="22px"
-                  h="22px"
-                  borderRadius="4px"
-                  bg={clsColor}
-                  color="white"
-                  fontSize="12px"
-                  fontWeight="700"
-                >
-                  {row.cls}
-                </Box>
-              ) : undefined;
-              const threshold =
-                row.cls === 'A'
-                  ? 30
-                  : row.cls === 'B'
-                    ? 20
-                    : row.cls === 'C'
-                      ? 15
-                      : null;
-              return (
-                <DataTableRow
-                  key={row.cls}
-                  cells={[
-                    row.cls,
-                    ...row.vals.map((v) => String(Math.trunc(v))),
-                  ]}
-                  isTotal={row.bold}
-                  rowBg={clsRowBg}
-                  cellColors={[clsColor]}
-                  cellNodes={[clsBadge]}
-                  cellWeights={['700', ...row.vals.map(() => '600')]}
-                  subRows={row.subRows.map((s) => ({
-                    cells: [s.sku, ...s.vals.map((v) => String(Math.trunc(v)))],
-                    cellColors: [
-                      undefined,
-                      ...s.vals.map((v) =>
-                        threshold !== null && v >= threshold
-                          ? '#067242'
-                          : undefined
-                      ),
-                    ],
-                  }))}
-                />
-              );
-            })}
+            {(() => {
+              const locCount = branchKeys.length;
+              const rows: React.ReactNode[] = [];
+              computedRows.forEach((row, rowIdx) => {
+                const isLastAbc =
+                  row.cls !== 'Other' &&
+                  (rowIdx === computedRows.length - 1 ||
+                    computedRows[rowIdx + 1]?.isOther);
+                const clsColor =
+                  row.cls === 'A'
+                    ? clsColors.A
+                    : row.cls === 'B'
+                      ? clsColors.B
+                      : row.cls === 'C'
+                        ? clsColors.C
+                        : undefined;
+                const clsRowBg =
+                  row.cls === 'A'
+                    ? clsColors.Abg
+                    : row.cls === 'B'
+                      ? clsColors.Bbg
+                      : row.cls === 'C'
+                        ? clsColors.Cbg
+                        : undefined;
+                const clsBadge = clsColor ? (
+                  <Box
+                    display="inline-flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    w="22px"
+                    h="22px"
+                    borderRadius="4px"
+                    bg={clsColor}
+                    color="white"
+                    fontSize="12px"
+                    fontWeight="700"
+                  >
+                    {row.cls}
+                  </Box>
+                ) : undefined;
+                const threshold =
+                  row.cls === 'A'
+                    ? 30
+                    : row.cls === 'B'
+                      ? 20
+                      : row.cls === 'C'
+                        ? 15
+                        : null;
+                const rowTotal = row.vals.reduce((s, v) => s + v, 0) / locCount;
+                rows.push(
+                  <DataTableRow
+                    key={row.cls}
+                    cells={[
+                      row.cls,
+                      ...row.vals.map((v) => String(Math.trunc(v))),
+                      String(Math.trunc(rowTotal)),
+                    ]}
+                    isTotal={row.bold}
+                    rowBg={clsRowBg}
+                    cellColors={[clsColor]}
+                    cellNodes={[clsBadge]}
+                    cellWeights={['700', ...row.vals.map(() => '600'), '600']}
+                    subRows={row.subRows.map((s) => ({
+                      cells: [
+                        s.sku,
+                        ...s.vals.map((v) => String(Math.trunc(v))),
+                        String(
+                          Math.trunc(
+                            s.vals.reduce((a, v) => a + v, 0) / locCount
+                          )
+                        ),
+                      ],
+                      cellColors: [
+                        undefined,
+                        ...s.vals.map((v) =>
+                          threshold !== null && v >= threshold
+                            ? '#067242'
+                            : undefined
+                        ),
+                        undefined,
+                      ],
+                    }))}
+                  />
+                );
+                if (isLastAbc) {
+                  rows.push(
+                    <DataTableRow
+                      key="total"
+                      cells={[
+                        'Total',
+                        ...totalVals.map((v) => String(Math.trunc(v))),
+                        String(Math.trunc(totalRowTotal)),
+                      ]}
+                      rowBg="#e5e7eb"
+                      cellWeights={[
+                        '700',
+                        ...totalVals.map(() => '700'),
+                        '700',
+                      ]}
+                    />
+                  );
+                }
+              });
+              return rows;
+            })()}
           </DataTable>
         </GridItem>
       </Grid>
@@ -1465,7 +1530,7 @@ export default function ScorecardDashboard() {
   };
   const iblVsTsclRows =
     (iblVsTsclData as { data?: IblVsTsclRow[] })?.data ?? [];
-  const pctSkusData = (['A', 'B', 'C', 'Others', 'Total'] as const)
+  const pctSkusData = (['Total', 'A', 'B', 'C', 'Others'] as const)
     .filter(
       (cls) =>
         cls === 'Total' ||

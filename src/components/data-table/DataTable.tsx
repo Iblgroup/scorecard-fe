@@ -141,6 +141,16 @@ export function DataTable({
       : row
   );
 
+  const renderedPinnedRows = pinnedRows.map((row, i) =>
+    isValidElement(row)
+      ? cloneElement(row as ReactElement<DataTableRowProps>, {
+          ...(rowCollapsible && { showToggleCol: true }),
+          ...(colAligns && { colAligns }),
+          key: `pinned-${i}`,
+        })
+      : row
+  );
+
   const handleExport = () => {
     const data: Record<string, string>[] = [];
     allRows.forEach((row) => {
@@ -328,7 +338,7 @@ export function DataTable({
               ) : (
                 <>
                   {renderedRows}
-                  {pinnedRows}
+                  {renderedPinnedRows}
                 </>
               )}
             </Table.Body>
