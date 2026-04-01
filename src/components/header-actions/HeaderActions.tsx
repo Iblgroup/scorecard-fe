@@ -11,7 +11,7 @@ import { Flex, HStack } from '@chakra-ui/react';
 // import { FiBarChart2, FiGrid } from 'react-icons/fi';
 
 const mainTabs = [
-  { label: 'Supply Chain', value: 'supplyChain' },
+  { label: 'Summary', value: 'supplyChain' },
   { label: 'Service Measure', value: 'serviceMeasure' },
   { label: 'Dispatch & WIP', value: 'dispatchWip' },
 ] as const;

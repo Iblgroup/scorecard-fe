@@ -315,7 +315,7 @@ function CoverDaysCard({
                           : 'th';
                   const mon = d.toLocaleDateString('en-US', { month: 'short' });
                   const yr = String(d.getFullYear()).slice(-2);
-                  return `As of ${day}${ord} ${mon}'${yr}`;
+                  return `days (As of ${day}${ord} ${mon}'${yr})`;
                 })()
               : 'As of selected'}
           </Text>
@@ -507,12 +507,12 @@ function SupplyChainTab({
                     textTransform="uppercase"
                     letterSpacing="wide"
                   >
-                    No of SKUs
+                    No. of SKUs
                   </Text>
                 </Flex>
               </Flex>
               {/* Data rows */}
-              <Flex direction="column" gap={2}>
+              <Flex direction="column" gap={3}>
                 {DAYS_BENCHMARKS.map((b) => {
                   const dayVal = b.days;
                   const skuVal =
