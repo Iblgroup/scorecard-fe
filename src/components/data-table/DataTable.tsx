@@ -311,7 +311,7 @@ export function DataTable({
                   onClick={() => handleSort(i)}
                   cursor="pointer"
                   userSelect="none"
-                  _hover={{ opacity: 0.8 }}
+                  _hover={{ opacity: 1 }}
                   textAlign={colAligns?.[i] ?? 'left'}
                 >
                   <HStack
@@ -468,7 +468,8 @@ export function DataTableRow({
             : {}),
         }}
         fontWeight={isTotal ? 'bold' : undefined}
-        _hover={resolvedBg ? { bg: resolvedBg } : undefined}
+        // transition="none"
+        _hover={stickyRow ? undefined : { bg: '#f1f5f9' }}
       >
         {showToggleCol && (
           <Table.Cell
@@ -523,28 +524,43 @@ export function DataTableRow({
 
       {hasSubRows &&
         isExpanded &&
-        subRows!.map((sub, i) => (
-          <Table.Row
-            key={i}
-            style={{ background: i % 2 === 0 ? '#f9fafb' : '#ffffff' }}
-            css={{ '&:hover': { background: '#e5e7eb !important' } }}
-          >
-            {/* indent spacer */}
-            <Table.Cell w="40px" px={1} />
-            {sub.cells.map((cell, j) => (
+        subRows!.map((sub, i) => {
+          const subBg = i % 2 === 0 ? '#f9fafb' : '#ffffff';
+          return (
+            <Table.Row
+              key={i}
+              style={{ background: subBg }}
+              css={{
+                '&:hover': { background: '#e5e7eb !important' },
+                '&:hover td': { background: '#e5e7eb !important' },
+              }}
+            >
+              {/* indent spacer */}
               <Table.Cell
-                key={j}
-                fontSize="xs"
-                color={sub.cellColors?.[j] ?? 'gray.500'}
-                fontWeight={sub.cellWeights?.[j]}
-                py={1}
-                pl={j === 0 ? 4 : undefined}
-              >
-                {cell}
-              </Table.Cell>
-            ))}
-          </Table.Row>
-        ))}
+                w="40px"
+                px={1}
+                style={stickyFirstCol ? { background: subBg } : undefined}
+              />
+              {sub.cells.map((cell, j) => (
+                <Table.Cell
+                  key={j}
+                  fontSize="xs"
+                  color={sub.cellColors?.[j] ?? 'gray.500'}
+                  fontWeight={sub.cellWeights?.[j]}
+                  py={1}
+                  pl={j === 0 ? 4 : undefined}
+                  style={
+                    stickyFirstCol && j === 0
+                      ? { background: subBg }
+                      : undefined
+                  }
+                >
+                  {cell}
+                </Table.Cell>
+              ))}
+            </Table.Row>
+          );
+        })}
     </>
   );
 }

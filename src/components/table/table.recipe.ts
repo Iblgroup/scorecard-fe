@@ -140,7 +140,7 @@ export const tableSlotRecipe = defineSlotRecipe({
               bg: 'primary.900/20',
             },
           },
-          transition: 'background 0.15s ease',
+          // transition: 'background 0.15s ease',
         },
       },
     },
