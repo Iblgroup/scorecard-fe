@@ -958,6 +958,7 @@ function ServiceMeasureTab({
             rowCollapsible
             height="270px"
             isLoading={isLoadingInventoryDays}
+            stickyFirstCol
           >
             {(() => {
               const locCount = branchKeys.length;
@@ -1021,6 +1022,7 @@ function ServiceMeasureTab({
                     cellColors={[clsColor]}
                     cellNodes={[clsBadge]}
                     cellWeights={['700', ...row.vals.map(() => '600'), '600']}
+                    stickyRow={!!clsColor}
                     subRows={row.subRows.map((s) => ({
                       cells: [
                         s.sku,

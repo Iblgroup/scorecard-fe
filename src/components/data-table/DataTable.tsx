@@ -49,6 +49,7 @@ export interface DataTableProps {
   height?: string;
   colAligns?: ('left' | 'right' | 'center')[];
   headerActions?: ReactNode;
+  stickyFirstCol?: boolean;
 }
 
 function getCellValue(child: ReactNode, col: number): string {
@@ -82,6 +83,7 @@ export function DataTable({
   height,
   colAligns,
   headerActions,
+  stickyFirstCol = false,
 }: DataTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortCol, setSortCol] = useState<number | null>(null);
@@ -136,6 +138,7 @@ export function DataTable({
       ? cloneElement(row as ReactElement<DataTableRowProps>, {
           ...(rowCollapsible && { showToggleCol: true }),
           ...(colAligns && { colAligns }),
+          ...(stickyFirstCol && { stickyFirstCol: true }),
           key: i,
         })
       : row
@@ -146,6 +149,7 @@ export function DataTable({
       ? cloneElement(row as ReactElement<DataTableRowProps>, {
           ...(rowCollapsible && { showToggleCol: true }),
           ...(colAligns && { colAligns }),
+          ...(stickyFirstCol && { stickyFirstCol: true }),
           key: `pinned-${i}`,
         })
       : row
@@ -243,25 +247,64 @@ export function DataTable({
       )}
       <Box
         overflowX="auto"
-        overflowY={maxHeight || height ? 'auto' : undefined}
+        overflowY="auto"
         maxH={maxHeight}
         h={height}
-        css={
-          maxHeight || height
-            ? {
-                '& thead tr th': {
-                  position: 'sticky',
-                  top: 0,
-                  zIndex: 2,
-                },
-              }
-            : undefined
-        }
+        css={{
+          '& thead tr': {
+            position: 'sticky',
+            top: 0,
+            zIndex: 4,
+          },
+          ...(stickyFirstCol && {
+            '& thead tr th:nth-of-type(1)': {
+              position: 'sticky',
+              left: 0,
+              zIndex: 3,
+            },
+            '& tbody tr td:nth-of-type(1)': {
+              position: 'sticky',
+              left: 0,
+              zIndex: 1,
+              background: 'white',
+            },
+            ...(rowCollapsible
+              ? {
+                  '& thead tr th:nth-of-type(2)': {
+                    position: 'sticky',
+                    left: '34px',
+                    zIndex: 3,
+                    boxShadow: '2px 0 4px rgba(0,0,0,0.08)',
+                  },
+                  '& tbody tr td:nth-of-type(2)': {
+                    position: 'sticky',
+                    left: '34px',
+                    zIndex: 1,
+                    background: 'white',
+                    boxShadow: '2px 0 4px rgba(0,0,0,0.08)',
+                  },
+                }
+              : {
+                  '& thead tr th:nth-of-type(1)': {
+                    boxShadow: '2px 0 4px rgba(0,0,0,0.08)',
+                  },
+                  '& tbody tr td:nth-of-type(1)': {
+                    boxShadow: '2px 0 4px rgba(0,0,0,0.08)',
+                  },
+                }),
+          }),
+        }}
       >
-        <Table.Root size="sm" w="full" borderTopRadius="none">
+        <Table.Root
+          size="sm"
+          w="full"
+          borderTopRadius="none"
+          overflowX="auto"
+          overflowY="auto"
+        >
           <Table.Header>
             <Table.Row style={{ background: headerGradient }}>
-              {rowCollapsible && <Table.ColumnHeader w="32px" />}
+              {rowCollapsible && <Table.ColumnHeader w="40px" />}
               {headers.map((h, i) => (
                 <Table.ColumnHeader
                   key={i}
@@ -310,7 +353,7 @@ export function DataTable({
               {isLoading ? (
                 Array.from({ length: 10 }).map((_, rowIdx) => (
                   <Table.Row key={rowIdx} opacity={1 - rowIdx * 0.07}>
-                    {rowCollapsible && <Table.Cell w="32px" />}
+                    {rowCollapsible && <Table.Cell w="40px" />}
                     {headers.map((_, colIdx) => (
                       <Table.Cell key={colIdx} py={2}>
                         <Skeleton
@@ -386,6 +429,10 @@ export interface DataTableRowProps {
   showToggleCol?: boolean;
   /** Injected by DataTable from colAligns prop */
   colAligns?: ('left' | 'right' | 'center')[];
+  /** Makes this row sticky below the thead when scrolling */
+  stickyRow?: boolean;
+  /** Injected by DataTable when stickyFirstCol={true} — carries row bg to sticky cells */
+  stickyFirstCol?: boolean;
 }
 
 export function DataTableRow({
@@ -398,6 +445,8 @@ export function DataTableRow({
   subRows,
   showToggleCol = false,
   colAligns,
+  stickyRow = false,
+  stickyFirstCol = false,
 }: DataTableRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const hasSubRows = showToggleCol && subRows && subRows.length > 0;
@@ -407,12 +456,32 @@ export function DataTableRow({
   return (
     <>
       <Table.Row
-        style={resolvedBg ? { background: resolvedBg } : undefined}
+        style={{
+          ...(resolvedBg ? { background: resolvedBg } : {}),
+          ...(stickyRow
+            ? {
+                position: 'sticky',
+                top: '36px',
+                zIndex: 3,
+                background: resolvedBg ?? '#ffffff',
+              }
+            : {}),
+        }}
         fontWeight={isTotal ? 'bold' : undefined}
         _hover={resolvedBg ? { bg: resolvedBg } : undefined}
       >
         {showToggleCol && (
-          <Table.Cell w="32px" px={1} py={0} verticalAlign="middle">
+          <Table.Cell
+            w="40px"
+            px={2}
+            py={0}
+            verticalAlign="middle"
+            style={
+              stickyFirstCol && resolvedBg
+                ? { background: resolvedBg }
+                : undefined
+            }
+          >
             {hasSubRows && (
               <button
                 onClick={() => setIsExpanded((e) => !e)}
@@ -441,6 +510,11 @@ export function DataTableRow({
             color={cellNodes?.[i] ? undefined : cellColors?.[i]}
             fontWeight={cellWeights?.[i]}
             textAlign={colAligns?.[i] ?? 'left'}
+            style={
+              stickyFirstCol && i === 0 && resolvedBg
+                ? { background: resolvedBg }
+                : undefined
+            }
           >
             {cellNodes?.[i] ?? cell}
           </Table.Cell>
@@ -456,7 +530,7 @@ export function DataTableRow({
             css={{ '&:hover': { background: '#e5e7eb !important' } }}
           >
             {/* indent spacer */}
-            <Table.Cell w="32px" px={1} />
+            <Table.Cell w="40px" px={1} />
             {sub.cells.map((cell, j) => (
               <Table.Cell
                 key={j}
