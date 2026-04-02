@@ -43,12 +43,15 @@ export const clsColors = {
   A: '#2563eb',
   B: '#059669',
   C: '#fca311',
+  Other: '#6b7280',
   Abg: '#dbeafe',
   Bbg: '#d1fae5',
   Cbg: '#fef3c7',
+  Otherbg: '#f3f4f6',
   Aborder: '#eff6ff',
   Bborder: '#f0fdf4',
   Cborder: '#fffbeb',
+  Otherborder: '#e5e7eb',
 } as const;
 
 // ─── Gradients ──────────────────────────────────────────────────────────────

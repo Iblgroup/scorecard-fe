@@ -71,7 +71,7 @@ function compareValues(a: string, b: string): number {
 
 export function DataTable({
   title,
-  headerGradient,
+  // headerGradient,
   headers,
   children,
   pageSize = 15,
@@ -303,7 +303,7 @@ export function DataTable({
           overflowY="auto"
         >
           <Table.Header>
-            <Table.Row style={{ background: headerGradient }}>
+            <Table.Row style={{ background: 'inherit' }}>
               {rowCollapsible && <Table.ColumnHeader w="40px" />}
               {headers.map((h, i) => (
                 <Table.ColumnHeader

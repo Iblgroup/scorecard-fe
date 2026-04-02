@@ -975,7 +975,7 @@ function ServiceMeasureTab({
                       ? clsColors.B
                       : row.cls === 'C'
                         ? clsColors.C
-                        : undefined;
+                        : clsColors.Other;
                 const clsRowBg =
                   row.cls === 'A'
                     ? clsColors.Abg
@@ -983,23 +983,35 @@ function ServiceMeasureTab({
                       ? clsColors.Bbg
                       : row.cls === 'C'
                         ? clsColors.Cbg
-                        : undefined;
-                const clsBadge = clsColor ? (
-                  <Box
-                    display="inline-flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    w="22px"
-                    h="22px"
-                    borderRadius="4px"
-                    bg={clsColor}
-                    color="white"
-                    fontSize="12px"
-                    fontWeight="700"
-                  >
-                    {row.cls}
-                  </Box>
-                ) : undefined;
+                        : clsColors.Otherbg;
+                const clsBadge =
+                  row.cls === 'Other' ? (
+                    <Box
+                      display="inline-flex"
+                      alignItems="center"
+                      color={clsColors.Other}
+                      fontSize="13px"
+                      fontWeight="700"
+                      py={'1px'}
+                    >
+                      Other
+                    </Box>
+                  ) : (
+                    <Box
+                      display="inline-flex"
+                      alignItems="center"
+                      justifyContent="center"
+                      w="22px"
+                      h="22px"
+                      borderRadius="4px"
+                      bg={clsColor}
+                      color="white"
+                      fontSize="12px"
+                      fontWeight="700"
+                    >
+                      {row.cls}
+                    </Box>
+                  );
                 const threshold =
                   row.cls === 'A'
                     ? 30
@@ -1022,7 +1034,7 @@ function ServiceMeasureTab({
                     cellColors={[clsColor]}
                     cellNodes={[clsBadge]}
                     cellWeights={['700', ...row.vals.map(() => '600'), '600']}
-                    stickyRow={!!clsColor}
+                    stickyRow
                     subRows={row.subRows.map((s) => ({
                       cells: [
                         s.sku,
@@ -1074,7 +1086,7 @@ function ServiceMeasureTab({
         <ChartCard
           colSpan={6}
           title="Service Measure by Branch"
-          height="340px"
+          height="330px"
           isLoading={isLoadingServiceMeasure}
           variant="line"
         >
@@ -1089,14 +1101,14 @@ function ServiceMeasureTab({
             ].filter(
               (l) => !classification || l.key === `sku${classification}`
             )}
-            height={340}
+            height={330}
             labelFormatter={(v) => `${v}%`}
           />
         </ChartCard>
         <ChartCard
           colSpan={3}
           title="Cover Days Threshold vs Actual"
-          height="321px"
+          height="319px"
           isLoading={isLoadingTgtVsActual}
         >
           <BarChart
@@ -1127,7 +1139,7 @@ function ServiceMeasureTab({
               Threshold
             </>
           }
-          height="321px"
+          height="319px"
           isLoading={isLoadingThreshold}
         >
           <BarChart
