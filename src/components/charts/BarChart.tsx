@@ -188,7 +188,7 @@ function computeYTicks(
   const step = Math.ceil(rawStep / magnitude) * magnitude;
   return Array.from(
     { length: Math.ceil(maxValue / step) + 1 },
-    (_, i) => i * step
+    (_, i) => Math.round(i * step * 10) / 10
   );
 }
 
