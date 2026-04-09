@@ -1,5 +1,5 @@
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import { useGetFilters } from '@/api/filters';
+import { useGetFilterBranches, useGetFilters } from '@/api/filters';
 import { DatePicker } from '@/components/date-picker';
 import { Select } from '@/components/select';
 import { MultiSelect } from '@/components/select/MultiSelect';
@@ -24,11 +24,9 @@ export interface FilterBarProps {
 }
 
 type FilterRow = {
-  branch_desc: string;
-  branch_code: string;
-  classification: string;
-  sku: string;
-  sap_mapping_code: number;
+  sap_code: string;
+  item_desc: string;
+  classification: string | null;
 };
 
 const CLS_LABEL: Record<string, string> = {
@@ -100,43 +98,42 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
   const { data: filtersData } = useGetFilters({});
   const rows: FilterRow[] = (filtersData as { data?: FilterRow[] })?.data ?? [];
 
+  const { data: branchesData } = useGetFilterBranches({});
+  type BranchRow = { sale_loc: string; sale_loc_desc: string };
+  const branchRows: BranchRow[] = (branchesData as { data?: BranchRow[] })?.data ?? [];
+
   const classificationOptions = useMemo(() => {
     const seen = new Set<string>();
     return rows
       .filter(
         (r) =>
-          r.classification &&
+          r.classification != null &&
           !seen.has(r.classification) &&
           seen.add(r.classification)
       )
-      .sort((a, b) => a.classification.localeCompare(b.classification))
+      .sort((a, b) => (a.classification as string).localeCompare(b.classification as string))
       .map((r) => ({
-        value: r.classification,
-        label: CLS_LABEL[r.classification] ?? r.classification,
+        value: r.classification as string,
+        label: CLS_LABEL[r.classification as string] ?? (r.classification as string),
       }));
   }, [rows]);
 
-  const branchOptions = useMemo(() => {
+  const branchOptions = useMemo(
+    () => branchRows.map((r) => ({ value: r.sale_loc, label: r.sale_loc_desc })),
+    [branchRows]
+  );
+
+  const skuOptions = useMemo(() => {
     const seen = new Set<string>();
     return rows
       .filter(
         (r) =>
-          r.branch_code && !seen.has(r.branch_code) && seen.add(r.branch_code)
-      )
-      .map((r) => ({ value: r.branch_code, label: r.branch_desc }));
-  }, [rows]);
-
-  const skuOptions = useMemo(() => {
-    const seen = new Set<number>();
-    return rows
-      .filter(
-        (r) =>
-          r.sap_mapping_code &&
+          r.sap_code &&
           (!localClassification || r.classification === localClassification) &&
-          !seen.has(r.sap_mapping_code) &&
-          seen.add(r.sap_mapping_code)
+          !seen.has(r.sap_code) &&
+          seen.add(r.sap_code)
       )
-      .map((r) => ({ value: String(r.sap_mapping_code), label: r.sku }));
+      .map((r) => ({ value: r.sap_code, label: r.item_desc }));
   }, [rows, localClassification]);
 
   return (

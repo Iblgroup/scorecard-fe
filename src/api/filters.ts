@@ -20,3 +20,16 @@ export const useGetFilters = (params: FilterParams = {}) => {
     staleTime: 5 * 60 * 1000,
   });
 };
+
+const getFilterBranches = async (params: FilterParams) => {
+  return axios.get(ApiEndpoints.filterBranches, { params });
+};
+
+export const useGetFilterBranches = (params: FilterParams = {}) => {
+  return useQuery({
+    queryKey: [ApiKey.filters, 'branches', params],
+    queryFn: () => getFilterBranches(params),
+    placeholderData: keepPreviousData,
+    staleTime: 5 * 60 * 1000,
+  });
+};

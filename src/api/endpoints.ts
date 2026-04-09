@@ -22,6 +22,7 @@ export const ApiEndpoints = {
   rpm: '/rpm',
   wip: '/wip',
   filters: '/filters',
+  filterBranches: '/filters/branches',
   serviceMeasure: '/service-measure',
   dispatchVsOrder: '/dispatch-vs-order',
   tgtVsActual: '/tgt-vs-actual',

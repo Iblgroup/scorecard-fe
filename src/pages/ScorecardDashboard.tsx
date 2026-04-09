@@ -400,7 +400,8 @@ interface ForecastCategoryRow {
   classification?: string | null;
   category?: string | null;
   month: string;
-  forecast_accuracy_pct: number;
+  forecast_accuracy_pct?: number | string;
+  budget_accuracy_pct?: number | string;
 }
 
 interface SupplyChainTabProps {
@@ -661,12 +662,12 @@ function SupplyChainTab({
             <Box w="1px" bg="gray.100" mx={3} flexShrink={0} />
             <Box flex={1} minW={0}>
               <BarChart
-                data={forecastBarData}
+                data={iblBarData}
                 xKey="classification"
                 barSize={35}
                 bars={
-                  forecastMonths.length
-                    ? forecastMonths.map((m, i) => ({
+                  iblMonths.length
+                    ? iblMonths.map((m, i) => ({
                         key: m,
                         label: m,
                         color: CHART_COLORS[i] ?? CHART_COLORS[0],
@@ -693,7 +694,6 @@ function SupplyChainTab({
             </Box>
           </Flex>
         </ChartCard>
-
         <ChartCard
           colSpan={6}
           title="Forecast Accuracy IBL"
@@ -723,12 +723,12 @@ function SupplyChainTab({
             <Box w="1px" bg="gray.100" mx={3} flexShrink={0} />
             <Box flex={1} minW={0}>
               <BarChart
-                data={iblBarData}
+                data={forecastBarData}
                 xKey="classification"
                 barSize={35}
                 bars={
-                  iblMonths.length
-                    ? iblMonths.map((m, i) => ({
+                  forecastMonths.length
+                    ? forecastMonths.map((m, i) => ({
                         key: m,
                         label: m,
                         color: CHART_COLORS[i] ?? CHART_COLORS[0],
@@ -864,19 +864,20 @@ function ServiceMeasureTab({
     );
 
   const grouped = invApiRows.reduce<Record<string, InvApiRow[]>>((acc, row) => {
-    const key = (row.classification as string) || 'Other';
+    const cls = row.classification as string;
+    const key = (!cls || cls === 'Others') ? 'Others' : cls;
     if (!acc[key]) acc[key] = [];
     acc[key].push(row);
     return acc;
   }, {});
 
-  const computedRows = (['A', 'B', 'C', 'Other'] as const)
+  const computedRows = (['A', 'B', 'C', 'Others'] as const)
     .filter((c) => grouped[c]?.length)
     .map((cls) => ({
       cls,
       vals: avgVals(grouped[cls]),
       bold: false,
-      isOther: cls === 'Other',
+      isOther: cls === 'Others',
       subRows: grouped[cls].map((r: InvApiRow) => ({
         sku: (r.item_desc as string) ?? '',
         vals: branchKeys.map((k) => Number(r[k] ?? 0)),
@@ -965,7 +966,7 @@ function ServiceMeasureTab({
               const rows: React.ReactNode[] = [];
               computedRows.forEach((row, rowIdx) => {
                 const isLastAbc =
-                  row.cls !== 'Other' &&
+                  row.cls !== 'Others' &&
                   (rowIdx === computedRows.length - 1 ||
                     computedRows[rowIdx + 1]?.isOther);
                 const clsColor =
@@ -985,7 +986,7 @@ function ServiceMeasureTab({
                         ? clsColors.Cbg
                         : clsColors.Otherbg;
                 const clsBadge =
-                  row.cls === 'Other' ? (
+                  row.cls === 'Others' ? (
                     <Box
                       display="inline-flex"
                       alignItems="center"
@@ -1468,7 +1469,8 @@ export default function ScorecardDashboard() {
 
   type CoverDayRow = {
     classification: string;
-    inv_value: string;
+    inv_val: string;
+    trg_value: string;
     cover_days: string;
     daily_target: string;
   };
@@ -1482,7 +1484,7 @@ export default function ScorecardDashboard() {
     Number(v ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
 
   const totalInv = coverDayApiRows.reduce(
-    (s, r) => s + Number(r.inv_value ?? 0),
+    (s, r) => s + Number(r.inv_val ?? 0),
     0
   );
   const totalDailyTarget = coverDayApiRows.reduce(
@@ -1501,39 +1503,39 @@ export default function ScorecardDashboard() {
     {
       ...COVER_DAYS[1],
       value: Math.round(Number(findCls('A')?.cover_days ?? 0)),
-      inv: fmtInv(findCls('A')?.inv_value),
+      inv: fmtInv(findCls('A')?.inv_val),
     },
     {
       ...COVER_DAYS[2],
       value: Math.round(Number(findCls('B')?.cover_days ?? 0)),
-      inv: fmtInv(findCls('B')?.inv_value),
+      inv: fmtInv(findCls('B')?.inv_val),
     },
     {
       ...COVER_DAYS[3],
       value: Math.round(Number(findCls('C')?.cover_days ?? 0)),
-      inv: fmtInv(findCls('C')?.inv_value),
+      inv: fmtInv(findCls('C')?.inv_val),
     },
     {
       ...COVER_DAYS[4],
       value: Math.round(Number(findCls('Others')?.cover_days ?? 0)),
-      inv: fmtInv(findCls('Others')?.inv_value),
+      inv: fmtInv(findCls('Others')?.inv_val),
     },
   ];
 
   type ThresholdRow = {
-    Classification: string;
-    'No Of SKUs > Threshold': number;
-    'No Of SKUs < Threshold': number;
+    classification: string;
+    'No Of SKUs > Threshold': string | number;
+    'No Of SKUs < Threshold': string | number;
   };
   const thresholdRows =
     (aboveBelowThresholdData as { data?: ThresholdRow[] })?.data ?? [];
   const skusThresholdData = thresholdRows
     .filter(
       (r) =>
-        !filters.classification || r.Classification === filters.classification
+        !filters.classification || r.classification === filters.classification
     )
     .map((r) => ({
-      class: r.Classification,
+      class: r.classification,
       above: Number(r['No Of SKUs > Threshold']) ?? 0,
       below: Number(r['No Of SKUs < Threshold']) ?? 0,
     }));
@@ -1564,10 +1566,13 @@ export default function ScorecardDashboard() {
   const tsclAccuracy = (() => {
     const row = (
       forecastAccuracyMonthlyData as {
-        data?: { forecast_accuracy_pct: number; new_total_all_sales: number }[];
+        data?: {
+          forecast_accuracy_pct: string | number;
+          new_total_all_sales: number;
+        }[];
       }
     )?.data?.[0];
-    return row ? Math.round(row.forecast_accuracy_pct * 100 * 10) / 10 : null;
+    return row ? Math.round(Number(row.forecast_accuracy_pct) * 10) / 10 : null;
   })();
 
   const tsclSalesDisplay = (() => {
@@ -1575,7 +1580,7 @@ export default function ScorecardDashboard() {
       forecastAccuracyMonthlyData as {
         data?: {
           new_total_all_sales: number;
-          period_sales_trg_ibl_primary: number;
+          period_sales_trg_ibl_primary: string | number;
         }[];
       }
     )?.data?.[0];
@@ -1594,13 +1599,13 @@ export default function ScorecardDashboard() {
     const row = (
       forecastAccuracyYearlyData as {
         data?: {
-          forecast_accuracy_pct: number;
+          budget_accuracy_pct: string | number;
           new_total_all_sales: number;
           budget: number;
         }[];
       }
     )?.data?.[0];
-    return row ? Math.round(row.forecast_accuracy_pct * 100 * 10) / 10 : null;
+    return row ? Math.round(Number(row.budget_accuracy_pct) * 10) / 10 : null;
   })();
 
   const iblSalesDisplay = (() => {
@@ -1635,7 +1640,7 @@ export default function ScorecardDashboard() {
         const label = key === '' || key === null ? 'Others' : key;
         if (!acc[label]) acc[label] = { classification: label };
         acc[label][r.month] =
-          Math.round(r.forecast_accuracy_pct * 100 * 10) / 10;
+          Math.round(Number(r.budget_accuracy_pct ?? r.forecast_accuracy_pct) * 10) / 10;
         return acc;
       },
       {}
@@ -1657,7 +1662,8 @@ export default function ScorecardDashboard() {
       const key = r.classification ?? r.category ?? 'Others';
       const label = key === '' ? 'Others' : key;
       if (!acc[label]) acc[label] = { classification: label };
-      acc[label][r.month] = Math.round(r.forecast_accuracy_pct * 100 * 10) / 10;
+      acc[label][r.month] =
+        Math.round(Number(r.forecast_accuracy_pct) * 10) / 10;
       return acc;
     }, {})
   );
