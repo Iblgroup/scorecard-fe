@@ -206,7 +206,7 @@ export function SalesSummaryCard({
           })}
 
       {/* Total */}
-      {total && (
+      {(isLoading || total) && (
         <Flex
           align="center"
           py={2}
@@ -216,28 +216,39 @@ export function SalesSummaryCard({
           borderColor="gray.200"
           gap={3}
         >
-          <Text flex={1} fontSize="13px" fontWeight="700" color="#1e293b">
-            Total
-          </Text>
-          <Text w="120px" fontSize="12px" fontWeight="600" color="gray.600">
-            {totalSku}
-          </Text>
-          <Box w="90px" display="flex" justifyContent="center">
-            <Pill
-              label={total.sales}
-              color="#1e293b"
-              bg="#f1f5f9"
-              border="#cbd5e1"
-            />
-          </Box>
-          <Box w="70px" display="flex" justifyContent="center">
-            <Pill
-              label={total.pct}
-              color="#059669"
-              bg="#05996912"
-              border="#05996935"
-            />
-          </Box>
+          {isLoading ? (
+            <>
+              <Skeleton flex={1} height="14px" borderRadius="sm" />
+              <Skeleton w="120px" height="14px" borderRadius="sm" />
+              <Skeleton w="90px" height="22px" borderRadius="sm" />
+              <Skeleton w="70px" height="22px" borderRadius="sm" />
+            </>
+          ) : (
+            <>
+              <Text flex={1} fontSize="13px" fontWeight="700" color="#1e293b">
+                Total
+              </Text>
+              <Text w="120px" fontSize="12px" fontWeight="600" color="gray.600">
+                {totalSku}
+              </Text>
+              <Box w="90px" display="flex" justifyContent="center">
+                <Pill
+                  label={total!.sales}
+                  color="#1e293b"
+                  bg="#f1f5f9"
+                  border="#cbd5e1"
+                />
+              </Box>
+              <Box w="70px" display="flex" justifyContent="center">
+                <Pill
+                  label={total!.pct}
+                  color="#059669"
+                  bg="#05996912"
+                  border="#05996935"
+                />
+              </Box>
+            </>
+          )}
         </Flex>
       )}
     </Box>

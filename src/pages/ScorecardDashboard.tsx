@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useGetSalesSummary } from '@/api/salesSummary';
-import { useGetCoverDays } from '@/api/coverDays';
+import { useGetCoverDays, useGetCoverDaysTotal } from '@/api/coverDays';
 import { useGetForecastAccuracyMonthly } from '@/api/forecastAccuracyMonthly';
 import { useGetForecastAccuracyYearly } from '@/api/forecastAccuracyYearly';
 import { useGetInventoryDays } from '@/api/inventoryDays';
@@ -13,6 +13,7 @@ import { useAppSelector } from '@/app/hooks';
 import { ChartCard } from '@/components/chart-card';
 import { BarChart, GaugeChart, LineChart } from '@/components/charts';
 import { DataTable, DataTableRow } from '@/components/data-table';
+import { Select } from '@/components/select';
 import { FilterBar } from '@/components/filter-bar';
 import { HeaderActions } from '@/components/header-actions';
 import { clsColors, colors, gradients } from '@/constants/theme';
@@ -146,6 +147,8 @@ const COVER_DAYS = [
   },
 ];
 
+type CoverDaysCardRow = (typeof COVER_DAYS)[number];
+
 const CHART_COLORS = ['#646ECB', '#5AC8D8', '#16476A'] as const;
 
 const INV_API_BRANCHES = [
@@ -261,7 +264,7 @@ function CoverDaysCard({
   border,
   dot,
   endDate,
-}: (typeof COVER_DAYS)[0] & { endDate?: string }) {
+}: CoverDaysCardRow & { endDate?: string }) {
   const isClassified = dot === '●';
   const letter = label.charAt(0);
 
@@ -394,15 +397,8 @@ const LABEL_MAP: Record<string, string> = {
   B: 'B',
   C: 'C',
   Other: 'Other',
+  Others: 'Others',
 };
-
-interface ForecastCategoryRow {
-  classification?: string | null;
-  category?: string | null;
-  month: string;
-  forecast_accuracy_pct?: number | string;
-  budget_accuracy_pct?: number | string;
-}
 
 interface SupplyChainTabProps {
   salesRows: {
@@ -413,7 +409,7 @@ interface SupplyChainTabProps {
     up: boolean | null;
   }[];
   salesTotal: { sales: string; pct: string };
-  coverDaysRows: typeof COVER_DAYS;
+  coverDaysRows: CoverDaysCardRow[];
   tsclAccuracy: number | null;
   tsclSalesDisplay?: { achieved: string; target: string };
   forecastBarData: Record<string, string | number>[];
@@ -841,15 +837,15 @@ function ServiceMeasureTab({
   }));
   type TgtVsActualRow = {
     classification: string;
-    cover_days_tgt: string;
-    actual_cover_days: string;
+    cover_days_tgt: string | number;
+    cover_days: string | number;
   };
   const coverDaysChartData = (
     (tgtVsActualData as { data?: TgtVsActualRow[] })?.data ?? []
   ).map((r) => ({
     class: r.classification,
-    tgt: parseFloat(r.cover_days_tgt),
-    actual: parseFloat(r.actual_cover_days),
+    tgt: Number(r.cover_days_tgt ?? 0),
+    actual: Number(r.cover_days ?? 0),
   }));
 
   type InvApiRow = Record<string, string | null>;
@@ -865,7 +861,7 @@ function ServiceMeasureTab({
 
   const grouped = invApiRows.reduce<Record<string, InvApiRow[]>>((acc, row) => {
     const cls = row.classification as string;
-    const key = (!cls || cls === 'Others') ? 'Others' : cls;
+    const key = !cls || cls === 'Others' ? 'Others' : cls;
     if (!acc[key]) acc[key] = [];
     acc[key].push(row);
     return acc;
@@ -1194,23 +1190,32 @@ function DispatchWipTab({
   type WipRow = { 'item desc': string; Wip_total: string };
   type RpmRow = {
     materialname: string;
+    cost?: string;
+    unit?: string;
     total_value: string;
     producttype?: string;
+    storage_location?: string;
+    restricted?: string;
+    unrestricted?: string;
   };
   const dispatchRows =
     (dispatchVsOrderData as { data?: DispatchRow[] })?.data ?? [];
   const wipRows = (wipData as { data?: WipRow[] })?.data ?? [];
   const allRpmRows = (rpmData as { data?: RpmRow[] })?.data ?? [];
-  const [rpmTypeFilter, setRpmTypeFilter] = useState<'All' | 'TPKG' | 'TRAW'>(
-    'All'
-  );
+  const [dispatchFilter, setDispatchFilter] = useState<string>('All');
+  const [rpmTypeFilter, setRpmTypeFilter] = useState<
+    'All' | 'location' | 'restricted' | 'unrestricted'
+  >('All');
+  const [rpmProductFilter, setRpmProductFilter] = useState<
+    'All' | 'TPKG' | 'TRAW'
+  >('All');
   const rpmRows =
-    rpmTypeFilter === 'All'
+    rpmProductFilter === 'All'
       ? allRpmRows
-      : allRpmRows.filter((r) => r.producttype === rpmTypeFilter);
+      : allRpmRows.filter((r) => r.producttype === rpmProductFilter);
 
   return (
-    <Grid templateColumns="repeat(10, 1fr)" gap={4}>
+    <Grid templateColumns="repeat(11, 1fr)" gap={4}>
       <GridItem colSpan={4}>
         <DataTable
           title="Dispatch Vs Order"
@@ -1219,6 +1224,30 @@ function DispatchWipTab({
           colAligns={['left', 'left', 'left', 'right']}
           pageSize={15}
           isLoading={isLoadingDispatch}
+          headerActions={
+            <Box minW="150px">
+              <Select
+                value={dispatchFilter}
+                options={[
+                  { value: 'All', label: 'All' },
+                  { value: 'export', label: 'Export' },
+                  { value: 'local', label: 'Local' },
+                ]}
+                onChange={(v) => setDispatchFilter(v as string)}
+                placeholder="Filter..."
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    minHeight: '36px',
+                    height: '36px',
+                  }),
+                  valueContainer: (base) => ({ ...base, padding: '0 8px' }),
+                  indicatorsContainer: (base) => ({ ...base, height: '36px' }),
+                  menu: (base) => ({ ...base, zIndex: 10 }),
+                }}
+              />
+            </Box>
+          }
         >
           {dispatchRows.map((row) => {
             const rawPct = parseInt(row.delivery_pct);
@@ -1284,50 +1313,82 @@ function DispatchWipTab({
       </GridItem>
 
       {/* RPM */}
-      <GridItem colSpan={3}>
+      <GridItem colSpan={4}>
         <DataTable
           title="RPM"
           headerGradient={gradients.tableIndigo}
-          headers={['Material Name', 'RPM Value']}
-          colAligns={['left', 'right']}
+          headers={['Material Name', 'Cost', 'Units', 'RPM Value']}
+          colAligns={['left', 'right', 'right', 'right']}
           pageSize={15}
           isLoading={isLoadingRpm}
           headerActions={
-            <HStack
-              gap={0}
-              borderRadius="md"
-              overflow="hidden"
-              border="1px solid"
-              borderColor="gray.200"
-            >
-              {(
-                [
-                  ['All', 'All'],
-                  ['PM', 'TPKG'],
-                  ['RM', 'TRAW'],
-                ] as const
-              ).map(([label, value]) => (
-                <Box
-                  key={value}
-                  as="button"
-                  px={3}
-                  py="5px"
-                  cursor={'pointer'}
-                  fontSize="12px"
-                  fontWeight="700"
-                  bg={rpmTypeFilter === value ? 'blue.600' : 'white'}
-                  color={rpmTypeFilter === value ? 'white' : 'gray.600'}
-                  _hover={{
-                    bg: rpmTypeFilter === value ? 'blue.600' : 'gray.50',
+            <HStack gap={2}>
+              <Box minW="150px">
+                <Select
+                  value={rpmTypeFilter}
+                  options={[
+                    { value: 'All', label: 'All' },
+                    { value: 'location', label: 'Storage Location' },
+                    { value: 'restricted', label: 'Restricted' },
+                    { value: 'unrestricted', label: 'Unrestricted' },
+                  ]}
+                  onChange={(v) =>
+                    setRpmTypeFilter(
+                      v as 'All' | 'location' | 'restricted' | 'unrestricted'
+                    )
+                  }
+                  placeholder="Type..."
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      minHeight: '36px',
+                      height: '36px',
+                    }),
+                    valueContainer: (base) => ({ ...base, padding: '0 8px' }),
+                    indicatorsContainer: (base) => ({
+                      ...base,
+                      height: '36px',
+                    }),
                   }}
-                  onClick={() => setRpmTypeFilter(value)}
-                  borderRight={value !== 'TRAW' ? '1px solid' : undefined}
-                  borderColor="gray.200"
-                  transition="all 0.15s"
-                >
-                  {label}
-                </Box>
-              ))}
+                />
+              </Box>
+              <HStack
+                gap={0}
+                borderRadius="md"
+                overflow="hidden"
+                border="1px solid"
+                borderColor="gray.200"
+                h="36px"
+              >
+                {(
+                  [
+                    ['All', 'All'],
+                    ['PM', 'TPKG'],
+                    ['RM', 'TRAW'],
+                  ] as const
+                ).map(([label, value]) => (
+                  <Box
+                    key={value}
+                    as="button"
+                    px={3}
+                    h="36px"
+                    cursor="pointer"
+                    fontSize="12px"
+                    fontWeight="700"
+                    bg={rpmProductFilter === value ? 'blue.600' : 'white'}
+                    color={rpmProductFilter === value ? 'white' : 'gray.600'}
+                    _hover={{
+                      bg: rpmProductFilter === value ? 'blue.600' : 'gray.50',
+                    }}
+                    onClick={() => setRpmProductFilter(value)}
+                    borderRight={value !== 'TRAW' ? '1px solid' : undefined}
+                    borderColor="gray.200"
+                    transition="all 0.15s"
+                  >
+                    {label}
+                  </Box>
+                ))}
+              </HStack>
             </HStack>
           }
         >
@@ -1335,22 +1396,26 @@ function DispatchWipTab({
             key="__rpm_total__"
             cells={[
               'Total',
+              '',
+              '',
               rpmRows
                 .reduce((s, r) => s + Number(r.total_value ?? 0), 0)
                 .toLocaleString('en-US', { maximumFractionDigits: 0 }),
             ]}
-            cellWeights={['700', '700']}
+            cellWeights={['700', '700', '700', '700']}
           />
           {rpmRows.map((row) => (
             <DataTableRow
               key={row.materialname}
               cells={[
                 row.materialname,
+                '',
+                '',
                 Number(row.total_value ?? 0).toLocaleString('en-US', {
                   maximumFractionDigits: 0,
                 }),
               ]}
-              cellWeights={[undefined, '600']}
+              cellWeights={[undefined, undefined, undefined, '600']}
             />
           ))}
         </DataTable>
@@ -1388,6 +1453,8 @@ export default function ScorecardDashboard() {
     useGetSalesSummary(params);
   const { data: coverDaysData, isFetching: isLoadingCoverDays } =
     useGetCoverDays(params);
+  const { data: coverDaysTotalData, isFetching: isLoadingCoverDaysTotal } =
+    useGetCoverDaysTotal(params);
   const { data: forecastAccuracyMonthlyData } =
     useGetForecastAccuracyMonthly(params);
   const {
@@ -1427,11 +1494,11 @@ export default function ScorecardDashboard() {
     useGetTgtVsActual(params);
 
   const apiRows = salesSummaryData?.data as
-    | { classification: string; sku: number; new_total_all_sales: number }[]
+    | { classification: string; sku: string | number; amount: number }[]
     | undefined;
 
   const totalSales = apiRows
-    ? apiRows.reduce((sum, item) => sum + Number(item.new_total_all_sales), 0)
+    ? apiRows.reduce((sum, item) => sum + Number(item.amount), 0)
     : null;
 
   const UP_MAP: Record<string, boolean | null> = {
@@ -1439,19 +1506,17 @@ export default function ScorecardDashboard() {
     B: true,
     C: false,
     Other: null,
+    Others: null,
   };
 
   const salesRows =
     apiRows && totalSales
       ? apiRows.map((item) => {
-          const pct = (
-            (Number(item.new_total_all_sales) / totalSales) *
-            100
-          ).toFixed(1);
+          const pct = ((Number(item.amount) / totalSales) * 100).toFixed(1);
           return {
             label: LABEL_MAP[item.classification] ?? item.classification,
             sku: String(item.sku),
-            sales: Number(item.new_total_all_sales).toLocaleString('en-US', {
+            sales: Number(item.amount).toLocaleString('en-US', {
               maximumFractionDigits: 0,
             }),
             pct: `${pct}%`,
@@ -1468,20 +1533,24 @@ export default function ScorecardDashboard() {
   };
 
   type CoverDayRow = {
-    classification: string;
-    inv_val: string;
-    trg_value: string;
-    cover_days: string;
-    daily_target: string;
+    classification?: string;
+    inv_val: string | number;
+    trg_value: string | number;
+    cover_days: string | number;
+    daily_target: string | number;
   };
   const coverDayApiRows =
     (coverDaysData as { data?: CoverDayRow[] })?.data ?? [];
+  const coverDayTotalRow =
+    ((coverDaysTotalData as { data?: CoverDayRow[] })?.data ?? [])[0];
 
   const findCls = (cls: string) =>
     coverDayApiRows.find((r) => r.classification === cls);
 
-  const fmtInv = (v: string | undefined) =>
-    Number(v ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  const fmtNumber = (
+    v: string | number | undefined,
+    maximumFractionDigits = 0
+  ) => Number(v ?? 0).toLocaleString('en-US', { maximumFractionDigits });
 
   const totalInv = coverDayApiRows.reduce(
     (s, r) => s + Number(r.inv_val ?? 0),
@@ -1494,31 +1563,36 @@ export default function ScorecardDashboard() {
   const totalCoverDays =
     totalDailyTarget > 0 ? Math.round(totalInv / totalDailyTarget) : 0;
 
-  const coverDaysRows: typeof COVER_DAYS = [
+  const coverDaysRows: CoverDaysCardRow[] = [
     {
       ...COVER_DAYS[0],
-      value: totalCoverDays,
-      inv: fmtInv(String(totalInv)),
+      value:
+        coverDayTotalRow?.cover_days !== undefined
+          ? Math.round(Number(coverDayTotalRow.cover_days))
+          : totalCoverDays,
+      inv: coverDayTotalRow
+        ? fmtNumber(coverDayTotalRow.inv_val)
+        : fmtNumber(totalInv),
     },
     {
       ...COVER_DAYS[1],
       value: Math.round(Number(findCls('A')?.cover_days ?? 0)),
-      inv: fmtInv(findCls('A')?.inv_val),
+      inv: fmtNumber(findCls('A')?.inv_val),
     },
     {
       ...COVER_DAYS[2],
       value: Math.round(Number(findCls('B')?.cover_days ?? 0)),
-      inv: fmtInv(findCls('B')?.inv_val),
+      inv: fmtNumber(findCls('B')?.inv_val),
     },
     {
       ...COVER_DAYS[3],
       value: Math.round(Number(findCls('C')?.cover_days ?? 0)),
-      inv: fmtInv(findCls('C')?.inv_val),
+      inv: fmtNumber(findCls('C')?.inv_val),
     },
     {
       ...COVER_DAYS[4],
       value: Math.round(Number(findCls('Others')?.cover_days ?? 0)),
-      inv: fmtInv(findCls('Others')?.inv_val),
+      inv: fmtNumber(findCls('Others')?.inv_val),
     },
   ];
 
@@ -1542,7 +1616,7 @@ export default function ScorecardDashboard() {
 
   type IblVsTsclRow = {
     classification: string;
-    forecast_vs_budget_pct: number;
+    ibl_vs_tscl_pct: string | number;
   };
   const iblVsTsclRows =
     (iblVsTsclData as { data?: IblVsTsclRow[] })?.data ?? [];
@@ -1559,7 +1633,7 @@ export default function ScorecardDashboard() {
       );
       return {
         class: cls,
-        pct: row ? Math.round(Number(row.forecast_vs_budget_pct)) : 0,
+        pct: row ? Math.round(Number(row.ibl_vs_tscl_pct)) : 0,
       };
     });
 
@@ -1567,29 +1641,27 @@ export default function ScorecardDashboard() {
     const row = (
       forecastAccuracyMonthlyData as {
         data?: {
-          forecast_accuracy_pct: string | number;
-          new_total_all_sales: number;
+          pct: string | number;
+          amount: number;
+          target_value: string | number;
         }[];
       }
     )?.data?.[0];
-    return row ? Math.round(Number(row.forecast_accuracy_pct) * 10) / 10 : null;
+    return row ? Math.round(Number(row.pct) * 100 * 10) / 10 : null;
   })();
 
   const tsclSalesDisplay = (() => {
     const row = (
       forecastAccuracyMonthlyData as {
-        data?: {
-          new_total_all_sales: number;
-          period_sales_trg_ibl_primary: string | number;
-        }[];
+        data?: { amount: number; target_value: string | number }[];
       }
     )?.data?.[0];
     if (!row) return undefined;
     return {
-      achieved: Number(row.new_total_all_sales).toLocaleString('en-US', {
+      achieved: Number(row.amount).toLocaleString('en-US', {
         maximumFractionDigits: 0,
       }),
-      target: Number(row.period_sales_trg_ibl_primary).toLocaleString('en-US', {
+      target: Number(row.target_value).toLocaleString('en-US', {
         maximumFractionDigits: 0,
       }),
     };
@@ -1599,35 +1671,43 @@ export default function ScorecardDashboard() {
     const row = (
       forecastAccuracyYearlyData as {
         data?: {
-          budget_accuracy_pct: string | number;
-          new_total_all_sales: number;
-          budget: number;
+          pct: string | number;
+          amount: number;
+          target_value: string | number;
         }[];
       }
     )?.data?.[0];
-    return row ? Math.round(Number(row.budget_accuracy_pct) * 10) / 10 : null;
+    return row ? Math.round(Number(row.pct) * 100 * 10) / 10 : null;
   })();
 
   const iblSalesDisplay = (() => {
     const row = (
       forecastAccuracyYearlyData as {
-        data?: { new_total_all_sales: number; budget: number }[];
+        data?: { amount: number; target_value: string | number }[];
       }
     )?.data?.[0];
     if (!row) return undefined;
     return {
-      achieved: Number(row.new_total_all_sales).toLocaleString('en-US', {
+      achieved: Number(row.amount).toLocaleString('en-US', {
         maximumFractionDigits: 0,
       }),
-      target: Number(row.budget).toLocaleString('en-US', {
+      target: Number(row.target_value).toLocaleString('en-US', {
         maximumFractionDigits: 0,
       }),
     };
   })();
 
-  const iblCategoryRows: ForecastCategoryRow[] =
-    (forecastAccuracyCategoryYearlyData as { data?: ForecastCategoryRow[] })
-      ?.data ?? [];
+  const iblCategoryRows = (
+    (
+      forecastAccuracyCategoryYearlyData as {
+        data?: {
+          classification: string;
+          month: string;
+          pct: string | number;
+        }[];
+      }
+    )?.data ?? []
+  ).map((r) => ({ ...r, month: r.month.trim() }));
 
   const iblMonths = [...new Set(iblCategoryRows.map((r) => r.month))].sort(
     (a, b) => new Date(`1 ${a}`).getTime() - new Date(`1 ${b}`).getTime()
@@ -1636,20 +1716,26 @@ export default function ScorecardDashboard() {
   const iblBarData: Record<string, string | number>[] = Object.values(
     iblCategoryRows.reduce<Record<string, Record<string, string | number>>>(
       (acc, r) => {
-        const key = r.category ?? r.classification ?? 'Others';
-        const label = key === '' || key === null ? 'Others' : key;
+        const label = r.classification || 'Others';
         if (!acc[label]) acc[label] = { classification: label };
-        acc[label][r.month] =
-          Math.round(Number(r.budget_accuracy_pct ?? r.forecast_accuracy_pct) * 10) / 10;
+        acc[label][r.month] = Math.round(Number(r.pct) * 10) / 10;
         return acc;
       },
       {}
     )
   );
 
-  const forecastCategoryRows: ForecastCategoryRow[] =
-    (forecastAccuracyCategoryMonthlyData as { data?: ForecastCategoryRow[] })
-      ?.data ?? [];
+  const forecastCategoryRows = (
+    (
+      forecastAccuracyCategoryMonthlyData as {
+        data?: {
+          classification: string;
+          month: string;
+          pct: string | number;
+        }[];
+      }
+    )?.data ?? []
+  ).map((r) => ({ ...r, month: r.month.trim() }));
 
   const forecastMonths = [
     ...new Set(forecastCategoryRows.map((r) => r.month)),
@@ -1659,11 +1745,9 @@ export default function ScorecardDashboard() {
     forecastCategoryRows.reduce<
       Record<string, Record<string, string | number>>
     >((acc, r) => {
-      const key = r.classification ?? r.category ?? 'Others';
-      const label = key === '' ? 'Others' : key;
+      const label = r.classification || 'Others';
       if (!acc[label]) acc[label] = { classification: label };
-      acc[label][r.month] =
-        Math.round(Number(r.forecast_accuracy_pct) * 10) / 10;
+      acc[label][r.month] = Math.round(Number(r.pct) * 10) / 10;
       return acc;
     }, {})
   );
@@ -1746,7 +1830,7 @@ export default function ScorecardDashboard() {
             iblBarData={iblBarData}
             iblMonths={iblMonths}
             isLoadingSales={isLoadingSales}
-            isLoadingCoverDays={isLoadingCoverDays}
+            isLoadingCoverDays={isLoadingCoverDays || isLoadingCoverDaysTotal}
             isLoadingForecastTscl={isLoadingForecastTscl}
             isLoadingForecastIbl={isLoadingForecastIbl}
             pctSkusData={pctSkusData}

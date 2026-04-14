@@ -24,8 +24,10 @@ export interface FilterBarProps {
 }
 
 type FilterRow = {
-  sap_code: string;
-  item_desc: string;
+  item_code?: string;
+  item_description?: string;
+  sap_code?: string;
+  item_desc?: string;
   classification: string | null;
 };
 
@@ -99,7 +101,12 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
   const rows: FilterRow[] = (filtersData as { data?: FilterRow[] })?.data ?? [];
 
   const { data: branchesData } = useGetFilterBranches({});
-  type BranchRow = { sale_loc: string; sale_loc_desc: string };
+  type BranchRow = {
+    branch_id?: string;
+    branch_desc?: string;
+    sale_loc?: string;
+    sale_loc_desc?: string;
+  };
   const branchRows: BranchRow[] = (branchesData as { data?: BranchRow[] })?.data ?? [];
 
   const classificationOptions = useMemo(() => {
@@ -119,21 +126,30 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
   }, [rows]);
 
   const branchOptions = useMemo(
-    () => branchRows.map((r) => ({ value: r.sale_loc, label: r.sale_loc_desc })),
+    () =>
+      branchRows.map((r) => ({
+        value: r.branch_id ?? r.sale_loc ?? '',
+        label: r.branch_desc ?? r.sale_loc_desc ?? '',
+      })),
     [branchRows]
   );
 
   const skuOptions = useMemo(() => {
     const seen = new Set<string>();
     return rows
+      .map((r) => ({
+        code: r.item_code ?? r.sap_code ?? '',
+        description: r.item_description ?? r.item_desc ?? '',
+        classification: r.classification,
+      }))
       .filter(
         (r) =>
-          r.sap_code &&
+          r.code &&
           (!localClassification || r.classification === localClassification) &&
-          !seen.has(r.sap_code) &&
-          seen.add(r.sap_code)
+          !seen.has(r.code) &&
+          seen.add(r.code)
       )
-      .map((r) => ({ value: r.sap_code, label: r.item_desc }));
+      .map((r) => ({ value: r.code, label: r.description }));
   }, [rows, localClassification]);
 
   return (

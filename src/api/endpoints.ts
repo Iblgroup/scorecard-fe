@@ -15,6 +15,7 @@ export const ApiEndpoints = {
   forecastAccuracyYearly: '/forecast-accuracy-yearly',
   inventoryDays: '/inventory-days',
   coverDays: '/cover-days',
+  coverDaysTotal: '/cover-days/total',
   aboveBelowThreshold: '/above-below-threshold',
   forecastAccuracyCategoryMonthly: '/forecast-accuracy-category-monthly',
   forecastAccuracyCategoryYearly: '/forecast-accuracy-category-yearly',
