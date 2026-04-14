@@ -1224,6 +1224,7 @@ function DispatchWipTab({
           colAligns={['left', 'left', 'left', 'right']}
           pageSize={15}
           isLoading={isLoadingDispatch}
+          minHeight="calc(100vh - 305px)"
           headerActions={
             <Box minW="150px">
               <Select
@@ -1286,6 +1287,7 @@ function DispatchWipTab({
           colAligns={['left', 'right']}
           pageSize={15}
           isLoading={isLoadingWip}
+          minHeight="calc(100vh - 305px)"
         >
           <DataTableRow
             key="__wip_total__"
@@ -1321,6 +1323,7 @@ function DispatchWipTab({
           colAligns={['left', 'right', 'right', 'right']}
           pageSize={15}
           isLoading={isLoadingRpm}
+          minHeight="calc(100vh - 305px)"
           headerActions={
             <HStack gap={2}>
               <Box minW="150px">
@@ -1349,6 +1352,7 @@ function DispatchWipTab({
                       ...base,
                       height: '36px',
                     }),
+                    menu: (base) => ({ ...base, zIndex: 10 }),
                   }}
                 />
               </Box>
@@ -1541,8 +1545,8 @@ export default function ScorecardDashboard() {
   };
   const coverDayApiRows =
     (coverDaysData as { data?: CoverDayRow[] })?.data ?? [];
-  const coverDayTotalRow =
-    ((coverDaysTotalData as { data?: CoverDayRow[] })?.data ?? [])[0];
+  const coverDayTotalRow = ((coverDaysTotalData as { data?: CoverDayRow[] })
+    ?.data ?? [])[0];
 
   const findCls = (cls: string) =>
     coverDayApiRows.find((r) => r.classification === cls);

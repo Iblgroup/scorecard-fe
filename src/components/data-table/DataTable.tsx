@@ -47,6 +47,7 @@ export interface DataTableProps {
   rowCollapsible?: boolean;
   maxHeight?: string;
   height?: string;
+  minHeight?: string;
   colAligns?: ('left' | 'right' | 'center')[];
   headerActions?: ReactNode;
   stickyFirstCol?: boolean;
@@ -81,6 +82,7 @@ export function DataTable({
   rowCollapsible = false,
   maxHeight,
   height,
+  minHeight,
   colAligns,
   headerActions,
   stickyFirstCol = false,
@@ -250,6 +252,7 @@ export function DataTable({
         overflowY="auto"
         maxH={maxHeight}
         h={height}
+        minH={minHeight}
         css={{
           '& thead tr': {
             position: 'sticky',
