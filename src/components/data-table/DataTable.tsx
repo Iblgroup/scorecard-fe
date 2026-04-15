@@ -50,6 +50,8 @@ export interface DataTableProps {
   minHeight?: string;
   colAligns?: ('left' | 'right' | 'center')[];
   headerActions?: ReactNode;
+  filterRow?: ReactNode;
+  headerMinH?: string;
   stickyFirstCol?: boolean;
 }
 
@@ -85,6 +87,8 @@ export function DataTable({
   minHeight,
   colAligns,
   headerActions,
+  filterRow,
+  headerMinH,
   stickyFirstCol = false,
 }: DataTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
@@ -189,7 +193,7 @@ export function DataTable({
       h="100%"
     >
       {(title || searchable || collapsible) && (
-        <Flex align="center" justify="space-between" px={3} py={2} gap={3}>
+        <Flex align="center" justify="space-between" px={3} py={2} gap={3} minH={headerMinH}>
           <HStack gap={2} flexShrink={0}>
             {collapsible && (
               <Button
@@ -221,7 +225,13 @@ export function DataTable({
               </Text>
             )}
           </HStack>
-          <HStack gap={2} w="100%" justifyContent={'flex-end'} ml="auto">
+          <HStack
+            gap={2}
+            w="100%"
+            justifyContent={'flex-end'}
+            alignItems={'flex-end'}
+            ml="auto"
+          >
             {headerActions}
             {searchable && (
               <Input
@@ -245,6 +255,18 @@ export function DataTable({
               <FiDownload /> Export
             </Button>
           </HStack>
+        </Flex>
+      )}
+      {filterRow && (
+        <Flex
+          align="center"
+          px={3}
+          py={2}
+          gap={2}
+          borderBottom="1px solid"
+          borderColor="gray.100"
+        >
+          {filterRow}
         </Flex>
       )}
       <Box

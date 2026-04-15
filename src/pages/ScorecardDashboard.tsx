@@ -13,7 +13,7 @@ import { useAppSelector } from '@/app/hooks';
 import { ChartCard } from '@/components/chart-card';
 import { BarChart, GaugeChart, LineChart } from '@/components/charts';
 import { DataTable, DataTableRow } from '@/components/data-table';
-import { Select } from '@/components/select';
+// import { Select } from '@/components/select';
 import { FilterBar } from '@/components/filter-bar';
 import { HeaderActions } from '@/components/header-actions';
 import { clsColors, colors, gradients } from '@/constants/theme';
@@ -802,6 +802,7 @@ function ServiceMeasureTab({
   inventoryDaysData,
   skusThresholdData,
   serviceMeasureData,
+  allBranchesServiceMeasureData,
   tgtVsActualData,
   classification,
   isLoadingInventoryDays,
@@ -813,6 +814,7 @@ function ServiceMeasureTab({
   skusThresholdData: { class: string; above: number; below: number }[];
   pctSkusData: { class: string; pct: number }[];
   serviceMeasureData: unknown;
+  allBranchesServiceMeasureData: unknown;
   tgtVsActualData: unknown;
   classification: string;
   isLoadingInventoryDays: boolean;
@@ -827,14 +829,24 @@ function ServiceMeasureTab({
     'SKU-B%': string;
     'SKU-C%': string;
   };
-  const serviceMeasureChartData = (
-    (serviceMeasureData as { data?: ServiceRow[] })?.data ?? []
-  ).map((r) => ({
-    branch: r.branch,
-    skuA: !isNaN(parseFloat(r['SKU-A%'])) ? parseFloat(r['SKU-A%']) : undefined,
-    skuB: !isNaN(parseFloat(r['SKU-B%'])) ? parseFloat(r['SKU-B%']) : undefined,
-    skuC: !isNaN(parseFloat(r['SKU-C%'])) ? parseFloat(r['SKU-C%']) : undefined,
-  }));
+  const allBranches = (
+    (allBranchesServiceMeasureData as { data?: ServiceRow[] })?.data ?? []
+  ).map((r) => r.branch);
+  const filteredMap = new Map(
+    ((serviceMeasureData as { data?: ServiceRow[] })?.data ?? []).map((r) => [
+      r.branch,
+      r,
+    ])
+  );
+  const serviceMeasureChartData = allBranches.map((branch) => {
+    const r = filteredMap.get(branch);
+    return {
+      branch,
+      skuA: r && !isNaN(parseFloat(r['SKU-A%'])) ? parseFloat(r['SKU-A%']) : 0,
+      skuB: r && !isNaN(parseFloat(r['SKU-B%'])) ? parseFloat(r['SKU-B%']) : 0,
+      skuC: r && !isNaN(parseFloat(r['SKU-C%'])) ? parseFloat(r['SKU-C%']) : 0,
+    };
+  });
   type TgtVsActualRow = {
     classification: string;
     cover_days_tgt: string | number;
@@ -1202,17 +1214,23 @@ function DispatchWipTab({
     (dispatchVsOrderData as { data?: DispatchRow[] })?.data ?? [];
   const wipRows = (wipData as { data?: WipRow[] })?.data ?? [];
   const allRpmRows = (rpmData as { data?: RpmRow[] })?.data ?? [];
-  const [dispatchFilter, setDispatchFilter] = useState<string>('All');
-  const [rpmTypeFilter, setRpmTypeFilter] = useState<
-    'All' | 'location' | 'restricted' | 'unrestricted'
+  // const [dispatchFilter, setDispatchFilter] = useState<string>('All');
+  const [rpmTypeFilter /*setRpmTypeFilter*/] = useState<
+    'All' | 'restricted' | 'unrestricted'
   >('All');
   const [rpmProductFilter, setRpmProductFilter] = useState<
     'All' | 'TPKG' | 'TRAW'
   >('All');
+  const filteredByType =
+    rpmTypeFilter === 'restricted'
+      ? allRpmRows.filter((r) => Number(r.restricted ?? 0) > 0)
+      : rpmTypeFilter === 'unrestricted'
+        ? allRpmRows.filter((r) => Number(r.unrestricted ?? 0) > 0)
+        : allRpmRows;
   const rpmRows =
     rpmProductFilter === 'All'
-      ? allRpmRows
-      : allRpmRows.filter((r) => r.producttype === rpmProductFilter);
+      ? filteredByType
+      : filteredByType.filter((r) => r.producttype === rpmProductFilter);
 
   return (
     <Grid templateColumns="repeat(11, 1fr)" gap={4}>
@@ -1222,38 +1240,42 @@ function DispatchWipTab({
           headerGradient={gradients.tableBlue}
           headers={['Material Name', 'Order Qty', 'Delivery Qty', '%']}
           colAligns={['left', 'left', 'left', 'right']}
+          headerMinH="52px"
           pageSize={15}
           isLoading={isLoadingDispatch}
           minHeight="calc(100vh - 305px)"
           headerActions={
-            <Box minW="150px">
-              <Select
-                value={dispatchFilter}
-                options={[
-                  { value: 'All', label: 'All' },
-                  { value: 'export', label: 'Export' },
-                  { value: 'local', label: 'Local' },
-                ]}
-                onChange={(v) => setDispatchFilter(v as string)}
-                placeholder="Filter..."
-                styles={{
-                  control: (base) => ({
-                    ...base,
-                    minHeight: '36px',
-                    height: '36px',
-                  }),
-                  valueContainer: (base) => ({ ...base, padding: '0 8px' }),
-                  indicatorsContainer: (base) => ({ ...base, height: '36px' }),
-                  menu: (base) => ({ ...base, zIndex: 10 }),
-                }}
-              />
-            </Box>
+            <></>
+            // <Box minW="150px">
+            //   <Select
+            //     value={dispatchFilter}
+            //     options={[
+            //       { value: 'All', label: 'All' },
+            //       { value: 'export', label: 'Export' },
+            //       { value: 'local', label: 'Local' },
+            //     ]}
+            //     onChange={(v) => setDispatchFilter(v as string)}
+            //     placeholder="Filter..."
+            //     styles={{
+            //       control: (base) => ({
+            //         ...base,
+            //         minHeight: '36px',
+            //         height: '36px',
+            //       }),
+            //       valueContainer: (base) => ({ ...base, padding: '0 8px' }),
+            //       indicatorsContainer: (base) => ({ ...base, height: '36px' }),
+            //       menu: (base) => ({ ...base, zIndex: 10 }),
+            //     }}
+            //   />
+            // </Box>
           }
         >
           {dispatchRows.map((row) => {
-            const rawPct = parseInt(row.delivery_pct);
-            const pct = `${rawPct < 0 ? 0 : rawPct}%`;
-            const isBelow95 = parseFloat(row.delivery_pct) < 95;
+            const rawPct = parseFloat(row.delivery_pct);
+            const safePct =
+              isNaN(rawPct) || rawPct < 0 ? 0 : Math.round(rawPct);
+            const pct = `${safePct}%`;
+            const isBelow95 = safePct < 95;
             const orderQty = Number(row.total_order_qty ?? 0).toLocaleString(
               'en-US',
               { maximumFractionDigits: 0 }
@@ -1285,6 +1307,7 @@ function DispatchWipTab({
           headerGradient={gradients.tableBlue}
           headers={['Material Name', 'WIP Value']}
           colAligns={['left', 'right']}
+          headerMinH="52px"
           pageSize={15}
           isLoading={isLoadingWip}
           minHeight="calc(100vh - 305px)"
@@ -1317,45 +1340,61 @@ function DispatchWipTab({
       {/* RPM */}
       <GridItem colSpan={4}>
         <DataTable
-          title="RPM"
+          title="RMPM"
           headerGradient={gradients.tableIndigo}
-          headers={['Material Name', 'Cost', 'Units', 'RPM Value']}
+          headerMinH="52px"
+          headers={[
+            'Material Name',
+            'Restricted',
+            'Unrestricted',
+            'Total Value',
+          ]}
           colAligns={['left', 'right', 'right', 'right']}
           pageSize={15}
           isLoading={isLoadingRpm}
           minHeight="calc(100vh - 305px)"
           headerActions={
-            <HStack gap={2}>
-              <Box minW="150px">
-                <Select
-                  value={rpmTypeFilter}
-                  options={[
-                    { value: 'All', label: 'All' },
-                    { value: 'location', label: 'Storage Location' },
-                    { value: 'restricted', label: 'Restricted' },
-                    { value: 'unrestricted', label: 'Unrestricted' },
-                  ]}
-                  onChange={(v) =>
-                    setRpmTypeFilter(
-                      v as 'All' | 'location' | 'restricted' | 'unrestricted'
-                    )
-                  }
-                  placeholder="Type..."
-                  styles={{
-                    control: (base) => ({
-                      ...base,
-                      minHeight: '36px',
-                      height: '36px',
-                    }),
-                    valueContainer: (base) => ({ ...base, padding: '0 8px' }),
-                    indicatorsContainer: (base) => ({
-                      ...base,
-                      height: '36px',
-                    }),
-                    menu: (base) => ({ ...base, zIndex: 10 }),
-                  }}
-                />
-              </Box>
+            <HStack gap={3} align="flex-end">
+              {/* <Box flexShrink={0}>
+                <Text
+                  fontSize="10px"
+                  fontWeight="700"
+                  color="gray.500"
+                  textTransform="uppercase"
+                  letterSpacing="0.05em"
+                  mb="4px"
+                >
+                  Storage Location
+                </Text>
+                <Box w="150px">
+                  <Select
+                    value={rpmTypeFilter}
+                    options={[
+                      { value: 'All', label: 'All' },
+                      { value: 'restricted', label: 'Restricted' },
+                      { value: 'unrestricted', label: 'Unrestricted' },
+                    ]}
+                    onChange={(v) =>
+                      setRpmTypeFilter(
+                        v as 'All' | 'restricted' | 'unrestricted'
+                      )
+                    }
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        minHeight: '36px',
+                        height: '36px',
+                      }),
+                      valueContainer: (base) => ({ ...base, padding: '0 8px' }),
+                      indicatorsContainer: (base) => ({
+                        ...base,
+                        height: '36px',
+                      }),
+                      menu: (base) => ({ ...base, zIndex: 10 }),
+                    }}
+                  />
+                </Box>
+              </Box> */}
               <HStack
                 gap={0}
                 borderRadius="md"
@@ -1363,6 +1402,7 @@ function DispatchWipTab({
                 border="1px solid"
                 borderColor="gray.200"
                 h="36px"
+                flexShrink={0}
               >
                 {(
                   [
@@ -1400,8 +1440,12 @@ function DispatchWipTab({
             key="__rpm_total__"
             cells={[
               'Total',
-              '',
-              '',
+              rpmRows
+                .reduce((s, r) => s + Number(r.restricted ?? 0), 0)
+                .toLocaleString('en-US', { maximumFractionDigits: 0 }),
+              rpmRows
+                .reduce((s, r) => s + Number(r.unrestricted ?? 0), 0)
+                .toLocaleString('en-US', { maximumFractionDigits: 0 }),
               rpmRows
                 .reduce((s, r) => s + Number(r.total_value ?? 0), 0)
                 .toLocaleString('en-US', { maximumFractionDigits: 0 }),
@@ -1413,8 +1457,12 @@ function DispatchWipTab({
               key={row.materialname}
               cells={[
                 row.materialname,
-                '',
-                '',
+                Number(row.restricted ?? 0).toLocaleString('en-US', {
+                  maximumFractionDigits: 0,
+                }),
+                Number(row.unrestricted ?? 0).toLocaleString('en-US', {
+                  maximumFractionDigits: 0,
+                }),
                 Number(row.total_value ?? 0).toLocaleString('en-US', {
                   maximumFractionDigits: 0,
                 }),
@@ -1494,6 +1542,12 @@ export default function ScorecardDashboard() {
   const { data: rpmData, isFetching: isLoadingRpm } = useGetRpm(params);
   const { data: serviceMeasureData, isFetching: isLoadingServiceMeasure } =
     useGetServiceMeasure(params);
+  const { data: allBranchesServiceMeasureData } = useGetServiceMeasure({
+    ...(filters.classification && { classification: filters.classification }),
+    ...(filters.sku.length > 0 && { sku: filters.sku }),
+    ...(filters.dateFrom && { startDate: filters.dateFrom }),
+    ...(filters.dateTo && { endDate: filters.dateTo }),
+  });
   const { data: tgtVsActualData, isFetching: isLoadingTgtVsActual } =
     useGetTgtVsActual(params);
 
@@ -1849,6 +1903,7 @@ export default function ScorecardDashboard() {
             skusThresholdData={skusThresholdData}
             pctSkusData={pctSkusData}
             serviceMeasureData={serviceMeasureData}
+            allBranchesServiceMeasureData={allBranchesServiceMeasureData}
             tgtVsActualData={tgtVsActualData}
             classification={filters.classification}
             isLoadingInventoryDays={isLoadingInventoryDays}
