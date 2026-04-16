@@ -1199,7 +1199,7 @@ function DispatchWipTab({
     total_order_qty: string;
     total_delivery_qty: string;
   };
-  type WipRow = { 'item desc': string; Wip_total: string };
+  type WipRow = { 'item desc': string; Wip_total: string; Quantity: number };
   type RpmRow = {
     materialname: string;
     cost?: string;
@@ -1305,8 +1305,8 @@ function DispatchWipTab({
         <DataTable
           title="WIP"
           headerGradient={gradients.tableBlue}
-          headers={['Material Name', 'WIP Value']}
-          colAligns={['left', 'right']}
+          headers={['Material Name', 'Quantity', 'WIP Value']}
+          colAligns={['left', 'right', 'right']}
           headerMinH="52px"
           pageSize={15}
           isLoading={isLoadingWip}
@@ -1317,21 +1317,27 @@ function DispatchWipTab({
             cells={[
               'Total',
               wipRows
+                .reduce((s, r) => s + Number(r.Quantity ?? 0), 0)
+                .toLocaleString('en-US', { maximumFractionDigits: 0 }),
+              wipRows
                 .reduce((s, r) => s + Number(r.Wip_total ?? 0), 0)
                 .toLocaleString('en-US', { maximumFractionDigits: 0 }),
             ]}
-            cellWeights={['700', '700']}
+            cellWeights={['700', '700', '700']}
           />
           {wipRows.map((row) => (
             <DataTableRow
               key={row['item desc']}
               cells={[
                 row['item desc'],
+                Number(row.Quantity ?? 0).toLocaleString('en-US', {
+                  maximumFractionDigits: 0,
+                }),
                 Number(row.Wip_total ?? 0).toLocaleString('en-US', {
                   maximumFractionDigits: 0,
                 }),
               ]}
-              cellWeights={[undefined, '600']}
+              cellWeights={[undefined, undefined, '600']}
             />
           ))}
         </DataTable>
