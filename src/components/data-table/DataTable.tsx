@@ -49,6 +49,7 @@ export interface DataTableProps {
   height?: string;
   minHeight?: string;
   colAligns?: ('left' | 'right' | 'center')[];
+  colWidths?: (string | undefined)[];
   headerActions?: ReactNode;
   filterRow?: ReactNode;
   headerMinH?: string;
@@ -86,6 +87,7 @@ export function DataTable({
   height,
   minHeight,
   colAligns,
+  colWidths,
   headerActions,
   filterRow,
   headerMinH,
@@ -99,13 +101,21 @@ export function DataTable({
 
   const allChildren = Children.toArray(children);
 
-  // Separate pinned total rows (always visible at bottom, outside pagination)
+  // Separate top-pinned rows (always visible at top, outside sort/pagination)
+  const pinnedTopRows = allChildren.filter(
+    (row) => isValidElement(row) && (row.props as { pinnedTop?: boolean }).pinnedTop
+  );
+  // Separate bottom-pinned total rows (always visible at bottom, outside pagination)
   const pinnedRows = allChildren.filter(
-    (row) => isValidElement(row) && (row.props as { isTotal?: boolean }).isTotal
+    (row) =>
+      isValidElement(row) &&
+      (row.props as { isTotal?: boolean }).isTotal &&
+      !(row.props as { pinnedTop?: boolean }).pinnedTop
   );
   let allRows = allChildren.filter(
     (row) =>
-      !(isValidElement(row) && (row.props as { isTotal?: boolean }).isTotal)
+      !(isValidElement(row) && (row.props as { isTotal?: boolean }).isTotal) &&
+      !(isValidElement(row) && (row.props as { pinnedTop?: boolean }).pinnedTop)
   );
 
   if (searchable && searchQuery.trim()) {
@@ -157,6 +167,18 @@ export function DataTable({
           ...(colAligns && { colAligns }),
           ...(stickyFirstCol && { stickyFirstCol: true }),
           key: `pinned-${i}`,
+        })
+      : row
+  );
+
+  const renderedPinnedTopRows = pinnedTopRows.map((row, i) =>
+    isValidElement(row)
+      ? cloneElement(row as ReactElement<DataTableRowProps>, {
+          ...(rowCollapsible && { showToggleCol: true }),
+          ...(colAligns && { colAligns }),
+          ...(stickyFirstCol && { stickyFirstCol: true }),
+          stickyRow: true,
+          key: `pinned-top-${i}`,
         })
       : row
   );
@@ -338,6 +360,7 @@ export function DataTable({
                   userSelect="none"
                   _hover={{ opacity: 1 }}
                   textAlign={colAligns?.[i] ?? 'left'}
+                  w={colWidths?.[i]}
                 >
                   <HStack
                     gap={1}
@@ -390,7 +413,7 @@ export function DataTable({
                     ))}
                   </Table.Row>
                 ))
-              ) : renderedRows.length === 0 && pinnedRows.length === 0 ? (
+              ) : renderedRows.length === 0 && pinnedRows.length === 0 && pinnedTopRows.length === 0 ? (
                 <Table.Row>
                   <Table.Cell
                     colSpan={headers.length + (rowCollapsible ? 1 : 0)}
@@ -405,6 +428,7 @@ export function DataTable({
                 </Table.Row>
               ) : (
                 <>
+                  {renderedPinnedTopRows}
                   {renderedRows}
                   {renderedPinnedRows}
                 </>
@@ -445,6 +469,7 @@ export function DataTable({
 export interface DataTableRowProps {
   cells: string[];
   isTotal?: boolean;
+  pinnedTop?: boolean;
   rowBg?: string;
   cellColors?: (string | undefined)[];
   cellWeights?: (string | undefined)[];
@@ -458,6 +483,7 @@ export interface DataTableRowProps {
   stickyRow?: boolean;
   /** Injected by DataTable when stickyFirstCol={true} — carries row bg to sticky cells */
   stickyFirstCol?: boolean;
+  onRowClick?: () => void;
 }
 
 export function DataTableRow({
@@ -472,6 +498,7 @@ export function DataTableRow({
   colAligns,
   stickyRow = false,
   stickyFirstCol = false,
+  onRowClick,
 }: DataTableRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const hasSubRows = showToggleCol && subRows && subRows.length > 0;
@@ -493,6 +520,8 @@ export function DataTableRow({
             : {}),
         }}
         fontWeight={isTotal ? 'bold' : undefined}
+        onClick={onRowClick ? (e) => { e.stopPropagation(); onRowClick(); } : undefined}
+        cursor={onRowClick ? 'pointer' : undefined}
         // transition="none"
         _hover={stickyRow ? undefined : { bg: '#f1f5f9' }}
       >

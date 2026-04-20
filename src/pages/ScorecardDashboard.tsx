@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGetSalesSummary } from '@/api/salesSummary';
 import { useGetCoverDays, useGetCoverDaysTotal } from '@/api/coverDays';
 import { useGetForecastAccuracyMonthly } from '@/api/forecastAccuracyMonthly';
@@ -13,19 +13,23 @@ import { useAppSelector } from '@/app/hooks';
 import { ChartCard } from '@/components/chart-card';
 import { BarChart, GaugeChart, LineChart } from '@/components/charts';
 import { DataTable, DataTableRow } from '@/components/data-table';
-// import { Select } from '@/components/select';
+import { RmpmDetails } from '@/dialog/rmpm-details';
+import { Select } from '@/components/select';
 import { FilterBar } from '@/components/filter-bar';
 import { HeaderActions } from '@/components/header-actions';
 import { clsColors, colors, gradients } from '@/constants/theme';
 import {
   Box,
+  Button,
   Flex,
   Grid,
   GridItem,
   HStack,
   Skeleton,
   Text,
+  Tooltip,
 } from '@chakra-ui/react';
+// Tooltip is used as Tooltip.Root / Tooltip.Trigger / Tooltip.Positioner / Tooltip.Content (Chakra v3 namespace API)
 import { SalesSummaryCard } from '@/components/sales-summary/SalesSummaryCard';
 import { useGetWip } from '@/api/wip';
 import { useGetRpm } from '@/api/rpm';
@@ -104,6 +108,8 @@ const COVER_DAYS = [
     label: 'Total Days',
     value: 54,
     inv: '54,188',
+    inv_efp: '0',
+    quantity: '0',
     color: '#0891b2',
     bg: '#fff',
     border: 'transparent',
@@ -113,6 +119,8 @@ const COVER_DAYS = [
     label: 'A – Cover Days',
     value: 28,
     inv: '28,408',
+    inv_efp: '0',
+    quantity: '0',
     color: clsColors.A,
     bg: clsColors.Abg,
     border: clsColors.Aborder,
@@ -122,6 +130,8 @@ const COVER_DAYS = [
     label: 'B – Cover Days',
     value: 18,
     inv: '13,608',
+    inv_efp: '0',
+    quantity: '0',
     color: clsColors.B,
     bg: clsColors.Bbg,
     border: clsColors.Bborder,
@@ -131,6 +141,8 @@ const COVER_DAYS = [
     label: 'C – Cover Days',
     value: 8,
     inv: '7,188',
+    inv_efp: '0',
+    quantity: '0',
     color: clsColors.C,
     bg: clsColors.Cbg,
     border: clsColors.Cborder,
@@ -140,6 +152,8 @@ const COVER_DAYS = [
     label: 'Others – Cover Days',
     value: 0,
     inv: '0',
+    inv_efp: '0',
+    quantity: '0',
     color: '#64748b',
     bg: '#64748b15',
     border: '#64748b35',
@@ -149,7 +163,8 @@ const COVER_DAYS = [
 
 type CoverDaysCardRow = (typeof COVER_DAYS)[number];
 
-const CHART_COLORS = ['#646ECB', '#5AC8D8', '#16476A'] as const;
+const CHART_COLORS = ['#87805E', '#5AC8D8', '#16476A'] as const;
+const Threshold_Actual = ['#5AC8D8', '#16476A'] as const;
 
 const INV_API_BRANCHES = [
   { key: 'bahawalpur', label: 'Bahawalpur' },
@@ -255,10 +270,59 @@ function BenchmarkBanner({
   );
 }
 
+function TruncatedCell({ text, maxW }: { text: string; maxW: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isTruncated, setIsTruncated] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (el) setIsTruncated(el.scrollWidth > el.clientWidth);
+  }, [text]);
+
+  const inner = (
+    <div
+      ref={ref}
+      style={{
+        maxWidth: maxW,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        cursor: 'default',
+      }}
+    >
+      {text}
+    </div>
+  );
+
+  if (!isTruncated) return inner;
+
+  return (
+    <Tooltip.Root positioning={{ placement: 'top' }}>
+      <Tooltip.Trigger asChild>{inner}</Tooltip.Trigger>
+      <Tooltip.Positioner>
+        <Tooltip.Content
+          bg="gray.700"
+          color="white"
+          borderRadius="6px"
+          px="10px"
+          py="6px"
+          fontSize="12px"
+          fontWeight="500"
+          boxShadow="sm"
+        >
+          {text}
+        </Tooltip.Content>
+      </Tooltip.Positioner>
+    </Tooltip.Root>
+  );
+}
+
 function CoverDaysCard({
   label,
   value,
   inv,
+  inv_efp,
+  quantity,
   color,
   bg,
   border,
@@ -271,7 +335,6 @@ function CoverDaysCard({
   if (!isClassified) {
     return (
       <Flex
-        align="center"
         gap={4}
         bg="white"
         borderRadius="lg"
@@ -323,9 +386,21 @@ function CoverDaysCard({
               : 'As of selected'}
           </Text>
           <Text fontSize="12px" color="gray.400" mt={0.5}>
-            Inventory:{' '}
+            Inventory Value:{' '}
             <Box as="span" fontWeight="600" color="gray.600">
-              {`${inv} (IBL inventory)`}
+              {`${inv} (IBL)`}
+            </Box>
+          </Text>
+          <Text fontSize="12px" color="gray.400" mt={0.5}>
+            Inventory Value EFP:{' '}
+            <Box as="span" fontWeight="600" color="gray.600">
+              {inv_efp}
+            </Box>
+          </Text>
+          <Text fontSize="12px" color="gray.400" mt={0.5}>
+            Units:{' '}
+            <Box as="span" fontWeight="600" color="gray.600">
+              {quantity}
             </Box>
           </Text>
         </Box>
@@ -343,7 +418,7 @@ function CoverDaysCard({
       border="1px solid"
       borderColor={border}
     >
-      <Flex align="center" gap={3}>
+      <Flex gap={3}>
         <Flex
           w={10}
           h={10}
@@ -381,9 +456,21 @@ function CoverDaysCard({
             </Flex>
           )}
           <Text fontSize="12px" color="gray.500" mt={0.5}>
-            Inventory:{' '}
+            Inventory Value:{' '}
             <Box as="span" fontWeight="600" color="gray.600">
               {inv}
+            </Box>
+          </Text>
+          <Text fontSize="12px" color="gray.500" mt={0.5}>
+            Inventory Value EFP:{' '}
+            <Box as="span" fontWeight="600" color="gray.600">
+              {inv_efp}
+            </Box>
+          </Text>
+          <Text fontSize="12px" color="gray.500" mt={0.5}>
+            Units:{' '}
+            <Box as="span" fontWeight="600" color="gray.600">
+              {quantity}
             </Box>
           </Text>
         </Box>
@@ -1125,11 +1212,11 @@ function ServiceMeasureTab({
             xKey="class"
             height={'100%'}
             bars={[
-              { key: 'tgt', label: 'TGT', color: CHART_COLORS[0] },
+              { key: 'tgt', label: 'TGT', color: Threshold_Actual[0] },
               {
                 key: 'actual',
                 label: 'Actual',
-                color: CHART_COLORS[1],
+                color: Threshold_Actual[1],
               },
             ]}
             showLabels
@@ -1199,47 +1286,57 @@ function DispatchWipTab({
     total_order_qty: string;
     total_delivery_qty: string;
   };
-  type WipRow = { 'item desc': string; Wip_total: string; Quantity: number };
+  type WipRow = { 'Material Name': string; 'WIP Value': number; Quantity: number; material_type_description?: string };
   type RpmRow = {
     materialname: string;
-    cost?: string;
-    unit?: string;
-    total_value: string;
     producttype?: string;
-    storage_location?: string;
-    restricted?: string;
-    unrestricted?: string;
+    total_qty?: string;
+    total_val?: string;
+    unrestricted_qty?: string;
+    unrestricted_val?: string;
+    restricted_qty?: string;
+    restricted_val?: string;
+    qualityinspection_qty?: string;
+    quality_inspection_val?: string;
+    blocked_qty?: string;
+    blocked_val?: string;
+    gr_blocked_val?: string;
+    return_qty?: string;
+    returns_val?: string;
+    stockintransit_qty?: string;
+    stock_in_transit_val?: string;
+    stocktransferplant_qty?: string;
+    stock_transfer_plant_val?: string;
+    stocktransferstoragelocation_qty?: string;
+    storage_location_val?: string;
+    tiedempties_qty?: string;
+    tied_empties_val?: string;
   };
   const dispatchRows =
     (dispatchVsOrderData as { data?: DispatchRow[] })?.data ?? [];
-  const wipRows = (wipData as { data?: WipRow[] })?.data ?? [];
+  const allWipRows = (wipData as { data?: WipRow[] })?.data ?? [];
+  const [wipFilter, setWipFilter] = useState<string>('All');
+  const wipRows = wipFilter === 'All' ? allWipRows : allWipRows.filter((r) => r.material_type_description === wipFilter);
   const allRpmRows = (rpmData as { data?: RpmRow[] })?.data ?? [];
-  // const [dispatchFilter, setDispatchFilter] = useState<string>('All');
-  const [rpmTypeFilter /*setRpmTypeFilter*/] = useState<
-    'All' | 'restricted' | 'unrestricted'
-  >('All');
   const [rpmProductFilter, setRpmProductFilter] = useState<
     'All' | 'TPKG' | 'TRAW'
   >('All');
-  const filteredByType =
-    rpmTypeFilter === 'restricted'
-      ? allRpmRows.filter((r) => Number(r.restricted ?? 0) > 0)
-      : rpmTypeFilter === 'unrestricted'
-        ? allRpmRows.filter((r) => Number(r.unrestricted ?? 0) > 0)
-        : allRpmRows;
+  const [rmpmDialogOpen, setRmpmDialogOpen] = useState(false);
+  const filteredByType = allRpmRows;
   const rpmRows =
     rpmProductFilter === 'All'
       ? filteredByType
       : filteredByType.filter((r) => r.producttype === rpmProductFilter);
 
   return (
-    <Grid templateColumns="repeat(11, 1fr)" gap={4}>
-      <GridItem colSpan={4}>
+    <Grid templateColumns="repeat(3, 1fr)" gap={4}>
+      <GridItem colSpan={1}>
         <DataTable
           title="Dispatch Vs Order"
           headerGradient={gradients.tableBlue}
           headers={['Material Name', 'Order Qty', 'Delivery Qty', '%']}
           colAligns={['left', 'left', 'left', 'right']}
+          colWidths={[undefined, undefined, undefined, '40px']}
           headerMinH="52px"
           pageSize={15}
           isLoading={isLoadingDispatch}
@@ -1301,39 +1398,55 @@ function DispatchWipTab({
       </GridItem>
 
       {/* WIP */}
-      <GridItem colSpan={3}>
+      <GridItem colSpan={1}>
         <DataTable
           title="WIP"
           headerGradient={gradients.tableBlue}
           headers={['Material Name', 'Quantity', 'WIP Value']}
           colAligns={['left', 'right', 'right']}
           headerMinH="52px"
-          pageSize={15}
+          pageSize={14}
           isLoading={isLoadingWip}
           minHeight="calc(100vh - 305px)"
+          headerActions={
+            <Select
+              value={wipFilter}
+              options={[
+                { value: 'All', label: 'All' },
+                { value: 'TSCL -  Toll-In Bulk', label: 'Toll-In Bulk' },
+                { value: 'HOTC - Mfg Finished Goods', label: 'HOTC Finished Goods' },
+                { value: 'TSCL - Semi Finished', label: 'Semi Finished' },
+                { value: 'TSCL - Mfg Finished Goods', label: 'TSCL Finished Goods' },
+                { value: 'TSCL - Export FG', label: 'Export FG' },
+              ]}
+              onChange={(v) => setWipFilter(v || 'All')}
+              minW="150px"
+            />
+          }
         >
           <DataTableRow
             key="__wip_total__"
+            pinnedTop
             cells={[
               'Total',
               wipRows
                 .reduce((s, r) => s + Number(r.Quantity ?? 0), 0)
                 .toLocaleString('en-US', { maximumFractionDigits: 0 }),
               wipRows
-                .reduce((s, r) => s + Number(r.Wip_total ?? 0), 0)
+                .reduce((s, r) => s + Number(r['WIP Value'] ?? 0), 0)
                 .toLocaleString('en-US', { maximumFractionDigits: 0 }),
             ]}
             cellWeights={['700', '700', '700']}
           />
           {wipRows.map((row) => (
             <DataTableRow
-              key={row['item desc']}
+              key={row['Material Name']}
               cells={[
-                row['item desc'],
+                row['Material Name'],
                 Number(row.Quantity ?? 0).toLocaleString('en-US', {
                   maximumFractionDigits: 0,
                 }),
-                Number(row.Wip_total ?? 0).toLocaleString('en-US', {
+                Number(row['WIP Value'] ?? 0).toLocaleString('en-US', {
                   maximumFractionDigits: 0,
                 }),
               ]}
@@ -1344,63 +1457,26 @@ function DispatchWipTab({
       </GridItem>
 
       {/* RPM */}
-      <GridItem colSpan={4}>
+      <GridItem colSpan={1}>
         <DataTable
           title="RMPM"
           headerGradient={gradients.tableIndigo}
           headerMinH="52px"
-          headers={[
-            'Material Name',
-            'Restricted',
-            'Unrestricted',
-            'Total Value',
-          ]}
-          colAligns={['left', 'right', 'right', 'right']}
-          pageSize={15}
+          headers={['Material Name', 'Total Qty', 'Total Cost']}
+          colAligns={['left', 'right', 'right']}
+          pageSize={14}
           isLoading={isLoadingRpm}
           minHeight="calc(100vh - 305px)"
           headerActions={
             <HStack gap={3} align="flex-end">
-              {/* <Box flexShrink={0}>
-                <Text
-                  fontSize="10px"
-                  fontWeight="700"
-                  color="gray.500"
-                  textTransform="uppercase"
-                  letterSpacing="0.05em"
-                  mb="4px"
-                >
-                  Storage Location
-                </Text>
-                <Box w="150px">
-                  <Select
-                    value={rpmTypeFilter}
-                    options={[
-                      { value: 'All', label: 'All' },
-                      { value: 'restricted', label: 'Restricted' },
-                      { value: 'unrestricted', label: 'Unrestricted' },
-                    ]}
-                    onChange={(v) =>
-                      setRpmTypeFilter(
-                        v as 'All' | 'restricted' | 'unrestricted'
-                      )
-                    }
-                    styles={{
-                      control: (base) => ({
-                        ...base,
-                        minHeight: '36px',
-                        height: '36px',
-                      }),
-                      valueContainer: (base) => ({ ...base, padding: '0 8px' }),
-                      indicatorsContainer: (base) => ({
-                        ...base,
-                        height: '36px',
-                      }),
-                      menu: (base) => ({ ...base, zIndex: 10 }),
-                    }}
-                  />
-                </Box>
-              </Box> */}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setRmpmDialogOpen(true)}
+                flexShrink={0}
+              >
+                View Details
+              </Button>
               <HStack
                 gap={0}
                 borderRadius="md"
@@ -1444,40 +1520,41 @@ function DispatchWipTab({
         >
           <DataTableRow
             key="__rpm_total__"
+            pinnedTop
             cells={[
               'Total',
               rpmRows
-                .reduce((s, r) => s + Number(r.restricted ?? 0), 0)
-                .toLocaleString('en-US', { maximumFractionDigits: 0 }),
+                .reduce((s, r) => s + Number(r.total_qty ?? 0), 0)
+                .toLocaleString('en-US', { maximumFractionDigits: 2 }),
               rpmRows
-                .reduce((s, r) => s + Number(r.unrestricted ?? 0), 0)
-                .toLocaleString('en-US', { maximumFractionDigits: 0 }),
-              rpmRows
-                .reduce((s, r) => s + Number(r.total_value ?? 0), 0)
+                .reduce((s, r) => s + Number(r.total_val ?? 0), 0)
                 .toLocaleString('en-US', { maximumFractionDigits: 0 }),
             ]}
-            cellWeights={['700', '700', '700', '700']}
+            cellWeights={['700', '700', '700']}
           />
           {rpmRows.map((row) => (
             <DataTableRow
               key={row.materialname}
               cells={[
                 row.materialname,
-                Number(row.restricted ?? 0).toLocaleString('en-US', {
-                  maximumFractionDigits: 0,
+                Number(row.total_qty ?? 0).toLocaleString('en-US', {
+                  maximumFractionDigits: 2,
                 }),
-                Number(row.unrestricted ?? 0).toLocaleString('en-US', {
-                  maximumFractionDigits: 0,
-                }),
-                Number(row.total_value ?? 0).toLocaleString('en-US', {
+                Number(row.total_val ?? 0).toLocaleString('en-US', {
                   maximumFractionDigits: 0,
                 }),
               ]}
-              cellWeights={[undefined, undefined, undefined, '600']}
+              cellWeights={[undefined, undefined, '600']}
+              onRowClick={() => setRmpmDialogOpen(true)}
             />
           ))}
         </DataTable>
       </GridItem>
+      <RmpmDetails
+        open={rmpmDialogOpen}
+        data={rpmRows}
+        onClose={() => setRmpmDialogOpen(false)}
+      />
     </Grid>
   );
 }
@@ -1602,6 +1679,7 @@ export default function ScorecardDashboard() {
     trg_value: string | number;
     cover_days: string | number;
     daily_target: string | number;
+    quantity?: string | number;
   };
   const coverDayApiRows =
     (coverDaysData as { data?: CoverDayRow[] })?.data ?? [];
@@ -1637,26 +1715,36 @@ export default function ScorecardDashboard() {
       inv: coverDayTotalRow
         ? fmtNumber(coverDayTotalRow.inv_val)
         : fmtNumber(totalInv),
+      inv_efp: fmtNumber(coverDayTotalRow?.inv_val_efp),
+      quantity: fmtNumber(coverDayTotalRow?.quantity),
     },
     {
       ...COVER_DAYS[1],
       value: Math.round(Number(findCls('A')?.cover_days ?? 0)),
       inv: fmtNumber(findCls('A')?.inv_val),
+      inv_efp: fmtNumber(findCls('A')?.inv_val_efp),
+      quantity: fmtNumber(findCls('A')?.quantity),
     },
     {
       ...COVER_DAYS[2],
       value: Math.round(Number(findCls('B')?.cover_days ?? 0)),
       inv: fmtNumber(findCls('B')?.inv_val),
+      inv_efp: fmtNumber(findCls('B')?.inv_val_efp),
+      quantity: fmtNumber(findCls('B')?.quantity),
     },
     {
       ...COVER_DAYS[3],
       value: Math.round(Number(findCls('C')?.cover_days ?? 0)),
       inv: fmtNumber(findCls('C')?.inv_val),
+      inv_efp: fmtNumber(findCls('C')?.inv_val_efp),
+      quantity: fmtNumber(findCls('C')?.quantity),
     },
     {
       ...COVER_DAYS[4],
       value: Math.round(Number(findCls('Others')?.cover_days ?? 0)),
       inv: fmtNumber(findCls('Others')?.inv_val),
+      inv_efp: fmtNumber(findCls('Others')?.inv_val_efp),
+      quantity: fmtNumber(findCls('Others')?.quantity),
     },
   ];
 

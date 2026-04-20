@@ -1,5 +1,8 @@
 import { Box, Flex, Text } from '@chakra-ui/react';
+import { useMemo } from 'react';
 import ReactSelect, {
+  type CSSObjectWithLabel,
+  type ControlProps,
   type Props as ReactSelectProps,
   type StylesConfig,
 } from 'react-select';
@@ -18,19 +21,21 @@ export interface SelectProps extends Omit<
   value: string;
   onChange: (value: string) => void;
   options: SelectOption[];
+  minW?: string;
+  height?: string;
 }
 
 const selectStyles: StylesConfig<SelectOption, false> = {
   control: (base) => ({
     ...base,
-    borderWidth: '2px',
+    borderWidth: '1px',
     borderColor: colors.controlBorder,
     borderRadius: '8px',
     fontSize: '14px',
     fontWeight: 500,
     minHeight: '36px',
     boxShadow: 'none',
-    w: '100%',
+    width: '100%',
     '&:hover': { borderColor: colors.controlBorderHover },
   }),
   option: (base, state) => ({
@@ -58,8 +63,25 @@ export function Select({
   value,
   onChange,
   options,
+  minW,
+  height,
   ...rest
 }: SelectProps) {
+  const mergedStyles = useMemo<StylesConfig<SelectOption, false>>(() => {
+    if (!height) return selectStyles;
+    return {
+      ...selectStyles,
+      control: (
+        base: CSSObjectWithLabel,
+        state: ControlProps<SelectOption, false>
+      ) => ({
+        ...selectStyles.control!(base, state),
+        minHeight: height,
+        height,
+      }),
+    };
+  }, [height]);
+
   return (
     <Flex direction="row" gap={3} alignItems="center">
       {label && (
@@ -73,12 +95,12 @@ export function Select({
           {label}
         </Text>
       )}
-      <Box flex={1} w="100%">
+      <Box flex={1} minW={minW}>
         <ReactSelect<SelectOption, false>
           value={options.find((o) => o.value === value) ?? null}
           onChange={(selected) => onChange(selected?.value ?? '')}
           options={options}
-          styles={selectStyles}
+          styles={mergedStyles}
           isSearchable
           {...rest}
         />
