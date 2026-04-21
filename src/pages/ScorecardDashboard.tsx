@@ -1284,7 +1284,12 @@ function DispatchWipTab({
     total_order_qty: string;
     total_delivery_qty: string;
   };
-  type WipRow = { 'Material Name': string; 'WIP Value': number; Quantity: number; material_type_description?: string };
+  type WipRow = {
+    'Material Name': string;
+    'WIP Value': number;
+    Quantity: number;
+    material_type_description?: string;
+  };
   type RpmRow = {
     materialname: string;
     producttype?: string;
@@ -1314,7 +1319,10 @@ function DispatchWipTab({
     (dispatchVsOrderData as { data?: DispatchRow[] })?.data ?? [];
   const allWipRows = (wipData as { data?: WipRow[] })?.data ?? [];
   const [wipFilter, setWipFilter] = useState<string>('All');
-  const wipRows = wipFilter === 'All' ? allWipRows : allWipRows.filter((r) => r.material_type_description === wipFilter);
+  const wipRows =
+    wipFilter === 'All'
+      ? allWipRows
+      : allWipRows.filter((r) => r.material_type_description === wipFilter);
   const allRpmRows = (rpmData as { data?: RpmRow[] })?.data ?? [];
   const [rpmProductFilter, setRpmProductFilter] = useState<
     'All' | 'TPKG' | 'TRAW'
@@ -1400,7 +1408,7 @@ function DispatchWipTab({
         <DataTable
           title="WIP"
           headerGradient={gradients.tableBlue}
-          headers={['Material Name', 'Quantity', 'WIP Value']}
+          headers={['Material Name', 'Qty', 'Value']}
           colAligns={['left', 'right', 'right']}
           headerMinH="52px"
           pageSize={14}
@@ -1411,11 +1419,23 @@ function DispatchWipTab({
               value={wipFilter}
               options={[
                 { value: 'All', label: 'All' },
-                { value: 'TSCL -  Toll-In Bulk', label: 'Toll-In Bulk' },
-                { value: 'HOTC - Mfg Finished Goods', label: 'HOTC Finished Goods' },
-                { value: 'TSCL - Semi Finished', label: 'Semi Finished' },
-                { value: 'TSCL - Mfg Finished Goods', label: 'TSCL Finished Goods' },
-                { value: 'TSCL - Export FG', label: 'Export FG' },
+                {
+                  value: 'TSCL -  Toll-In Bulk',
+                  label: 'TSCL -  Toll-In Bulk',
+                },
+                {
+                  value: 'HOTC - Mfg Finished Goods',
+                  label: 'HOTC - Mfg Finished Goods',
+                },
+                {
+                  value: 'TSCL - Semi Finished',
+                  label: 'TSCL - Semi Finished',
+                },
+                {
+                  value: 'TSCL - Mfg Finished Goods',
+                  label: 'TSCL - Mfg Finished Goods',
+                },
+                { value: 'TSCL - Export FG', label: 'TSCL - Export FG' },
               ]}
               onChange={(v) => setWipFilter(v || 'All')}
               minW="150px"
