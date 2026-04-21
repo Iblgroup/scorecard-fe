@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useGetSalesSummary } from '@/api/salesSummary';
 import { useGetCoverDays, useGetCoverDaysTotal } from '@/api/coverDays';
 import { useGetForecastAccuracyMonthly } from '@/api/forecastAccuracyMonthly';
@@ -27,9 +27,7 @@ import {
   HStack,
   Skeleton,
   Text,
-  Tooltip,
 } from '@chakra-ui/react';
-// Tooltip is used as Tooltip.Root / Tooltip.Trigger / Tooltip.Positioner / Tooltip.Content (Chakra v3 namespace API)
 import { SalesSummaryCard } from '@/components/sales-summary/SalesSummaryCard';
 import { useGetWip } from '@/api/wip';
 import { useGetRpm } from '@/api/rpm';
@@ -270,52 +268,52 @@ function BenchmarkBanner({
   );
 }
 
-function TruncatedCell({ text, maxW }: { text: string; maxW: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [isTruncated, setIsTruncated] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (el) setIsTruncated(el.scrollWidth > el.clientWidth);
-  }, [text]);
-
-  const inner = (
-    <div
-      ref={ref}
-      style={{
-        maxWidth: maxW,
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap',
-        cursor: 'default',
-      }}
-    >
-      {text}
-    </div>
-  );
-
-  if (!isTruncated) return inner;
-
-  return (
-    <Tooltip.Root positioning={{ placement: 'top' }}>
-      <Tooltip.Trigger asChild>{inner}</Tooltip.Trigger>
-      <Tooltip.Positioner>
-        <Tooltip.Content
-          bg="gray.700"
-          color="white"
-          borderRadius="6px"
-          px="10px"
-          py="6px"
-          fontSize="12px"
-          fontWeight="500"
-          boxShadow="sm"
-        >
-          {text}
-        </Tooltip.Content>
-      </Tooltip.Positioner>
-    </Tooltip.Root>
-  );
-}
+// function TruncatedCell({ text, maxW }: { text: string; maxW: string }) {
+//   const ref = useRef<HTMLDivElement>(null);
+//   const [isTruncated, setIsTruncated] = useState(false);
+//
+//   useEffect(() => {
+//     const el = ref.current;
+//     if (el) setIsTruncated(el.scrollWidth > el.clientWidth);
+//   }, [text]);
+//
+//   const inner = (
+//     <div
+//       ref={ref}
+//       style={{
+//         maxWidth: maxW,
+//         overflow: 'hidden',
+//         textOverflow: 'ellipsis',
+//         whiteSpace: 'nowrap',
+//         cursor: 'default',
+//       }}
+//     >
+//       {text}
+//     </div>
+//   );
+//
+//   if (!isTruncated) return inner;
+//
+//   return (
+//     <Tooltip.Root positioning={{ placement: 'top' }}>
+//       <Tooltip.Trigger asChild>{inner}</Tooltip.Trigger>
+//       <Tooltip.Positioner>
+//         <Tooltip.Content
+//           bg="gray.700"
+//           color="white"
+//           borderRadius="6px"
+//           px="10px"
+//           py="6px"
+//           fontSize="12px"
+//           fontWeight="500"
+//           boxShadow="sm"
+//         >
+//           {text}
+//         </Tooltip.Content>
+//       </Tooltip.Positioner>
+//     </Tooltip.Root>
+//   );
+// }
 
 function CoverDaysCard({
   label,
@@ -1676,6 +1674,7 @@ export default function ScorecardDashboard() {
   type CoverDayRow = {
     classification?: string;
     inv_val: string | number;
+    inv_val_efp?: string | number;
     trg_value: string | number;
     cover_days: string | number;
     daily_target: string | number;

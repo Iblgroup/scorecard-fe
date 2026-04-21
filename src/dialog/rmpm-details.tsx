@@ -10,7 +10,9 @@ export interface RpmRow {
   producttype?: string;
   location_type?: 'Plant' | 'Storage Location';
   plant?: string | number;
+  plantname?: string;
   storagelocation?: string | number;
+  storagelocationname?: string;
   unrestricted_qty?: string;
   unrestricted_val?: string;
   restricted_qty?: string;
@@ -168,12 +170,14 @@ export function RmpmDetails({ open, data, onClose }: RmpmDetailsProps) {
   }, [open]);
 
   const plantOptions = useMemo(() => {
-    const unique = [
-      ...new Set(data.map((r) => String(r.plant ?? '')).filter(Boolean)),
-    ];
+    const map = new Map<string, string>();
+    data.forEach((r) => {
+      const val = String(r.plant ?? '');
+      if (val) map.set(val, r.plantname || val);
+    });
     return [
       { value: 'All', label: 'All' },
-      ...unique.map((p) => ({ value: p, label: p })),
+      ...[...map.entries()].map(([v, l]) => ({ value: v, label: l })),
     ];
   }, [data]);
 
@@ -182,14 +186,14 @@ export function RmpmDetails({ open, data, onClose }: RmpmDetailsProps) {
       plantFilter === 'All'
         ? data
         : data.filter((r) => String(r.plant) === plantFilter);
-    const unique = [
-      ...new Set(
-        filtered.map((r) => String(r.storagelocation ?? '')).filter(Boolean)
-      ),
-    ];
+    const map = new Map<string, string>();
+    filtered.forEach((r) => {
+      const val = String(r.storagelocation ?? '');
+      if (val) map.set(val, r.storagelocationname || val);
+    });
     return [
       { value: 'All', label: 'All' },
-      ...unique.map((s) => ({ value: s, label: s })),
+      ...[...map.entries()].map(([v, l]) => ({ value: v, label: l })),
     ];
   }, [data, plantFilter]);
 
