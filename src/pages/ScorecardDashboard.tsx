@@ -379,6 +379,72 @@ function BenchmarkBanner({
 //   );
 // }
 
+function CoverDaysSection({
+  coverDaysRows,
+  isLoadingCoverDays,
+  endDate,
+}: {
+  coverDaysRows: CoverDaysCardRow[];
+  isLoadingCoverDays: boolean;
+  endDate?: string;
+}) {
+  const [coverDaysInventoryView, setCoverDaysInventoryView] =
+    useState<CoverDaysInventoryView>('TP');
+
+  return (
+    <Box bg="white" borderRadius="xl" p={4} boxShadow="md" h="full">
+      <Flex justify="space-between" align="center" gap={3} mb={3}>
+        <Text
+          fontSize="13px"
+          fontWeight="800"
+          color="gray.700"
+          textTransform="uppercase"
+          letterSpacing="wide"
+        >
+          Cover Days (IBL)
+        </Text>
+        <ToggleGroup
+          options={[
+            { label: 'TP', value: 'TP' },
+            { label: 'EFP', value: 'EFP' },
+          ]}
+          value={coverDaysInventoryView}
+          onChange={setCoverDaysInventoryView}
+        />
+      </Flex>
+      {isLoadingCoverDays ? (
+        <Flex direction="column" gap={2}>
+          <Skeleton height="60px" borderRadius="lg" />
+          <Grid templateColumns="1fr 1fr" gap={2}>
+            <Skeleton height="72px" borderRadius="md" />
+            <Skeleton height="72px" borderRadius="md" />
+            <Skeleton height="72px" borderRadius="md" />
+            <Skeleton height="72px" borderRadius="md" />
+          </Grid>
+        </Flex>
+      ) : (
+        <Flex direction="column" gap={2}>
+          <CoverDaysCard
+            {...coverDaysRows[0]}
+            endDate={endDate}
+            inventoryView={coverDaysInventoryView}
+          />
+          <Grid templateColumns="1fr 1fr" gap={2}>
+            {coverDaysRows.slice(1).map((c) => (
+              <CoverDaysCard
+                key={c.label}
+                {...c}
+                endDate={endDate}
+                inventoryView={coverDaysInventoryView}
+              />
+            ))}
+          </Grid>
+        </Flex>
+      )}
+    </Box>
+  );
+}
+
 function CoverDaysCard({
   label,
   value,
@@ -599,9 +665,6 @@ function SupplyChainTab({
   skuCounts,
   endDate,
 }: SupplyChainTabProps) {
-  const [coverDaysInventoryView, setCoverDaysInventoryView] =
-    useState<CoverDaysInventoryView>('TP');
-
   return (
     <Flex direction="column" gap={4}>
       {/* Benchmarks + Sales Summary */}
@@ -744,56 +807,11 @@ function SupplyChainTab({
         </GridItem>
         {/* Cover Days — 3 cols */}
         <GridItem colSpan={{ base: 12, lg: 4 }}>
-          <Box bg="white" borderRadius="xl" p={4} boxShadow="md" h="full">
-            <Flex justify="space-between" align="center" gap={3} mb={3}>
-              <Text
-                fontSize="13px"
-                fontWeight="800"
-                color="gray.700"
-                textTransform="uppercase"
-                letterSpacing="wide"
-              >
-                Cover Days (IBL)
-              </Text>
-              <ToggleGroup
-                options={[
-                  { label: 'TP', value: 'TP' },
-                  { label: 'EFP', value: 'EFP' },
-                ]}
-                value={coverDaysInventoryView}
-                onChange={setCoverDaysInventoryView}
-              />
-            </Flex>
-            {isLoadingCoverDays ? (
-              <Flex direction="column" gap={2}>
-                <Skeleton height="60px" borderRadius="lg" />
-                <Grid templateColumns="1fr 1fr" gap={2}>
-                  <Skeleton height="72px" borderRadius="md" />
-                  <Skeleton height="72px" borderRadius="md" />
-                  <Skeleton height="72px" borderRadius="md" />
-                  <Skeleton height="72px" borderRadius="md" />
-                </Grid>
-              </Flex>
-            ) : (
-              <Flex direction="column" gap={2}>
-                <CoverDaysCard
-                  {...coverDaysRows[0]}
-                  endDate={endDate}
-                  inventoryView={coverDaysInventoryView}
-                />
-                <Grid templateColumns="1fr 1fr" gap={2}>
-                  {coverDaysRows.slice(1).map((c) => (
-                    <CoverDaysCard
-                      key={c.label}
-                      {...c}
-                      endDate={endDate}
-                      inventoryView={coverDaysInventoryView}
-                    />
-                  ))}
-                </Grid>
-              </Flex>
-            )}
-          </Box>
+          <CoverDaysSection
+            coverDaysRows={coverDaysRows}
+            isLoadingCoverDays={isLoadingCoverDays}
+            endDate={endDate}
+          />
         </GridItem>
       </Grid>
 
