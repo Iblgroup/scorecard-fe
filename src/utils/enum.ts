@@ -3,6 +3,7 @@ export enum ApiKey {
   coverDays = 'coverDays',
   coverDaysTotal = 'coverDaysTotal',
   forecastAccuracyMonthly = 'forecastAccuracyMonthly',
+  forecastAccuracyMonthlyDaysGone = 'forecastAccuracyMonthlyDaysGone',
   forecastAccuracyYearly = 'forecastAccuracyYearly',
   inventoryDays = 'inventoryDays',
   aboveBelowThreshold = 'aboveBelowThreshold',

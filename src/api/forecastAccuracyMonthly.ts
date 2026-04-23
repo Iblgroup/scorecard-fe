@@ -17,3 +17,20 @@ export const useGetForecastAccuracyMonthly = (
     staleTime: 5 * 60 * 1000,
   });
 };
+
+const getForecastAccuracyMonthlyDaysGone = async (
+  params?: Record<string, unknown>
+) => {
+  return axios.get(ApiEndpoints.forecastAccuracyMonthlyDaysGone, { params });
+};
+
+export const useGetForecastAccuracyMonthlyDaysGone = (
+  params?: Record<string, unknown>
+) => {
+  return useQuery({
+    queryKey: [ApiKey.forecastAccuracyMonthlyDaysGone, params],
+    queryFn: () => getForecastAccuracyMonthlyDaysGone(params),
+    placeholderData: keepPreviousData,
+    staleTime: 5 * 60 * 1000,
+  });
+};

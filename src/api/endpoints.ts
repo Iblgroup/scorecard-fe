@@ -12,6 +12,7 @@ export const ApiEndpoints = {
   userById: (id: string | number) => `/users/${id}`,
   saleSummary: '/sales-summary',
   forecastAccuracyMonthly: '/forecast-accuracy-monthly',
+  forecastAccuracyMonthlyDaysGone: '/forecast-accuracy-monthly/daysgone',
   forecastAccuracyYearly: '/forecast-accuracy-yearly',
   inventoryDays: '/inventory-days',
   coverDays: '/cover-days',

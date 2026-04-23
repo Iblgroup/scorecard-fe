@@ -1,12 +1,20 @@
 import { Box, Flex, Text, Tooltip } from '@chakra-ui/react';
 import ReactSelect, {
   components,
+  type CSSObjectWithLabel,
+  type ControlProps,
   type ValueContainerProps,
   type StylesConfig,
   type Props as ReactSelectProps,
 } from 'react-select';
 import { colors } from '@/constants/theme';
-import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 export interface SelectOption {
   value: string;
@@ -21,6 +29,8 @@ export interface MultiSelectProps extends Omit<
   value: string[];
   onChange: (value: string[]) => void;
   options: SelectOption[];
+  minW?: string;
+  height?: string;
 }
 
 const BADGE_WIDTH = 44; // approximate width of "+N" badge
@@ -177,9 +187,9 @@ function OverflowValueContainer(
 const multiSelectStyles: StylesConfig<SelectOption, true> = {
   control: (base) => ({
     ...base,
-    borderWidth: '2px',
+    borderWidth: '1px',
     borderColor: colors.controlBorder,
-    borderRadius: '8px',
+    borderRadius: '6px',
     fontSize: '14px',
     fontWeight: 500,
     minHeight: '36px',
@@ -226,7 +236,7 @@ const multiSelectStyles: StylesConfig<SelectOption, true> = {
   }),
   menu: (base) => ({
     ...base,
-    borderRadius: '8px',
+    borderRadius: '6px',
     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
     zIndex: 10,
   }),
@@ -239,8 +249,25 @@ export function MultiSelect({
   value,
   onChange,
   options,
+  minW,
+  height,
   ...rest
 }: MultiSelectProps) {
+  const mergedStyles = useMemo<StylesConfig<SelectOption, true>>(() => {
+    if (!height) return multiSelectStyles;
+    return {
+      ...multiSelectStyles,
+      control: (
+        base: CSSObjectWithLabel,
+        state: ControlProps<SelectOption, true>
+      ) => ({
+        ...multiSelectStyles.control!(base, state),
+        minHeight: height,
+        height,
+      }),
+    };
+  }, [height]);
+
   return (
     <Flex direction="row" gap={3} alignItems="center">
       {label && (
@@ -254,7 +281,7 @@ export function MultiSelect({
           {label}
         </Text>
       )}
-      <Box flex={1} w="100%" minW={0}>
+      <Box flex={1} w="100%" minW={minW ?? 0}>
         <ReactSelect<SelectOption, true>
           isMulti
           value={options.filter((o) => value.includes(o.value))}
@@ -262,7 +289,7 @@ export function MultiSelect({
             onChange(selected ? selected.map((o) => o.value) : [])
           }
           options={options}
-          styles={multiSelectStyles}
+          styles={mergedStyles}
           components={customComponents}
           isSearchable
           closeMenuOnSelect={false}

@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { useGetSalesSummary } from '@/api/salesSummary';
 import { useGetCoverDays, useGetCoverDaysTotal } from '@/api/coverDays';
-import { useGetForecastAccuracyMonthly } from '@/api/forecastAccuracyMonthly';
+import {
+  useGetForecastAccuracyMonthly,
+  useGetForecastAccuracyMonthlyDaysGone,
+} from '@/api/forecastAccuracyMonthly';
 import { useGetForecastAccuracyYearly } from '@/api/forecastAccuracyYearly';
 import { useGetInventoryDays } from '@/api/inventoryDays';
 import { useGetAboveBelowThreshold } from '@/api/aboveBelowThreshold';
@@ -15,6 +18,7 @@ import { BarChart, GaugeChart, LineChart } from '@/components/charts';
 import { DataTable, DataTableRow } from '@/components/data-table';
 import { RmpmDetails } from '@/dialog/rmpm-details';
 import { Select } from '@/components/select';
+import { MultiSelect } from '@/components/select/MultiSelect';
 import { FilterBar } from '@/components/filter-bar';
 import { HeaderActions } from '@/components/header-actions';
 import { clsColors, colors, gradients } from '@/constants/theme';
@@ -25,6 +29,7 @@ import {
   Grid,
   GridItem,
   HStack,
+  Separator,
   Skeleton,
   Text,
 } from '@chakra-ui/react';
@@ -159,7 +164,9 @@ const COVER_DAYS = [
   },
 ];
 
-type CoverDaysCardRow = (typeof COVER_DAYS)[number];
+type CoverDaysCardRow = (typeof COVER_DAYS)[number] & {
+  value_efp: number;
+};
 
 const CHART_COLORS = ['#87805E', '#5AC8D8', '#16476A'] as const;
 const Threshold_Actual = ['#5AC8D8', '#16476A'] as const;
@@ -180,6 +187,63 @@ const INV_API_BRANCHES = [
   { key: 'quetta', label: 'Quetta' },
   { key: 'sukkur', label: 'Sukkur' },
 ] as const;
+
+type CoverDaysInventoryView = 'TP' | 'EFP';
+
+function parseFilterDate(value?: string) {
+  if (!value) return new Date();
+
+  const [yearText, monthText, dayText] = value.split('-');
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+
+  if ([year, month, day].every((part) => Number.isFinite(part))) {
+    return new Date(year, month - 1, day);
+  }
+
+  return new Date(value);
+}
+
+function ToggleGroup<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { label: string; value: T }[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <Box display="inline-flex" h="36px" flexShrink={0}>
+      {options.map(({ label, value: v }, idx) => (
+        <Box
+          key={v}
+          as="button"
+          px={3}
+          h="36px"
+          cursor="pointer"
+          fontSize="12px"
+          fontWeight="700"
+          bg={value === v ? 'blue.600' : 'white'}
+          color={value === v ? 'white' : 'gray.600'}
+          _hover={{ bg: value === v ? 'blue.600' : 'gray.50' }}
+          onClick={() => onChange(v)}
+          border="1px solid"
+          borderColor={value === v ? 'blue.600' : 'gray.200'}
+          borderLeftRadius={idx === 0 ? 'md' : 0}
+          borderRightRadius={idx === options.length - 1 ? 'md' : 0}
+          ml={idx > 0 ? '-1px' : 0}
+          zIndex={value === v ? 1 : 0}
+          position="relative"
+          transition="background 0.15s, border-color 0.15s"
+        >
+          {label}
+        </Box>
+      ))}
+    </Box>
+  );
+}
 
 function BenchmarkBanner({
   cls,
@@ -318,6 +382,7 @@ function BenchmarkBanner({
 function CoverDaysCard({
   label,
   value,
+  value_efp,
   inv,
   inv_efp,
   quantity,
@@ -326,9 +391,17 @@ function CoverDaysCard({
   border,
   dot,
   endDate,
-}: CoverDaysCardRow & { endDate?: string }) {
+  inventoryView,
+}: CoverDaysCardRow & {
+  endDate?: string;
+  inventoryView: CoverDaysInventoryView;
+}) {
   const isClassified = dot === '●';
   const letter = label.charAt(0);
+  const inventoryLabel =
+    inventoryView === 'TP' ? 'Inventory Value TP:' : 'Inventory Value EFP:';
+  const inventoryValue = inventoryView === 'TP' ? inv : inv_efp;
+  const displayValue = inventoryView === 'TP' ? value : value_efp;
 
   if (!isClassified) {
     return (
@@ -361,7 +434,7 @@ function CoverDaysCard({
           lineHeight="1"
           pl={1}
         >
-          {value}
+          {displayValue}
         </Text>
         <Box>
           <Text fontSize="13px" fontWeight="700" color="gray.600">
@@ -384,15 +457,9 @@ function CoverDaysCard({
               : 'As of selected'}
           </Text>
           <Text fontSize="12px" color="gray.400" mt={0.5}>
-            Inventory Value:{' '}
+            {inventoryLabel}{' '}
             <Box as="span" fontWeight="600" color="gray.600">
-              {`${inv} (IBL)`}
-            </Box>
-          </Text>
-          <Text fontSize="12px" color="gray.400" mt={0.5}>
-            Inventory Value EFP:{' '}
-            <Box as="span" fontWeight="600" color="gray.600">
-              {inv_efp}
+              {inventoryValue}
             </Box>
           </Text>
           <Text fontSize="12px" color="gray.400" mt={0.5}>
@@ -440,7 +507,7 @@ function CoverDaysCard({
                 color={color}
                 lineHeight="1"
               >
-                {value}
+                {displayValue}
               </Text>
               <Text
                 fontSize="12px"
@@ -454,15 +521,9 @@ function CoverDaysCard({
             </Flex>
           )}
           <Text fontSize="12px" color="gray.500" mt={0.5}>
-            Inventory Value:{' '}
+            {inventoryLabel}{' '}
             <Box as="span" fontWeight="600" color="gray.600">
-              {inv}
-            </Box>
-          </Text>
-          <Text fontSize="12px" color="gray.500" mt={0.5}>
-            Inventory Value EFP:{' '}
-            <Box as="span" fontWeight="600" color="gray.600">
-              {inv_efp}
+              {inventoryValue}
             </Box>
           </Text>
           <Text fontSize="12px" color="gray.500" mt={0.5}>
@@ -497,10 +558,12 @@ interface SupplyChainTabProps {
   coverDaysRows: CoverDaysCardRow[];
   tsclAccuracy: number | null;
   tsclSalesDisplay?: { achieved: string; target: string };
+  tsclDaysGoneInfo?: { daysGone: number; totalDays: number; target: string };
   forecastBarData: Record<string, string | number>[];
   forecastMonths: string[];
   iblAccuracy: number | null;
   iblSalesDisplay?: { achieved: string; target: string };
+  iblDaysGoneInfo?: { daysGone: number; totalDays: number; target: string };
   iblBarData: Record<string, string | number>[];
   iblMonths: string[];
   isLoadingSales: boolean;
@@ -518,10 +581,12 @@ function SupplyChainTab({
   salesTotal,
   tsclAccuracy,
   tsclSalesDisplay,
+  tsclDaysGoneInfo,
   forecastBarData,
   forecastMonths,
   iblAccuracy,
   iblSalesDisplay,
+  iblDaysGoneInfo,
   iblBarData,
   iblMonths,
   coverDaysRows,
@@ -534,6 +599,9 @@ function SupplyChainTab({
   skuCounts,
   endDate,
 }: SupplyChainTabProps) {
+  const [coverDaysInventoryView, setCoverDaysInventoryView] =
+    useState<CoverDaysInventoryView>('TP');
+
   return (
     <Flex direction="column" gap={4}>
       {/* Benchmarks + Sales Summary */}
@@ -677,16 +745,25 @@ function SupplyChainTab({
         {/* Cover Days — 3 cols */}
         <GridItem colSpan={{ base: 12, lg: 4 }}>
           <Box bg="white" borderRadius="xl" p={4} boxShadow="md" h="full">
-            <Text
-              fontSize="13px"
-              fontWeight="800"
-              color="gray.700"
-              textTransform="uppercase"
-              letterSpacing="wide"
-              mb={3}
-            >
-              Cover Days
-            </Text>
+            <Flex justify="space-between" align="center" gap={3} mb={3}>
+              <Text
+                fontSize="13px"
+                fontWeight="800"
+                color="gray.700"
+                textTransform="uppercase"
+                letterSpacing="wide"
+              >
+                Cover Days (IBL)
+              </Text>
+              <ToggleGroup
+                options={[
+                  { label: 'TP', value: 'TP' },
+                  { label: 'EFP', value: 'EFP' },
+                ]}
+                value={coverDaysInventoryView}
+                onChange={setCoverDaysInventoryView}
+              />
+            </Flex>
             {isLoadingCoverDays ? (
               <Flex direction="column" gap={2}>
                 <Skeleton height="60px" borderRadius="lg" />
@@ -699,10 +776,19 @@ function SupplyChainTab({
               </Flex>
             ) : (
               <Flex direction="column" gap={2}>
-                <CoverDaysCard {...coverDaysRows[0]} endDate={endDate} />
+                <CoverDaysCard
+                  {...coverDaysRows[0]}
+                  endDate={endDate}
+                  inventoryView={coverDaysInventoryView}
+                />
                 <Grid templateColumns="1fr 1fr" gap={2}>
                   {coverDaysRows.slice(1).map((c) => (
-                    <CoverDaysCard key={c.label} {...c} endDate={endDate} />
+                    <CoverDaysCard
+                      key={c.label}
+                      {...c}
+                      endDate={endDate}
+                      inventoryView={coverDaysInventoryView}
+                    />
                   ))}
                 </Grid>
               </Flex>
@@ -725,9 +811,38 @@ function SupplyChainTab({
               w="175px"
               flexShrink={0}
               display="flex"
+              flexDirection="column"
               alignItems="center"
               justifyContent="center"
+              gap={2}
             >
+              <Box px={3} py={2} borderRadius="md" bg="gray.50" w="100%">
+                <Flex justify="space-between" align="center">
+                  <Text fontSize="xs" color="gray.500" fontWeight="500">
+                    Days Gone
+                  </Text>
+                  <Text fontSize="13px" fontWeight="700">
+                    <Text as="span" color="green.500">
+                      {iblDaysGoneInfo?.daysGone ?? '-'}
+                    </Text>
+                    <Text as="span" color="gray.400" mx={1}>
+                      /
+                    </Text>
+                    <Text as="span" color="gray.600">
+                      {iblDaysGoneInfo?.totalDays ?? '-'}
+                    </Text>
+                  </Text>
+                </Flex>
+                <Separator my={1.5} borderColor="gray.200" />
+                <Flex justify="space-between" align="center">
+                  <Text fontSize="xs" color="gray.500" fontWeight="500">
+                    Target
+                  </Text>
+                  <Text fontSize="13px" color="gray.800" fontWeight="700">
+                    {iblDaysGoneInfo?.target ?? '-'}
+                  </Text>
+                </Flex>
+              </Box>
               <GaugeChart
                 value={iblAccuracy ?? 0}
                 target={100}
@@ -787,9 +902,38 @@ function SupplyChainTab({
               w="175px"
               flexShrink={0}
               display="flex"
+              flexDirection="column"
               alignItems="center"
               justifyContent="center"
+              gap={2}
             >
+              <Box px={3} py={2} borderRadius="md" bg="gray.50" w="100%">
+                <Flex justify="space-between" align="center">
+                  <Text fontSize="xs" color="gray.500" fontWeight="500">
+                    Days Gone
+                  </Text>
+                  <Text fontSize="13px" fontWeight="700">
+                    <Text as="span" color="green.500">
+                      {tsclDaysGoneInfo?.daysGone ?? '-'}
+                    </Text>
+                    <Text as="span" color="gray.400" mx={1}>
+                      /
+                    </Text>
+                    <Text as="span" color="gray.600">
+                      {tsclDaysGoneInfo?.totalDays ?? '-'}
+                    </Text>
+                  </Text>
+                </Flex>
+                <Separator my={1.5} borderColor="gray.200" />
+                <Flex justify="space-between" align="center">
+                  <Text fontSize="xs" color="gray.500" fontWeight="500">
+                    Target
+                  </Text>
+                  <Text fontSize="13px" color="gray.800" fontWeight="700">
+                    {tsclDaysGoneInfo?.target ?? '-'}
+                  </Text>
+                </Flex>
+              </Box>
               <GaugeChart
                 value={tsclAccuracy ?? 0}
                 target={100}
@@ -1318,11 +1462,13 @@ function DispatchWipTab({
   const dispatchRows =
     (dispatchVsOrderData as { data?: DispatchRow[] })?.data ?? [];
   const allWipRows = (wipData as { data?: WipRow[] })?.data ?? [];
-  const [wipFilter, setWipFilter] = useState<string>('All');
+  const [wipFilter, setWipFilter] = useState<string[]>([]);
   const wipRows =
-    wipFilter === 'All'
+    wipFilter.length === 0
       ? allWipRows
-      : allWipRows.filter((r) => r.material_type_description === wipFilter);
+      : allWipRows.filter((r) =>
+          wipFilter.includes(r.material_type_description ?? '')
+        );
   const allRpmRows = (rpmData as { data?: RpmRow[] })?.data ?? [];
   const [rpmProductFilter, setRpmProductFilter] = useState<
     'All' | 'TPKG' | 'TRAW'
@@ -1415,10 +1561,9 @@ function DispatchWipTab({
           isLoading={isLoadingWip}
           minHeight="calc(100vh - 305px)"
           headerActions={
-            <Select
+            <MultiSelect
               value={wipFilter}
               options={[
-                { value: 'All', label: 'All' },
                 {
                   value: 'TSCL -  Toll-In Bulk',
                   label: 'TSCL -  Toll-In Bulk',
@@ -1437,8 +1582,11 @@ function DispatchWipTab({
                 },
                 { value: 'TSCL - Export FG', label: 'TSCL - Export FG' },
               ]}
-              onChange={(v) => setWipFilter(v || 'All')}
-              minW="150px"
+              onChange={setWipFilter}
+              isClearable
+              placeholder="Select..."
+              minW="200px"
+              height="36px"
             />
           }
         >
@@ -1610,6 +1758,8 @@ export default function ScorecardDashboard() {
     useGetCoverDaysTotal(params);
   const { data: forecastAccuracyMonthlyData } =
     useGetForecastAccuracyMonthly(params);
+  const { data: forecastAccuracyMonthlyDaysGoneData } =
+    useGetForecastAccuracyMonthlyDaysGone(params);
   const {
     data: forecastAccuracyCategoryMonthlyData,
     isFetching: isLoadingForecastTscl,
@@ -1697,6 +1847,7 @@ export default function ScorecardDashboard() {
     inv_val_efp?: string | number;
     trg_value: string | number;
     cover_days: string | number;
+    cover_days_efp?: string | number;
     daily_target: string | number;
     quantity?: string | number;
   };
@@ -1717,12 +1868,18 @@ export default function ScorecardDashboard() {
     (s, r) => s + Number(r.inv_val ?? 0),
     0
   );
+  const totalInvEfp = coverDayApiRows.reduce(
+    (s, r) => s + Number(r.inv_val_efp ?? 0),
+    0
+  );
   const totalDailyTarget = coverDayApiRows.reduce(
     (s, r) => s + Number(r.daily_target ?? 0),
     0
   );
   const totalCoverDays =
     totalDailyTarget > 0 ? Math.round(totalInv / totalDailyTarget) : 0;
+  const totalCoverDaysEfp =
+    totalDailyTarget > 0 ? Math.round(totalInvEfp / totalDailyTarget) : 0;
 
   const coverDaysRows: CoverDaysCardRow[] = [
     {
@@ -1731,15 +1888,22 @@ export default function ScorecardDashboard() {
         coverDayTotalRow?.cover_days !== undefined
           ? Math.round(Number(coverDayTotalRow.cover_days))
           : totalCoverDays,
+      value_efp:
+        coverDayTotalRow?.cover_days_efp !== undefined
+          ? Math.round(Number(coverDayTotalRow.cover_days_efp))
+          : totalCoverDaysEfp,
       inv: coverDayTotalRow
         ? fmtNumber(coverDayTotalRow.inv_val)
         : fmtNumber(totalInv),
-      inv_efp: fmtNumber(coverDayTotalRow?.inv_val_efp),
+      inv_efp: coverDayTotalRow
+        ? fmtNumber(coverDayTotalRow.inv_val_efp)
+        : fmtNumber(totalInvEfp),
       quantity: fmtNumber(coverDayTotalRow?.quantity),
     },
     {
       ...COVER_DAYS[1],
       value: Math.round(Number(findCls('A')?.cover_days ?? 0)),
+      value_efp: Math.round(Number(findCls('A')?.cover_days_efp ?? 0)),
       inv: fmtNumber(findCls('A')?.inv_val),
       inv_efp: fmtNumber(findCls('A')?.inv_val_efp),
       quantity: fmtNumber(findCls('A')?.quantity),
@@ -1747,6 +1911,7 @@ export default function ScorecardDashboard() {
     {
       ...COVER_DAYS[2],
       value: Math.round(Number(findCls('B')?.cover_days ?? 0)),
+      value_efp: Math.round(Number(findCls('B')?.cover_days_efp ?? 0)),
       inv: fmtNumber(findCls('B')?.inv_val),
       inv_efp: fmtNumber(findCls('B')?.inv_val_efp),
       quantity: fmtNumber(findCls('B')?.quantity),
@@ -1754,6 +1919,7 @@ export default function ScorecardDashboard() {
     {
       ...COVER_DAYS[3],
       value: Math.round(Number(findCls('C')?.cover_days ?? 0)),
+      value_efp: Math.round(Number(findCls('C')?.cover_days_efp ?? 0)),
       inv: fmtNumber(findCls('C')?.inv_val),
       inv_efp: fmtNumber(findCls('C')?.inv_val_efp),
       quantity: fmtNumber(findCls('C')?.quantity),
@@ -1761,6 +1927,7 @@ export default function ScorecardDashboard() {
     {
       ...COVER_DAYS[4],
       value: Math.round(Number(findCls('Others')?.cover_days ?? 0)),
+      value_efp: Math.round(Number(findCls('Others')?.cover_days_efp ?? 0)),
       inv: fmtNumber(findCls('Others')?.inv_val),
       inv_efp: fmtNumber(findCls('Others')?.inv_val_efp),
       quantity: fmtNumber(findCls('Others')?.quantity),
@@ -1838,6 +2005,36 @@ export default function ScorecardDashboard() {
     };
   })();
 
+  const tsclDaysGoneInfo = (() => {
+    const refDate = parseFilterDate(filters.dateTo || filters.dateFrom);
+    const year = refDate.getFullYear();
+    const month = refDate.getMonth();
+    const monthStart = new Date(year, month, 1);
+    const monthEnd = new Date(year, month + 1, 0);
+    const totalDays = monthEnd.getDate();
+    const daysGone = Math.max(
+      1,
+      Math.min(refDate.getDate(), monthEnd.getDate())
+    );
+
+    const row = (
+      forecastAccuracyMonthlyDaysGoneData as {
+        data?: { amount: number; target_value: string | number }[];
+      }
+    )?.data?.[0];
+    const target = row
+      ? Number(row.target_value).toLocaleString('en-US', {
+          maximumFractionDigits: 0,
+        })
+      : '-';
+
+    return {
+      daysGone,
+      totalDays,
+      target,
+    };
+  })();
+
   const iblAccuracy = (() => {
     const row = (
       forecastAccuracyYearlyData as {
@@ -1863,6 +2060,35 @@ export default function ScorecardDashboard() {
         maximumFractionDigits: 0,
       }),
       target: Number(row.target_value).toLocaleString('en-US', {
+        maximumFractionDigits: 0,
+      }),
+    };
+  })();
+
+  const iblDaysGoneInfo = (() => {
+    const refDate = parseFilterDate(filters.dateTo || filters.dateFrom);
+    const year = refDate.getFullYear();
+    const month = refDate.getMonth();
+    const monthEnd = new Date(year, month + 1, 0);
+    const totalDays = monthEnd.getDate();
+    const daysGone = Math.max(
+      1,
+      Math.min(refDate.getDate(), monthEnd.getDate())
+    );
+
+    const row = (
+      forecastAccuracyYearlyData as {
+        data?: { target_value: string | number }[];
+      }
+    )?.data?.[0];
+    const totalBudget = Number(row?.target_value ?? 0);
+    const proratedTarget =
+      totalDays > 0 ? (totalBudget / totalDays) * daysGone : 0;
+
+    return {
+      daysGone,
+      totalDays,
+      target: proratedTarget.toLocaleString('en-US', {
         maximumFractionDigits: 0,
       }),
     };
@@ -1994,10 +2220,12 @@ export default function ScorecardDashboard() {
             coverDaysRows={coverDaysRows}
             tsclAccuracy={tsclAccuracy}
             tsclSalesDisplay={tsclSalesDisplay}
+            tsclDaysGoneInfo={tsclDaysGoneInfo}
             forecastBarData={forecastBarData}
             forecastMonths={forecastMonths}
             iblAccuracy={iblAccuracy}
             iblSalesDisplay={iblSalesDisplay}
+            iblDaysGoneInfo={iblDaysGoneInfo}
             iblBarData={iblBarData}
             iblMonths={iblMonths}
             isLoadingSales={isLoadingSales}
