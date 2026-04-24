@@ -17,4 +17,5 @@ export enum ApiKey {
   filters = 'filters',
   rpm = 'rpm',
   wip = 'wip',
+  dailySalesAvg = 'dailySalesAvg',
 }

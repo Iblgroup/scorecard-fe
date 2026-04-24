@@ -17,7 +17,6 @@ import { ChartCard } from '@/components/chart-card';
 import { BarChart, GaugeChart, LineChart } from '@/components/charts';
 import { DataTable, DataTableRow } from '@/components/data-table';
 import { RmpmDetails } from '@/dialog/rmpm-details';
-import { Select } from '@/components/select';
 import { MultiSelect } from '@/components/select/MultiSelect';
 import { FilterBar } from '@/components/filter-bar';
 import { HeaderActions } from '@/components/header-actions';
@@ -209,19 +208,22 @@ function ToggleGroup<T extends string>({
   options,
   value,
   onChange,
+  height = 36,
 }: {
   options: { label: string; value: T }[];
   value: T;
   onChange: (v: T) => void;
+  height?: number;
 }) {
+  const h = `${height}px`;
   return (
-    <Box display="inline-flex" h="36px" flexShrink={0}>
+    <Box display="inline-flex" h={h} flexShrink={0}>
       {options.map(({ label, value: v }, idx) => (
         <Box
           key={v}
           as="button"
           px={3}
-          h="36px"
+          h={h}
           cursor="pointer"
           fontSize="12px"
           fontWeight="700"
@@ -410,6 +412,7 @@ function CoverDaysSection({
           ]}
           value={coverDaysInventoryView}
           onChange={setCoverDaysInventoryView}
+          height={28}
         />
       </Flex>
       {isLoadingCoverDays ? (
@@ -2027,7 +2030,6 @@ export default function ScorecardDashboard() {
     const refDate = parseFilterDate(filters.dateTo || filters.dateFrom);
     const year = refDate.getFullYear();
     const month = refDate.getMonth();
-    const monthStart = new Date(year, month, 1);
     const monthEnd = new Date(year, month + 1, 0);
     const totalDays = monthEnd.getDate();
     const daysGone = Math.max(
