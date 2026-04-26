@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useGetSalesSummary } from '@/api/salesSummary';
 import { useGetCoverDays, useGetCoverDaysTotal } from '@/api/coverDays';
 import {
@@ -16,8 +16,9 @@ import { useAppSelector } from '@/app/hooks';
 import { ChartCard } from '@/components/chart-card';
 import { BarChart, GaugeChart, LineChart } from '@/components/charts';
 import { DataTable, DataTableRow } from '@/components/data-table';
+import { Select } from '@/components/select';
 import { RmpmDetails } from '@/dialog/rmpm-details';
-import { MultiSelect } from '@/components/select/MultiSelect';
+import { WipDetails } from '@/dialog/wip-details';
 import { FilterBar } from '@/components/filter-bar';
 import { HeaderActions } from '@/components/header-actions';
 import { clsColors, colors, gradients } from '@/constants/theme';
@@ -1448,12 +1449,20 @@ function DispatchWipTab({
     delivery_pct: string;
     total_order_qty: string;
     total_delivery_qty: string;
+    channel_type?: string;
   };
   type WipRow = {
     'Material Name': string;
     'WIP Value': number;
     Quantity: number;
     material_type_description?: string;
+    good_received_qty?: number;
+    item_qty?: number;
+    order_number?: string;
+    plant?: string | number;
+    plnt_desc?: string;
+    storage_loc?: string | number;
+    storage_loc_desc?: string;
   };
   type RpmRow = {
     materialname: string;
@@ -1480,21 +1489,30 @@ function DispatchWipTab({
     tiedempties_qty?: string;
     tied_empties_val?: string;
   };
-  const dispatchRows =
+  const allDispatchRows =
     (dispatchVsOrderData as { data?: DispatchRow[] })?.data ?? [];
-  const allWipRows = (wipData as { data?: WipRow[] })?.data ?? [];
-  const [wipFilter, setWipFilter] = useState<string[]>([]);
-  const wipRows =
-    wipFilter.length === 0
-      ? allWipRows
-      : allWipRows.filter((r) =>
-          wipFilter.includes(r.material_type_description ?? '')
-        );
+  const [dispatchChannelFilter, setDispatchChannelFilter] = useState('All');
+  const dispatchChannelOptions = useMemo(() => {
+    const set = new Set<string>();
+    allDispatchRows.forEach((r) => {
+      if (r.channel_type) set.add(r.channel_type);
+    });
+    return [
+      { value: 'All', label: 'All' },
+      ...[...set].sort().map((v) => ({ value: v, label: v })),
+    ];
+  }, [allDispatchRows]);
+  const dispatchRows =
+    dispatchChannelFilter === 'All'
+      ? allDispatchRows
+      : allDispatchRows.filter((r) => r.channel_type === dispatchChannelFilter);
+  const wipRows = (wipData as { data?: WipRow[] })?.data ?? [];
   const allRpmRows = (rpmData as { data?: RpmRow[] })?.data ?? [];
   const [rpmProductFilter, setRpmProductFilter] = useState<
     'All' | 'TPKG' | 'TRAW'
   >('All');
   const [rmpmDialogOpen, setRmpmDialogOpen] = useState(false);
+  const [wipDialogOpen, setWipDialogOpen] = useState(false);
   const filteredByType = allRpmRows;
   const rpmRows =
     rpmProductFilter === 'All'
@@ -1515,29 +1533,14 @@ function DispatchWipTab({
           isLoading={isLoadingDispatch}
           minHeight="calc(100vh - 305px)"
           headerActions={
-            <></>
-            // <Box minW="150px">
-            //   <Select
-            //     value={dispatchFilter}
-            //     options={[
-            //       { value: 'All', label: 'All' },
-            //       { value: 'export', label: 'Export' },
-            //       { value: 'local', label: 'Local' },
-            //     ]}
-            //     onChange={(v) => setDispatchFilter(v as string)}
-            //     placeholder="Filter..."
-            //     styles={{
-            //       control: (base) => ({
-            //         ...base,
-            //         minHeight: '36px',
-            //         height: '36px',
-            //       }),
-            //       valueContainer: (base) => ({ ...base, padding: '0 8px' }),
-            //       indicatorsContainer: (base) => ({ ...base, height: '36px' }),
-            //       menu: (base) => ({ ...base, zIndex: 10 }),
-            //     }}
-            //   />
-            // </Box>
+            <Select
+              // label="Channel"
+              placeholder="Channel"
+              value={dispatchChannelFilter}
+              options={dispatchChannelOptions}
+              onChange={(v) => setDispatchChannelFilter(v || 'All')}
+              minW="160px"
+            />
           }
         >
           {dispatchRows.map((row) => {
@@ -1582,33 +1585,14 @@ function DispatchWipTab({
           isLoading={isLoadingWip}
           minHeight="calc(100vh - 305px)"
           headerActions={
-            <MultiSelect
-              value={wipFilter}
-              options={[
-                {
-                  value: 'TSCL -  Toll-In Bulk',
-                  label: 'TSCL -  Toll-In Bulk',
-                },
-                {
-                  value: 'HOTC - Mfg Finished Goods',
-                  label: 'HOTC - Mfg Finished Goods',
-                },
-                {
-                  value: 'TSCL - Semi Finished',
-                  label: 'TSCL - Semi Finished',
-                },
-                {
-                  value: 'TSCL - Mfg Finished Goods',
-                  label: 'TSCL - Mfg Finished Goods',
-                },
-                { value: 'TSCL - Export FG', label: 'TSCL - Export FG' },
-              ]}
-              onChange={setWipFilter}
-              isClearable
-              placeholder="Select..."
-              minW="200px"
-              height="36px"
-            />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setWipDialogOpen(true)}
+              flexShrink={0}
+            >
+              View Details
+            </Button>
           }
         >
           <DataTableRow
@@ -1638,6 +1622,7 @@ function DispatchWipTab({
                 }),
               ]}
               cellWeights={[undefined, undefined, '600']}
+              onRowClick={() => setWipDialogOpen(true)}
             />
           ))}
         </DataTable>
@@ -1741,6 +1726,11 @@ function DispatchWipTab({
         open={rmpmDialogOpen}
         data={rpmRows}
         onClose={() => setRmpmDialogOpen(false)}
+      />
+      <WipDetails
+        open={wipDialogOpen}
+        data={wipRows}
+        onClose={() => setWipDialogOpen(false)}
       />
     </Grid>
   );
