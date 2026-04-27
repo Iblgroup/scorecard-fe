@@ -221,16 +221,30 @@ export function BarChart({
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    setContainerWidth(el.offsetWidth);
-    const ro = new ResizeObserver(() => setContainerWidth(el.offsetWidth));
+    let frame = 0;
+    const measure = () => {
+      const w = Math.floor(el.getBoundingClientRect().width);
+      setContainerWidth((prev) => (Math.abs(prev - w) > 1 ? w : prev));
+    };
+    measure();
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(measure);
+    });
     ro.observe(el);
-    return () => ro.disconnect();
+    return () => {
+      cancelAnimationFrame(frame);
+      ro.disconnect();
+    };
   }, []);
 
   const itemSlotWidth = barSize * bars.length + (compact ? 10 : 40);
   const yAxisWidth = 50;
-  const neededWidth = filteredData.length * itemSlotWidth + yAxisWidth;
-  const innerWidth = Math.max(containerWidth, neededWidth);
+  const neededWidth = Math.ceil(filteredData.length * itemSlotWidth + yAxisWidth);
+  // 4px tolerance so a 1–3px sub-pixel jitter at fractional zoom does not
+  // toggle the horizontal scrollbar on/off repeatedly.
+  const innerWidth =
+    neededWidth > containerWidth + 4 ? neededWidth : containerWidth;
 
   const tickWidth =
     innerWidth && filteredData.length ? innerWidth / filteredData.length - 10 : 50;
@@ -268,7 +282,12 @@ export function BarChart({
           ))}
         </HStack>
       )}
-      <Box ref={containerRef} flex={1} overflowX="auto">
+      <Box
+        ref={containerRef}
+        flex={1}
+        overflowX={innerWidth > containerWidth ? 'auto' : 'hidden'}
+        overflowY="hidden"
+      >
         <Box style={{ width: innerWidth }} h="100%" minW="100%">
           <ResponsiveContainer width="100%" height="100%">
             <RechartsBarChart
