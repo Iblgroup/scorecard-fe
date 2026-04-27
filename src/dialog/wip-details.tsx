@@ -40,7 +40,7 @@ const buildHeaders = (qtyLabel: string) => [
   'Order number',
   'Plant',
   'Storage Location',
-  'Item Qty',
+  'Process Item Qty',
   'Good Received Qty',
   qtyLabel,
   'WIP Value',
@@ -56,6 +56,18 @@ const COL_ALIGNS: ('left' | 'right' | 'center')[] = [
   'right',
   'right',
   'right',
+];
+
+const COL_WIDTHS: (string | undefined)[] = [
+  undefined, // Material Name
+  undefined, // Material Type
+  '140px',   // Order #
+  undefined, // Plant
+  undefined, // Storage Location
+  '150px',   // Process / Item Qty
+  '160px',   // Good Received Qty
+  '150px',   // Variance / WIP Qty
+  '150px',   // WIP Value
 ];
 
 function buildCells(r: WipDetailRow): string[] {
@@ -243,6 +255,7 @@ export function WipDetails({ open, data, onClose }: WipDetailsProps) {
               headerGradient={gradients.tableBlue}
               headers={headers}
               colAligns={COL_ALIGNS}
+              colWidths={COL_WIDTHS}
               pageSize={15}
               minHeight="0"
               height="100%"
