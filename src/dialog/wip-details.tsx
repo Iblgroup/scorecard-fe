@@ -37,12 +37,12 @@ function fmt(val?: string | number, frac = 0) {
 const HEADERS = [
   'Material Name',
   'Material Type',
-  'Order #',
+  'Order number',
   'Plant',
   'Storage Location',
   'Item Qty',
   'Good Received Qty',
-  'Quantity',
+  'Qty',
   'WIP Value',
 ];
 
