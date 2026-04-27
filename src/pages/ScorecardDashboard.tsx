@@ -1578,7 +1578,7 @@ function DispatchWipTab({
         <DataTable
           title="WIP"
           headerGradient={gradients.tableBlue}
-          headers={['Material Name', 'Qty', 'Value']}
+          headers={['Material Name', 'Item Qty', 'Value']}
           colAligns={['left', 'right', 'right']}
           headerMinH="52px"
           pageSize={14}
@@ -1601,7 +1601,7 @@ function DispatchWipTab({
             cells={[
               'Total',
               wipRows
-                .reduce((s, r) => s + Number(r.Quantity ?? 0), 0)
+                .reduce((s, r) => s + Number(r.item_qty ?? 0), 0)
                 .toLocaleString('en-US', { maximumFractionDigits: 0 }),
               wipRows
                 .reduce((s, r) => s + Number(r['WIP Value'] ?? 0), 0)
@@ -1614,7 +1614,7 @@ function DispatchWipTab({
               key={row['Material Name']}
               cells={[
                 row['Material Name'],
-                Number(row.Quantity ?? 0).toLocaleString('en-US', {
+                Number(row.item_qty ?? 0).toLocaleString('en-US', {
                   maximumFractionDigits: 0,
                 }),
                 Number(row['WIP Value'] ?? 0).toLocaleString('en-US', {
