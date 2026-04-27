@@ -34,7 +34,7 @@ function fmt(val?: string | number, frac = 0) {
   });
 }
 
-const HEADERS = [
+const buildHeaders = (qtyLabel: string) => [
   'Material Name',
   'Material Type',
   'Order number',
@@ -42,7 +42,7 @@ const HEADERS = [
   'Storage Location',
   'Item Qty',
   'Good Received Qty',
-  'WIP Qty',
+  qtyLabel,
   'WIP Value',
 ];
 
@@ -96,6 +96,7 @@ export function WipDetails({ open, data, onClose }: WipDetailsProps) {
   const [materialTypeFilter, setMaterialTypeFilter] = useState<string[]>([]);
   const [plantFilter, setPlantFilter] = useState<string>('All');
   const [storageFilter, setStorageFilter] = useState<string>('All');
+  const [wipStatusFilter, setWipStatusFilter] = useState<string>('All');
 
   const [ready, setReady] = useState(false);
   useEffect(() => {
@@ -146,13 +147,32 @@ export function WipDetails({ open, data, onClose }: WipDetailsProps) {
       const matchStorage =
         storageFilter === 'All' ||
         (r.storage_loc_desc ?? String(r.storage_loc ?? '')) === storageFilter;
-      return matchType && matchPlant && matchStorage;
+      const matchStatus =
+        wipStatusFilter === 'All' ||
+        (wipStatusFilter === 'PendingGR' &&
+          Number(r.good_received_qty ?? 0) === 0);
+      return matchType && matchPlant && matchStorage && matchStatus;
     });
-  }, [data, materialTypeFilter, plantFilter, storageFilter, showData]);
+  }, [
+    data,
+    materialTypeFilter,
+    plantFilter,
+    storageFilter,
+    wipStatusFilter,
+    showData,
+  ]);
 
   const totalCells = useMemo(
     () => buildTotalCells(filteredData),
     [filteredData]
+  );
+
+  const headers = useMemo(
+    () =>
+      buildHeaders(
+        wipStatusFilter === 'PendingGR' ? 'WIP Qty' : 'Variance Qty'
+      ),
+    [wipStatusFilter]
   );
 
   return (
@@ -221,7 +241,7 @@ export function WipDetails({ open, data, onClose }: WipDetailsProps) {
             <DataTable
               title=""
               headerGradient={gradients.tableBlue}
-              headers={HEADERS}
+              headers={headers}
               colAligns={COL_ALIGNS}
               pageSize={15}
               minHeight="0"
@@ -257,13 +277,24 @@ export function WipDetails({ open, data, onClose }: WipDetailsProps) {
                     onChange={(v) => setStorageFilter(v || 'All')}
                     minW="170px"
                   />
+                  <Select
+                    label="WIP"
+                    placeholder="WIP"
+                    value={wipStatusFilter}
+                    options={[
+                      { value: 'All', label: 'All' },
+                      { value: 'PendingGR', label: 'Good Received' },
+                    ]}
+                    onChange={(v) => setWipStatusFilter(v || 'All')}
+                    minW="170px"
+                  />
                 </Flex>
               }
             >
               <DataTableRow
                 pinnedTop
                 cells={totalCells}
-                cellWeights={Array(HEADERS.length).fill('700')}
+                cellWeights={Array(headers.length).fill('700')}
               />
               {filteredData.map((r, i) => (
                 <DataTableRow

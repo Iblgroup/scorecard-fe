@@ -1510,6 +1510,11 @@ function DispatchWipTab({
       ? allDispatchRows
       : allDispatchRows.filter((r) => r.channel_type === dispatchChannelFilter);
   const wipRows = (wipData as { data?: WipRow[] })?.data ?? [];
+  // WIP card defaults to "Pending GR" — only rows with good_received_qty = 0.
+  // The detail dialog still receives the full `wipRows` so its own filter works.
+  const wipPendingGrRows = wipRows.filter(
+    (r) => Number(r.good_received_qty ?? 0) === 0
+  );
   const allRpmRows = (rpmData as { data?: RpmRow[] })?.data ?? [];
   const [rpmProductFilter, setRpmProductFilter] = useState<
     'All' | 'TPKG' | 'TRAW'
@@ -1603,16 +1608,16 @@ function DispatchWipTab({
             pinnedTop
             cells={[
               'Total',
-              wipRows
+              wipPendingGrRows
                 .reduce((s, r) => s + Number(r.Quantity ?? 0), 0)
                 .toLocaleString('en-US', { maximumFractionDigits: 0 }),
-              wipRows
+              wipPendingGrRows
                 .reduce((s, r) => s + Number(r['WIP Value'] ?? 0), 0)
                 .toLocaleString('en-US', { maximumFractionDigits: 0 }),
             ]}
             cellWeights={['700', '700', '700']}
           />
-          {wipRows.map((row) => (
+          {wipPendingGrRows.map((row) => (
             <DataTableRow
               key={row['Material Name']}
               cells={[
