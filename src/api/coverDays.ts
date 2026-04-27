@@ -11,6 +11,10 @@ const getCoverDaysTotal = async (params?: Record<string, unknown>) => {
   return axios.get(ApiEndpoints.coverDaysTotal, { params });
 };
 
+const getCoverDaysClosingInv = async () => {
+  return axios.get(ApiEndpoints.coverDaysClosingInv);
+};
+
 export const useGetCoverDays = (params?: Record<string, unknown>) => {
   return useQuery({
     queryKey: [ApiKey.coverDays, params],
@@ -24,6 +28,15 @@ export const useGetCoverDaysTotal = (params?: Record<string, unknown>) => {
   return useQuery({
     queryKey: [ApiKey.coverDaysTotal, params],
     queryFn: () => getCoverDaysTotal(params),
+    placeholderData: keepPreviousData,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useGetCoverDaysClosingInv = () => {
+  return useQuery({
+    queryKey: [ApiKey.coverDaysClosingInv],
+    queryFn: getCoverDaysClosingInv,
     placeholderData: keepPreviousData,
     staleTime: 5 * 60 * 1000,
   });

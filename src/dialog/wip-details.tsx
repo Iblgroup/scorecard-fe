@@ -42,7 +42,7 @@ const HEADERS = [
   'Storage Location',
   'Item Qty',
   'Good Received Qty',
-  'Qty',
+  'WIP Qty',
   'WIP Value',
 ];
 

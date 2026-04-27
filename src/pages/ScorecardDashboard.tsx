@@ -1,6 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useGetSalesSummary } from '@/api/salesSummary';
-import { useGetCoverDays, useGetCoverDaysTotal } from '@/api/coverDays';
+import {
+  useGetCoverDays,
+  useGetCoverDaysTotal,
+  useGetCoverDaysClosingInv,
+} from '@/api/coverDays';
 import {
   useGetForecastAccuracyMonthly,
   useGetForecastAccuracyMonthlyDaysGone,
@@ -468,8 +472,7 @@ function CoverDaysCard({
 }) {
   const isClassified = dot === '●';
   const letter = label.charAt(0);
-  const inventoryLabel =
-    inventoryView === 'TP' ? 'Inventory Value TP:' : 'Inventory Value EFP:';
+  const inventoryLabel = 'Inventory Value:';
   const inventoryValue = inventoryView === 'TP' ? inv : inv_efp;
   const displayValue = inventoryView === 'TP' ? value : value_efp;
 
@@ -522,9 +525,9 @@ function CoverDaysCard({
                           : 'th';
                   const mon = d.toLocaleDateString('en-US', { month: 'short' });
                   const yr = String(d.getFullYear()).slice(-2);
-                  return `days (As of ${day}${ord} ${mon}'${yr})`;
+                  return `days (Closing Date: ${day}${ord} ${mon}'${yr})`;
                 })()
-              : 'As of selected'}
+              : 'Closing Date: -'}
           </Text>
           <Text fontSize="12px" color="gray.400" mt={0.5}>
             {inventoryLabel}{' '}
@@ -840,8 +843,8 @@ function SupplyChainTab({
             >
               <Box px={3} py={2} borderRadius="md" bg="gray.50" w="100%">
                 <Flex justify="space-between" align="center">
-                  <Text fontSize="xs" color="gray.500" fontWeight="500">
-                    Days Gone
+                  <Text fontSize="xs" color="gray.600" fontWeight="600">
+                    Days Gone:
                   </Text>
                   <Text fontSize="13px" fontWeight="700">
                     <Text as="span" color="green.500">
@@ -857,8 +860,8 @@ function SupplyChainTab({
                 </Flex>
                 <Separator my={1.5} borderColor="gray.200" />
                 <Flex justify="space-between" align="center">
-                  <Text fontSize="xs" color="gray.500" fontWeight="500">
-                    Target
+                  <Text fontSize="xs" color="gray.600" fontWeight="600">
+                    Target:
                   </Text>
                   <Text fontSize="13px" color="gray.800" fontWeight="700">
                     {iblDaysGoneInfo?.target ?? '-'}
@@ -931,8 +934,8 @@ function SupplyChainTab({
             >
               <Box px={3} py={2} borderRadius="md" bg="gray.50" w="100%">
                 <Flex justify="space-between" align="center">
-                  <Text fontSize="xs" color="gray.500" fontWeight="500">
-                    Days Gone
+                  <Text fontSize="xs" color="gray.600" fontWeight="600">
+                    Days Gone:
                   </Text>
                   <Text fontSize="13px" fontWeight="700">
                     <Text as="span" color="green.500">
@@ -948,8 +951,8 @@ function SupplyChainTab({
                 </Flex>
                 <Separator my={1.5} borderColor="gray.200" />
                 <Flex justify="space-between" align="center">
-                  <Text fontSize="xs" color="gray.500" fontWeight="500">
-                    Target
+                  <Text fontSize="xs" color="gray.600" fontWeight="600">
+                    Target:
                   </Text>
                   <Text fontSize="13px" color="gray.800" fontWeight="700">
                     {tsclDaysGoneInfo?.target ?? '-'}
@@ -1578,7 +1581,7 @@ function DispatchWipTab({
         <DataTable
           title="WIP"
           headerGradient={gradients.tableBlue}
-          headers={['Material Name', 'Item Qty', 'Value']}
+          headers={['Material Name', 'WIP Qty', 'Value']}
           colAligns={['left', 'right', 'right']}
           headerMinH="52px"
           pageSize={14}
@@ -1601,7 +1604,7 @@ function DispatchWipTab({
             cells={[
               'Total',
               wipRows
-                .reduce((s, r) => s + Number(r.item_qty ?? 0), 0)
+                .reduce((s, r) => s + Number(r.Quantity ?? 0), 0)
                 .toLocaleString('en-US', { maximumFractionDigits: 0 }),
               wipRows
                 .reduce((s, r) => s + Number(r['WIP Value'] ?? 0), 0)
@@ -1614,7 +1617,7 @@ function DispatchWipTab({
               key={row['Material Name']}
               cells={[
                 row['Material Name'],
-                Number(row.item_qty ?? 0).toLocaleString('en-US', {
+                Number(row.Quantity ?? 0).toLocaleString('en-US', {
                   maximumFractionDigits: 0,
                 }),
                 Number(row['WIP Value'] ?? 0).toLocaleString('en-US', {
@@ -1749,6 +1752,15 @@ export default function ScorecardDashboard() {
     ...(filters.dateTo && { endDate: filters.dateTo }),
   };
 
+  // Cap endDate at today so daysgone never requests future days.
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const cappedEndDate =
+    filters.dateTo && filters.dateTo > todayIso ? todayIso : filters.dateTo;
+  const daysGoneParams = {
+    ...params,
+    ...(cappedEndDate && { endDate: cappedEndDate }),
+  };
+
   const { data: totalSkuData } = useGetTotalSku({
     ...(filters.classification && { classification: filters.classification }),
     ...(filters.sku.length > 0 && { sku: filters.sku }),
@@ -1767,10 +1779,14 @@ export default function ScorecardDashboard() {
     useGetCoverDays(params);
   const { data: coverDaysTotalData, isFetching: isLoadingCoverDaysTotal } =
     useGetCoverDaysTotal(params);
+  const { data: coverDaysClosingInvData } = useGetCoverDaysClosingInv();
+  const closingDate =
+    (coverDaysClosingInvData as { data?: { closing_date?: string }[] })
+      ?.data?.[0]?.closing_date ?? undefined;
   const { data: forecastAccuracyMonthlyData } =
     useGetForecastAccuracyMonthly(params);
   const { data: forecastAccuracyMonthlyDaysGoneData } =
-    useGetForecastAccuracyMonthlyDaysGone(params);
+    useGetForecastAccuracyMonthlyDaysGone(daysGoneParams);
   const {
     data: forecastAccuracyCategoryMonthlyData,
     isFetching: isLoadingForecastTscl,
@@ -2022,10 +2038,13 @@ export default function ScorecardDashboard() {
     const month = refDate.getMonth();
     const monthEnd = new Date(year, month + 1, 0);
     const totalDays = monthEnd.getDate();
-    const daysGone = Math.max(
-      1,
-      Math.min(refDate.getDate(), monthEnd.getDate())
-    );
+    const today = new Date();
+    const isCurrentMonth =
+      year === today.getFullYear() && month === today.getMonth();
+    const cappedDay = isCurrentMonth
+      ? Math.min(refDate.getDate(), today.getDate())
+      : refDate.getDate();
+    const daysGone = Math.max(1, Math.min(cappedDay, totalDays));
 
     const row = (
       forecastAccuracyMonthlyDaysGoneData as {
@@ -2081,10 +2100,13 @@ export default function ScorecardDashboard() {
     const month = refDate.getMonth();
     const monthEnd = new Date(year, month + 1, 0);
     const totalDays = monthEnd.getDate();
-    const daysGone = Math.max(
-      1,
-      Math.min(refDate.getDate(), monthEnd.getDate())
-    );
+    const today = new Date();
+    const isCurrentMonth =
+      year === today.getFullYear() && month === today.getMonth();
+    const cappedDay = isCurrentMonth
+      ? Math.min(refDate.getDate(), today.getDate())
+      : refDate.getDate();
+    const daysGone = Math.max(1, Math.min(cappedDay, totalDays));
 
     const row = (
       forecastAccuracyYearlyData as {
@@ -2245,7 +2267,7 @@ export default function ScorecardDashboard() {
             pctSkusData={pctSkusData}
             isLoadingPctSkus={isLoadingIblVsTscl}
             skuCounts={skuCounts}
-            endDate={filters.dateTo}
+            endDate={closingDate ?? filters.dateTo}
           />
         )}
         {mainTab === 'serviceMeasure' && (
