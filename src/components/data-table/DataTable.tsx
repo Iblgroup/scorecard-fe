@@ -103,7 +103,8 @@ export function DataTable({
 
   // Separate top-pinned rows (always visible at top, outside sort/pagination)
   const pinnedTopRows = allChildren.filter(
-    (row) => isValidElement(row) && (row.props as { pinnedTop?: boolean }).pinnedTop
+    (row) =>
+      isValidElement(row) && (row.props as { pinnedTop?: boolean }).pinnedTop
   );
   // Separate bottom-pinned total rows (always visible at bottom, outside pagination)
   const pinnedRows = allChildren.filter(
@@ -215,7 +216,14 @@ export function DataTable({
       h="100%"
     >
       {(title || searchable || collapsible) && (
-        <Flex align="center" justify="space-between" px={3} py={2} gap={3} minH={headerMinH}>
+        <Flex
+          align="center"
+          justify="space-between"
+          px={3}
+          py={2}
+          gap={3}
+          minH={headerMinH}
+        >
           <HStack gap={2} flexShrink={0}>
             {collapsible && (
               <Button
@@ -413,7 +421,9 @@ export function DataTable({
                     ))}
                   </Table.Row>
                 ))
-              ) : renderedRows.length === 0 && pinnedRows.length === 0 && pinnedTopRows.length === 0 ? (
+              ) : renderedRows.length === 0 &&
+                pinnedRows.length === 0 &&
+                pinnedTopRows.length === 0 ? (
                 <Table.Row>
                   <Table.Cell
                     colSpan={headers.length + (rowCollapsible ? 1 : 0)}
@@ -520,7 +530,14 @@ export function DataTableRow({
             : {}),
         }}
         fontWeight={isTotal ? 'bold' : undefined}
-        onClick={onRowClick ? (e) => { e.stopPropagation(); onRowClick(); } : undefined}
+        onClick={
+          onRowClick
+            ? (e) => {
+                e.stopPropagation();
+                onRowClick();
+              }
+            : undefined
+        }
         cursor={onRowClick ? 'pointer' : undefined}
         // transition="none"
         _hover={stickyRow ? undefined : { bg: '#f1f5f9' }}

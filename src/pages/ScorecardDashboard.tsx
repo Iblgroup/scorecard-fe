@@ -21,6 +21,7 @@ import { ChartCard } from '@/components/chart-card';
 import { BarChart, GaugeChart, LineChart } from '@/components/charts';
 import { DataTable, DataTableRow } from '@/components/data-table';
 import { Select } from '@/components/select';
+import { MultiSelect } from '@/components/select/MultiSelect';
 import { RmpmDetails } from '@/dialog/rmpm-details';
 import { WipDetails } from '@/dialog/wip-details';
 import { FilterBar } from '@/components/filter-bar';
@@ -1494,21 +1495,22 @@ function DispatchWipTab({
   };
   const allDispatchRows =
     (dispatchVsOrderData as { data?: DispatchRow[] })?.data ?? [];
-  const [dispatchChannelFilter, setDispatchChannelFilter] = useState('All');
+  const [dispatchChannelFilter, setDispatchChannelFilter] = useState<string[]>(
+    []
+  );
   const dispatchChannelOptions = useMemo(() => {
     const set = new Set<string>();
     allDispatchRows.forEach((r) => {
       if (r.channel_type) set.add(r.channel_type);
     });
-    return [
-      { value: 'All', label: 'All' },
-      ...[...set].sort().map((v) => ({ value: v, label: v })),
-    ];
+    return [...set].sort().map((v) => ({ value: v, label: v }));
   }, [allDispatchRows]);
   const dispatchRows =
-    dispatchChannelFilter === 'All'
+    dispatchChannelFilter.length === 0
       ? allDispatchRows
-      : allDispatchRows.filter((r) => r.channel_type === dispatchChannelFilter);
+      : allDispatchRows.filter((r) =>
+          dispatchChannelFilter.includes(r.channel_type ?? '')
+        );
   const wipRows = (wipData as { data?: WipRow[] })?.data ?? [];
   // WIP card defaults to "Pending GR" — only rows with good_received_qty = 0.
   // The detail dialog still receives the full `wipRows` so its own filter works.
@@ -1528,8 +1530,8 @@ function DispatchWipTab({
       : filteredByType.filter((r) => r.producttype === rpmProductFilter);
 
   return (
-    <Grid templateColumns="repeat(3, 1fr)" gap={4}>
-      <GridItem colSpan={1}>
+    <Grid templateColumns="repeat(21, 1fr)" gap={4}>
+      <GridItem colSpan={8}>
         <DataTable
           title="Dispatch Vs Order"
           headerGradient={gradients.tableBlue}
@@ -1541,13 +1543,13 @@ function DispatchWipTab({
           isLoading={isLoadingDispatch}
           minHeight="calc(100vh - 305px)"
           headerActions={
-            <Select
-              // label="Channel"
-              placeholder="Channel"
+            <MultiSelect
+              placeholder="All"
               value={dispatchChannelFilter}
               options={dispatchChannelOptions}
-              onChange={(v) => setDispatchChannelFilter(v || 'All')}
-              minW="160px"
+              onChange={setDispatchChannelFilter}
+              isClearable
+              minW="200px"
             />
           }
         >
@@ -1582,7 +1584,7 @@ function DispatchWipTab({
       </GridItem>
 
       {/* WIP */}
-      <GridItem colSpan={1}>
+      <GridItem colSpan={6}>
         <DataTable
           title="WIP"
           headerGradient={gradients.tableBlue}
@@ -1637,7 +1639,7 @@ function DispatchWipTab({
       </GridItem>
 
       {/* RPM */}
-      <GridItem colSpan={1}>
+      <GridItem colSpan={7}>
         <DataTable
           title="RMPM"
           headerGradient={gradients.tableIndigo}

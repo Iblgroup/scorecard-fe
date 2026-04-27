@@ -30,6 +30,7 @@ export interface MultiSelectProps extends Omit<
   onChange: (value: string[]) => void;
   options: SelectOption[];
   minW?: string;
+  maxW?: string;
   height?: string;
 }
 
@@ -250,6 +251,7 @@ export function MultiSelect({
   onChange,
   options,
   minW,
+  maxW,
   height,
   ...rest
 }: MultiSelectProps) {
@@ -281,7 +283,7 @@ export function MultiSelect({
           {label}
         </Text>
       )}
-      <Box flex={1} w="100%" minW={minW ?? 0}>
+      <Box flex={1} w="100%" minW={minW ?? 0} maxW={maxW}>
         <ReactSelect<SelectOption, true>
           isMulti
           value={options.filter((o) => value.includes(o.value))}
