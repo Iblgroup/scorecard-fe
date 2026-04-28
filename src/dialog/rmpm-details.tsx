@@ -240,7 +240,7 @@ export function RmpmDetails({ open, data, onClose }: RmpmDetailsProps) {
           borderRadius="xl"
           overflow="hidden"
           maxW="95vw"
-          maxH="90vh"
+          maxH="92vh"
           minH="0"
           display="flex"
           flexDirection="column"
@@ -294,7 +294,7 @@ export function RmpmDetails({ open, data, onClose }: RmpmDetailsProps) {
               headerGradient={gradients.tableIndigo}
               headers={headers}
               colAligns={colAligns}
-              pageSize={15}
+              pageSize={16}
               minHeight="0"
               height="100%"
               isLoading={!ready}

@@ -20,7 +20,6 @@ import { useAppSelector } from '@/app/hooks';
 import { ChartCard } from '@/components/chart-card';
 import { BarChart, GaugeChart, LineChart } from '@/components/charts';
 import { DataTable, DataTableRow } from '@/components/data-table';
-import { Select } from '@/components/select';
 import { MultiSelect } from '@/components/select/MultiSelect';
 import { RmpmDetails } from '@/dialog/rmpm-details';
 import { WipDetails } from '@/dialog/wip-details';
@@ -1530,8 +1529,8 @@ function DispatchWipTab({
       : filteredByType.filter((r) => r.producttype === rpmProductFilter);
 
   return (
-    <Grid templateColumns="repeat(21, 1fr)" gap={4}>
-      <GridItem colSpan={8}>
+    <Grid templateColumns="repeat(27, 1fr)" gap={4}>
+      <GridItem colSpan={10}>
         <DataTable
           title="Dispatch Vs Order"
           headerGradient={gradients.tableBlue}
@@ -1584,7 +1583,7 @@ function DispatchWipTab({
       </GridItem>
 
       {/* WIP */}
-      <GridItem colSpan={6}>
+      <GridItem colSpan={8}>
         <DataTable
           title="WIP"
           headerGradient={gradients.tableBlue}
@@ -1639,7 +1638,7 @@ function DispatchWipTab({
       </GridItem>
 
       {/* RPM */}
-      <GridItem colSpan={7}>
+      <GridItem colSpan={9}>
         <DataTable
           title="RMPM"
           headerGradient={gradients.tableIndigo}
@@ -1820,11 +1819,26 @@ export default function ScorecardDashboard() {
     useGetAboveBelowThreshold(params);
   const { data: iblVsTsclData, isFetching: isLoadingIblVsTscl } =
     useGetIblVsTscl(params);
+  // Dispatch vs Order ignores SKU filter; pass everything else.
+  const dispatchParams = {
+    ...(filters.classification && { classification: filters.classification }),
+    ...(filters.branch.length > 0 && { branch: filters.branch }),
+    ...(filters.dateFrom && { startDate: filters.dateFrom }),
+    ...(filters.dateTo && { endDate: filters.dateTo }),
+  };
   const { data: dispatchVsOrderData, isFetching: isLoadingDispatch } =
-    useGetDispatchVsOrder(params);
+    useGetDispatchVsOrder(dispatchParams);
 
-  const { data: wipData, isFetching: isLoadingWip } = useGetWip(params);
-  const { data: rpmData, isFetching: isLoadingRpm } = useGetRpm(params);
+  // WIP & RPM only respect date filters — branch / classification / sku are
+  // intentionally excluded.
+  const dateOnlyParams = {
+    ...(filters.dateFrom && { startDate: filters.dateFrom }),
+    ...(filters.dateTo && { endDate: filters.dateTo }),
+  };
+  const { data: wipData, isFetching: isLoadingWip } =
+    useGetWip(dateOnlyParams);
+  const { data: rpmData, isFetching: isLoadingRpm } =
+    useGetRpm(dateOnlyParams);
   const { data: serviceMeasureData, isFetching: isLoadingServiceMeasure } =
     useGetServiceMeasure(params);
   const { data: allBranchesServiceMeasureData } = useGetServiceMeasure({

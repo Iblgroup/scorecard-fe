@@ -40,7 +40,7 @@ const CLS_LABEL: Record<string, string> = {
 export function FilterBar({ initialFilters }: FilterBarProps) {
   const dispatch = useAppDispatch();
   const mainTab = useAppSelector((state) => state.salesDashboard.mainTab);
-  const isBranchDisabled = mainTab === 'dispatchWip';
+  const hideBranchAndSku = mainTab === 'dispatchWip';
 
   // All filters staged locally — only flushed to Redux on Apply
   const [localClassification, setLocalClassification] = useState(
@@ -166,8 +166,17 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
         px={2}
         zIndex={10}
         gap={3}
+        flexWrap={{ base: 'wrap', xl: 'nowrap' }}
       >
-        <Grid gap={3} flex={1} templateColumns="repeat(3, 1fr)">
+        <Grid
+          gap={3}
+          flex={{ base: '1 0 100%', xl: 1 }}
+          templateColumns={{
+            base: 'repeat(1, 1fr)',
+            md: 'repeat(2, 1fr)',
+            lg: 'repeat(3, 1fr)',
+          }}
+        >
           {/* Classification — single select */}
           <Select
             label="Classification"
@@ -178,26 +187,29 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
             placeholder="Select..."
           />
 
-          {/* SKU — multi select */}
-          <MultiSelect
-            label="SKU"
-            value={localSku}
-            options={skuOptions}
-            onChange={(v) => setLocalSku(v)}
-            isClearable
-            placeholder="Select..."
-          />
+          {!hideBranchAndSku && (
+            <>
+              {/* SKU — multi select */}
+              <MultiSelect
+                label="SKU"
+                value={localSku}
+                options={skuOptions}
+                onChange={(v) => setLocalSku(v)}
+                isClearable
+                placeholder="Select..."
+              />
 
-          {/* Branches — multi select */}
-          <MultiSelect
-            label="Branches"
-            value={localBranch}
-            options={branchOptions}
-            onChange={(v) => setLocalBranch(v)}
-            isClearable
-            placeholder="Select..."
-            isDisabled={isBranchDisabled}
-          />
+              {/* Branches — multi select */}
+              <MultiSelect
+                label="Branches"
+                value={localBranch}
+                options={branchOptions}
+                onChange={(v) => setLocalBranch(v)}
+                isClearable
+                placeholder="Select..."
+              />
+            </>
+          )}
         </Grid>
 
         <Flex align="center" flexShrink={0}>

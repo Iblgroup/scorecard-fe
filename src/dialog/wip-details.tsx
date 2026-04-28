@@ -61,13 +61,13 @@ const COL_ALIGNS: ('left' | 'right' | 'center')[] = [
 const COL_WIDTHS: (string | undefined)[] = [
   undefined, // Material Name
   undefined, // Material Type
-  '140px',   // Order #
+  '140px', // Order #
   undefined, // Plant
   undefined, // Storage Location
-  '150px',   // Process / Item Qty
-  '160px',   // Good Received Qty
-  '150px',   // Variance / WIP Qty
-  '150px',   // WIP Value
+  '150px', // Process / Item Qty
+  '160px', // Good Received Qty
+  '150px', // Variance / WIP Qty
+  '150px', // WIP Value
 ];
 
 function buildCells(r: WipDetailRow): string[] {
@@ -102,9 +102,15 @@ interface WipDetailsProps {
   open: boolean;
   data: WipDetailRow[];
   onClose: () => void;
+  minH?: string;
 }
 
-export function WipDetails({ open, data, onClose }: WipDetailsProps) {
+export function WipDetails({
+  open,
+  data,
+  onClose,
+  minH = '80vh',
+}: WipDetailsProps) {
   const [materialTypeFilter, setMaterialTypeFilter] = useState<string[]>([]);
   const [plantFilter, setPlantFilter] = useState<string>('All');
   const [storageFilter, setStorageFilter] = useState<string>('All');
@@ -202,7 +208,7 @@ export function WipDetails({ open, data, onClose }: WipDetailsProps) {
           borderRadius="xl"
           overflow="hidden"
           maxW="95vw"
-          maxH="90vh"
+          maxH="92vh"
           minH="0"
           display="flex"
           flexDirection="column"
@@ -248,7 +254,7 @@ export function WipDetails({ open, data, onClose }: WipDetailsProps) {
             overflow="hidden"
             display="flex"
             flexDirection="column"
-            minH="90vh"
+            minH={minH}
           >
             <DataTable
               title=""
@@ -256,7 +262,7 @@ export function WipDetails({ open, data, onClose }: WipDetailsProps) {
               headers={headers}
               colAligns={COL_ALIGNS}
               colWidths={COL_WIDTHS}
-              pageSize={15}
+              pageSize={16}
               minHeight="0"
               height="100%"
               isLoading={!ready}
