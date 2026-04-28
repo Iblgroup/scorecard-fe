@@ -1819,9 +1819,8 @@ export default function ScorecardDashboard() {
     useGetAboveBelowThreshold(params);
   const { data: iblVsTsclData, isFetching: isLoadingIblVsTscl } =
     useGetIblVsTscl(params);
-  // Dispatch vs Order ignores SKU filter; pass everything else.
+  // Dispatch vs Order ignores SKU and Classification filters.
   const dispatchParams = {
-    ...(filters.classification && { classification: filters.classification }),
     ...(filters.branch.length > 0 && { branch: filters.branch }),
     ...(filters.dateFrom && { startDate: filters.dateFrom }),
     ...(filters.dateTo && { endDate: filters.dateTo }),

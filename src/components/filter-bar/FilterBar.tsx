@@ -40,7 +40,9 @@ const CLS_LABEL: Record<string, string> = {
 export function FilterBar({ initialFilters }: FilterBarProps) {
   const dispatch = useAppDispatch();
   const mainTab = useAppSelector((state) => state.salesDashboard.mainTab);
-  const hideBranchAndSku = mainTab === 'dispatchWip';
+  const isDispatchWip = mainTab === 'dispatchWip';
+  const hideBranchAndSku = isDispatchWip;
+  const hideClassification = isDispatchWip;
 
   // All filters staged locally — only flushed to Redux on Apply
   const [localClassification, setLocalClassification] = useState(
@@ -177,15 +179,17 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
             lg: 'repeat(3, 1fr)',
           }}
         >
-          {/* Classification — single select */}
-          <Select
-            label="Classification"
-            value={localClassification}
-            options={classificationOptions}
-            onChange={(v) => setLocalClassification(v)}
-            isClearable
-            placeholder="Select..."
-          />
+          {!hideClassification && (
+            /* Classification — single select */
+            <Select
+              label="Classification"
+              value={localClassification}
+              options={classificationOptions}
+              onChange={(v) => setLocalClassification(v)}
+              isClearable
+              placeholder="Select..."
+            />
+          )}
 
           {!hideBranchAndSku && (
             <>
