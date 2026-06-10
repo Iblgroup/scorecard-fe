@@ -1834,10 +1834,8 @@ export default function ScorecardDashboard() {
     ...(filters.dateFrom && { startDate: filters.dateFrom }),
     ...(filters.dateTo && { endDate: filters.dateTo }),
   };
-  const { data: wipData, isFetching: isLoadingWip } =
-    useGetWip(dateOnlyParams);
-  const { data: rpmData, isFetching: isLoadingRpm } =
-    useGetRpm(dateOnlyParams);
+  const { data: wipData, isFetching: isLoadingWip } = useGetWip(dateOnlyParams);
+  const { data: rpmData, isFetching: isLoadingRpm } = useGetRpm(dateOnlyParams);
   const { data: serviceMeasureData, isFetching: isLoadingServiceMeasure } =
     useGetServiceMeasure(params);
   const { data: allBranchesServiceMeasureData } = useGetServiceMeasure({
@@ -2214,25 +2212,17 @@ export default function ScorecardDashboard() {
       >
         <Flex align="center" gap={3}>
           {/* Logo */}
-          <HStack gap={2} flexShrink={0}>
-            <Flex w={50} h={50} align="center" justify="center" flexShrink={0}>
-              <img
-                src="https://www.iblgrp.com/images/iblpvt-logo.jpeg"
-                alt="IBL Logo"
-                width="100%"
-                height="100%"
-                style={{ objectFit: 'contain', borderRadius: 4 }}
-              />
-            </Flex>
-            <Text
-              fontWeight="700"
-              fontSize="sm"
-              color="gray.900"
-              whiteSpace="nowrap"
-            >
-              SupplyChain Pulse 1.0
+          <Box flexShrink={0}>
+            <img
+              width="80px"
+              src="/logo.png"
+              style={{ marginBottom: '2px' }}
+              alt="Searle"
+            />
+            <Text fontSize="sm" color="gray.900" fontWeight="semibold">
+              Sales Pulse 1.0
             </Text>
-          </HStack>
+          </Box>
 
           {/* Tabs + toggles */}
           <HeaderActions />
