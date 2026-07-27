@@ -2220,7 +2220,7 @@ export default function ScorecardDashboard() {
               alt="Searle"
             />
             <Text fontSize="sm" color="gray.900" fontWeight="semibold">
-              Sales Pulse 1.0
+              SupplyChain Pulse 1.0
             </Text>
           </Box>
 
