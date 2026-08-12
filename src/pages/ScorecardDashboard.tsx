@@ -43,6 +43,7 @@ import { useGetRpm } from '@/api/rpm';
 import { useGetServiceMeasure } from '@/api/serviceMeasure';
 import { useGetTgtVsActual } from '@/api/tgtVsActual';
 import { useGetTotalSku } from '@/api/totalSku';
+import { RegionalDistributorTab } from '@/components/regional-distributor';
 
 const INVENTORY_THRESHOLD_DAYS: Record<string, number> = {
   A: 30,
@@ -2295,6 +2296,11 @@ export default function ScorecardDashboard() {
             isLoadingThreshold={isLoadingThreshold}
             isLoadingPctSkus={isLoadingIblVsTscl}
           />
+        )}
+        {mainTab === 'regionalDistributor' && (
+          /* UI shell only — no endpoint yet, so the tab falls back to its own
+             dummy rows. Wire the API here and hand it `rows` / `isLoading`. */
+          <RegionalDistributorTab />
         )}
         {mainTab === 'dispatchWip' && (
           <DispatchWipTab

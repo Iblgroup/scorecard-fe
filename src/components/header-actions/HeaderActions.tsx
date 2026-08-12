@@ -14,6 +14,7 @@ const mainTabs = [
   { label: 'Summary', value: 'supplyChain' },
   { label: 'Service Measure', value: 'serviceMeasure' },
   { label: 'Dispatch & WIP', value: 'dispatchWip' },
+  { label: 'RD Status', value: 'regionalDistributor' },
 ] as const;
 
 export function HeaderActions() {
@@ -47,7 +48,11 @@ export function HeaderActions() {
             onClick={() => {
               dispatch(
                 setMainTab(
-                  tab.value as 'supplyChain' | 'serviceMeasure' | 'dispatchWip'
+                  tab.value as
+                    | 'supplyChain'
+                    | 'serviceMeasure'
+                    | 'dispatchWip'
+                    | 'regionalDistributor'
                 )
               );
               dispatch(setActiveTab('visualizations'));
