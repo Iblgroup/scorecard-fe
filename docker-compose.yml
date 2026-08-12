@@ -2,13 +2,14 @@ name: scorecard-fe
 
 services:
   app:
-    image: iblcloud/searle-scorecard-fe:1.0.0
+    image: iblgroup/searle-scorecard-fe:1.0.0
     container_name: searle-scorecard-fe
     restart: unless-stopped
     build:
       context: .
       dockerfile: Dockerfile
-    environment:
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://192.168.130.72:3014/api}
+    # NOTE: the API base URL is baked into the JS bundle at BUILD time by Vite.
+    # It cannot be set here at runtime — pass it when building the image:
+    #   docker build --build-arg VITE_API_BASE_URL=http://208.110.83.26:3005/api ...
     ports:
-      - "3013:3013"
+      - "3004:3004"

@@ -48,7 +48,7 @@
 | Framework     | Express                 | ^4.18.2   |
 | ORM           | Sequelize               | ^6.35.2   |
 | Database      | PostgreSQL               | —         |
-| Port          | `3014`                  | —         |
+| Port          | `3005`                  | —         |
 | Base URL      | `/api`                  | —         |
 
 ### Frontend
@@ -73,7 +73,7 @@
 
 **Base URL:** `/api`
 **Technology:** Node.js · Express · Sequelize · PostgreSQL
-**Port:** `3014`
+**Port:** `3005`
 
 ### Common Query Parameters
 

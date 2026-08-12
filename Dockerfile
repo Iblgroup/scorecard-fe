@@ -14,10 +14,10 @@ RUN npm install
 COPY . .
 
 # Expose the port the app runs on
-EXPOSE 3013
+EXPOSE 3004
 
 # Start the development server
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3013"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3004"]
 
 # Production Stage
 FROM node:20-alpine AS build
@@ -35,7 +35,7 @@ RUN npm install
 COPY . .
 
 # Accept build argument for API URL
-ARG VITE_API_BASE_URL=http://localhost:3014/api
+ARG VITE_API_BASE_URL=http://localhost:3005/api
 
 # Set as environment variable for Vite build
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
@@ -52,8 +52,8 @@ COPY --from=build /app/dist /usr/share/nginx/html
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port 3013
-EXPOSE 3013
+# Expose port 3004
+EXPOSE 3004
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
