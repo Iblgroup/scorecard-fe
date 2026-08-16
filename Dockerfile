@@ -40,6 +40,15 @@ ARG VITE_API_BASE_URL=http://localhost:3005/api
 # Set as environment variable for Vite build
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
+# Where an unauthenticated visitor is sent. Baked in at build time like the
+# API URL above, so changing it needs a rebuild.
+ARG VITE_AUTH_PORTAL_URL=http://208.110.83.26:4001
+ENV VITE_AUTH_PORTAL_URL=${VITE_AUTH_PORTAL_URL}
+
+# Authenticator API, for redeeming the one-time handoff ticket.
+ARG VITE_AUTH_API_URL=http://208.110.83.26:4002/api
+ENV VITE_AUTH_API_URL=${VITE_AUTH_API_URL}
+
 # Build the application
 RUN npm run build
 

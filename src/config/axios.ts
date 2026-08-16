@@ -1,4 +1,5 @@
 import Axios from "axios"
+import { getToken, redirectToPortal } from "@/utils/session"
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -19,7 +20,7 @@ const axios = Axios.create({
 axios.interceptors.request.use(
     (config) => {
         // Add auth token if available
-        const token = localStorage.getItem("authToken")
+        const token = getToken()
         if (token) {
             config.headers.Authorization = `Bearer ${token}`
         }
@@ -50,9 +51,9 @@ axios.interceptors.response.use(
 
         // Handle specific error codes
         if (status === 401) {
-            // Unauthorized - clear token and redirect to login
-            localStorage.removeItem("authToken")
-            window.location.href = "/login"
+            // Session expired or rejected by the API. This app has no login of
+            // its own — the portal owns that.
+            redirectToPortal()
         } else if (status === 403) {
             // Forbidden
             console.error("Access forbidden")
