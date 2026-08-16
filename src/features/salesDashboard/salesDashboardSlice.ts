@@ -8,6 +8,8 @@ interface Filters {
     classification: string
     branch: string[]
     sku: string[]
+    // RD Status only — franchise distributor codes
+    distributor: string[]
     dateFrom: string
     dateTo: string
 }
@@ -34,6 +36,7 @@ const initialState: SalesDashboardState = {
         classification: '',
         branch: [],
         sku: [],
+        distributor: [],
         dateFrom: fromDate,
         dateTo: toDate,
     },
@@ -62,6 +65,7 @@ export const salesDashboardSlice = createSlice({
                 classification: '',
                 branch: [],
                 sku: [],
+                distributor: [],
                 dateFrom: formatLocal(new Date(now.getFullYear(), now.getMonth(), 1)),
                 dateTo: formatLocal(now),
             }

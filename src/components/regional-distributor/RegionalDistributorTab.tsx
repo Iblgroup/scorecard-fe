@@ -5,99 +5,49 @@ import { DataTable, DataTableRow } from '@/components/data-table';
 import { gradients } from '@/constants/theme';
 
 // ─── Column / box labels ────────────────────────────────────────────────────
-// Read off the hand sketch — adjust these two lists to rename anything; the
-// table body and the export follow them automatically.
+// Display order (name before code, and the previous-stock date leading its
+// qty/value pair). Source columns, in the same order: distributor_desc,
+// ibl_distributor_code, branch_desc, branch_code, stock_qty, stock_value,
+// last_stock_date, last_stock_qty, last_stock_value, day_diff. Rename or
+// reorder here — the table body and the export follow this list.
 const COLUMNS = [
   'RD Name',
-  'Current Stock in Hand',
-  'Previous Stock in Hand',
-  'Total',
-  'Previous Days Gone',
+  'RD Code',
+  'Branch Name',
+  'Branch Code',
+  'Current Stock in Hand Units',
+  'Current Stock in Hand Value',
+  'Previous Stock Date',
+  'Previous Stock Units',
+  'Previous Stock Value',
+  'Days Difference',
 ] as const;
 
 const COL_ALIGNS: ('left' | 'right' | 'center')[] = [
   'left',
+  'left',
+  'left',
+  'left',
   'right',
+  'right',
+  'center',
   'right',
   'right',
   'right',
 ];
 
 export interface RegionalDistributorRow {
-  rdName: string;
-  currentStockInHand: number | string;
-  previousStockInHand: number | string;
-  previousDaysGone: number | string;
+  iblDistributorCode: string;
+  distributorDesc: string;
+  branchCode: string;
+  branchDesc: string;
+  stockQty: number | string;
+  stockValue: number | string;
+  lastStockQty: number | string;
+  lastStockValue: number | string;
+  lastStockDate: string | null;
+  dayDiff: number | string;
 }
-
-// The two stock columns are mutually exclusive: an RD that uploaded for the
-// selected period carries its qty in `currentStockInHand` (previous = 0, no
-// days gone). An RD that did not upload carries its last known qty in
-// `previousStockInHand`, and `previousDaysGone` is how old that upload is.
-// Placeholder data so the tab reads like the real thing until the endpoint
-// lands — drop this once `rows` is wired to the API.
-const DUMMY_ROWS: RegionalDistributorRow[] = [
-  {
-    rdName: 'Al-Rehman Distributors — Karachi',
-    currentStockInHand: 18450,
-    previousStockInHand: 0,
-    previousDaysGone: 0,
-  },
-  {
-    rdName: 'Bilal Traders — Lahore',
-    currentStockInHand: 0,
-    previousStockInHand: 14110,
-    previousDaysGone: 4,
-  },
-  {
-    rdName: 'Chughtai Enterprises — Faisalabad',
-    currentStockInHand: 9640,
-    previousStockInHand: 0,
-    previousDaysGone: 0,
-  },
-  {
-    rdName: 'Dawn Pharma — Islamabad',
-    currentStockInHand: 0,
-    previousStockInHand: 9450,
-    previousDaysGone: 12,
-  },
-  {
-    rdName: 'Eastern Medico — Multan',
-    currentStockInHand: 6120,
-    previousStockInHand: 0,
-    previousDaysGone: 0,
-  },
-  {
-    rdName: 'Frontier Agencies — Peshawar',
-    currentStockInHand: 5480,
-    previousStockInHand: 0,
-    previousDaysGone: 0,
-  },
-  {
-    rdName: 'Gujranwala Medical Store',
-    currentStockInHand: 0,
-    previousStockInHand: 5220,
-    previousDaysGone: 2,
-  },
-  {
-    rdName: 'Hyder Distribution — Hyderabad',
-    currentStockInHand: 3970,
-    previousStockInHand: 0,
-    previousDaysGone: 0,
-  },
-  {
-    rdName: 'Indus Healthcare — Sukkur',
-    currentStockInHand: 0,
-    previousStockInHand: 3560,
-    previousDaysGone: 28,
-  },
-  {
-    rdName: 'Quetta Pharma Link',
-    currentStockInHand: 1760,
-    previousStockInHand: 0,
-    previousDaysGone: 0,
-  },
-];
 
 // Card palette — accent only carries the icon tile and the badge, so the three
 // cards stay a matched set of plain white panels.
@@ -107,6 +57,10 @@ const PREVIOUS_ACCENT = '#0891b2';
 const PREVIOUS_TINT = '#ecfeff';
 const TOTAL_ACCENT = '#ea580c';
 const TOTAL_TINT = '#fff7ed';
+
+// Table figures: the live side reads green, the carried-over side red.
+const CURRENT_STOCK_COLOR = '#067242';
+const PREVIOUS_STOCK_COLOR = '#dc2626';
 
 const pct = (part: number, whole: number) =>
   whole > 0 ? (part / whole) * 100 : 0;
@@ -232,23 +186,23 @@ export interface RegionalDistributorTabProps {
 }
 
 export function RegionalDistributorTab({
-  rows = DUMMY_ROWS,
+  rows = [],
   isLoading = false,
 }: RegionalDistributorTabProps) {
   const sum = (key: keyof RegionalDistributorRow) =>
     rows.reduce((acc, r) => acc + (Number(r[key]) || 0), 0);
 
-  const totalCurrent = sum('currentStockInHand');
-  const totalPrevious = sum('previousStockInHand');
+  const totalCurrent = sum('stockQty');
+  const totalPrevious = sum('lastStockQty');
   const grandTotal = totalCurrent + totalPrevious;
 
   // An RD sits on exactly one side: it uploaded for this period, or it is
   // still carrying its previous figure.
   const reportedCount = rows.filter(
-    (r) => (Number(r.currentStockInHand) || 0) > 0
+    (r) => (Number(r.stockQty) || 0) > 0
   ).length;
   const carriedCount = rows.filter(
-    (r) => (Number(r.previousStockInHand) || 0) > 0
+    (r) => (Number(r.lastStockQty) || 0) > 0
   ).length;
 
   const currentShare = pct(totalCurrent, grandTotal);
@@ -296,57 +250,64 @@ export function RegionalDistributorTab({
 
       {/* ── Detail table ── */}
       <DataTable
-        title="RD Status"
+        exportName="RD Data Status"
         headerGradient={gradients.tableBlue}
         headers={[...COLUMNS]}
         colAligns={COL_ALIGNS}
         isLoading={isLoading}
-        pageSize={15}
+        pageSize={12}
         maxHeight="calc(100vh - 420px)"
       >
         {rows.map((row, i) => {
-          const current = Number(row.currentStockInHand) || 0;
-          const previous = Number(row.previousStockInHand) || 0;
-          const daysGone = Number(row.previousDaysGone) || 0;
+          const daysGone = Number(row.dayDiff) || 0;
+          const hasCurrent = (Number(row.stockQty) || 0) > 0;
+          const hasPrevious = (Number(row.lastStockQty) || 0) > 0;
+          // Colour only the side that actually holds a figure — the other side
+          // is a dash, which stays neutral.
+          const current = hasCurrent ? CURRENT_STOCK_COLOR : undefined;
+          const previous = hasPrevious ? PREVIOUS_STOCK_COLOR : undefined;
           return (
             <DataTableRow
               key={i}
               cells={[
-                String(row.rdName ?? '—'),
-                fmtOptional(current),
-                fmtOptional(previous),
-                fmt(current + previous),
-                daysGone > 0 ? `${fmt(daysGone)} d` : '—',
+                String(row.distributorDesc || '—'),
+                String(row.iblDistributorCode ?? '—'),
+                String(row.branchDesc || '—'),
+                String(row.branchCode ?? '—'),
+                fmtOptional(row.stockQty),
+                fmtOptional(row.stockValue),
+                row.lastStockDate || '—',
+                fmtOptional(row.lastStockQty),
+                fmtOptional(row.lastStockValue),
+                daysGone > 0 ? fmt(daysGone) : '—',
               ]}
               cellColors={[
                 undefined,
                 undefined,
                 undefined,
                 undefined,
+                current,
+                current,
+                undefined,
+                previous,
+                previous,
                 daysGoneColor(daysGone),
               ]}
               cellWeights={[
                 undefined,
                 undefined,
                 undefined,
-                '600',
+                undefined,
+                hasCurrent ? '600' : undefined,
+                hasCurrent ? '600' : undefined,
+                undefined,
+                hasPrevious ? '600' : undefined,
+                hasPrevious ? '600' : undefined,
                 daysGone > 0 ? '700' : undefined,
               ]}
             />
           );
         })}
-        {rows.length > 0 && (
-          <DataTableRow
-            isTotal
-            cells={[
-              'Total',
-              fmt(totalCurrent),
-              fmt(totalPrevious),
-              fmt(grandTotal),
-              '',
-            ]}
-          />
-        )}
       </DataTable>
     </Flex>
   );

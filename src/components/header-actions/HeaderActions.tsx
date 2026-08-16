@@ -14,7 +14,7 @@ const mainTabs = [
   { label: 'Summary', value: 'supplyChain' },
   { label: 'Service Measure', value: 'serviceMeasure' },
   { label: 'Dispatch & WIP', value: 'dispatchWip' },
-  { label: 'RD Status', value: 'regionalDistributor' },
+  { label: 'RD Data Status', value: 'regionalDistributor' },
 ] as const;
 
 export function HeaderActions() {
@@ -56,8 +56,17 @@ export function HeaderActions() {
                 )
               );
               dispatch(setActiveTab('visualizations'));
-              if (tab.value === 'dispatchWip') {
+              // RD Status branch codes come from the franchise DB and mean
+              // nothing to the other tabs (and vice versa), so the branch
+              // selection is dropped whenever that boundary is crossed.
+              const crossesRdBoundary =
+                tab.value === 'regionalDistributor' ||
+                mainTab === 'regionalDistributor';
+              if (tab.value === 'dispatchWip' || crossesRdBoundary) {
                 dispatch(setFilter({ key: 'branch', value: [] }));
+              }
+              if (crossesRdBoundary) {
+                dispatch(setFilter({ key: 'distributor', value: [] }));
               }
             }}
           >

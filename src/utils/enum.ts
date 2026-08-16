@@ -19,4 +19,5 @@ export enum ApiKey {
   rpm = 'rpm',
   wip = 'wip',
   dailySalesAvg = 'dailySalesAvg',
+  rdStatus = 'rdStatus',
 }

@@ -1,5 +1,10 @@
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { useGetFilterBranches, useGetFilters } from '@/api/filters';
+import {
+  useGetRdStatus,
+  rdStatusDate,
+  type RdStatusApiRow,
+} from '@/api/rdStatus';
 import { DatePicker } from '@/components/date-picker';
 import { Select } from '@/components/select';
 import { MultiSelect } from '@/components/select/MultiSelect';
@@ -15,6 +20,7 @@ interface Filters {
   classification: string;
   branch: string[];
   sku: string[];
+  distributor: string[];
   dateFrom: string;
   dateTo: string;
 }
@@ -41,8 +47,12 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
   const dispatch = useAppDispatch();
   const mainTab = useAppSelector((state) => state.salesDashboard.mainTab);
   const isDispatchWip = mainTab === 'dispatchWip';
-  const hideBranchAndSku = isDispatchWip;
-  const hideClassification = isDispatchWip;
+  // RD Status reads a different database, so it carries its own two filters
+  // (branch + distributor, both drawn from the RD list) and a single as-of
+  // date rather than a range.
+  const isRdStatus = mainTab === 'regionalDistributor';
+  const hideBranchAndSku = isDispatchWip || isRdStatus;
+  const hideClassification = isDispatchWip || isRdStatus;
 
   // All filters staged locally — only flushed to Redux on Apply
   const [localClassification, setLocalClassification] = useState(
@@ -50,6 +60,9 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
   );
   const [localBranch, setLocalBranch] = useState(initialFilters.branch);
   const [localSku, setLocalSku] = useState(initialFilters.sku);
+  const [localDistributor, setLocalDistributor] = useState(
+    initialFilters.distributor
+  );
   const [localDateFrom, setLocalDateFrom] = useState(initialFilters.dateFrom);
   const [localDateTo, setLocalDateTo] = useState(initialFilters.dateTo);
 
@@ -58,12 +71,14 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
     setLocalClassification(initialFilters.classification);
     setLocalBranch(initialFilters.branch);
     setLocalSku(initialFilters.sku);
+    setLocalDistributor(initialFilters.distributor);
     setLocalDateFrom(initialFilters.dateFrom);
     setLocalDateTo(initialFilters.dateTo);
   }, [
     initialFilters.classification,
     initialFilters.branch,
     initialFilters.sku,
+    initialFilters.distributor,
     initialFilters.dateFrom,
     initialFilters.dateTo,
   ]);
@@ -73,12 +88,14 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
     localDateFrom !== initialFilters.dateFrom ||
     localDateTo !== initialFilters.dateTo ||
     localBranch.join(',') !== initialFilters.branch.join(',') ||
-    localSku.join(',') !== initialFilters.sku.join(',');
+    localSku.join(',') !== initialFilters.sku.join(',') ||
+    localDistributor.join(',') !== initialFilters.distributor.join(',');
 
   const hasActiveFilters =
     !!localClassification ||
     localBranch.length > 0 ||
     localSku.length > 0 ||
+    localDistributor.length > 0 ||
     !!localDateFrom ||
     !!localDateTo;
 
@@ -86,6 +103,7 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
     dispatch(setFilter({ key: 'classification', value: localClassification }));
     dispatch(setFilter({ key: 'branch', value: localBranch }));
     dispatch(setFilter({ key: 'sku', value: localSku }));
+    dispatch(setFilter({ key: 'distributor', value: localDistributor }));
     dispatch(setFilter({ key: 'dateFrom', value: localDateFrom }));
     dispatch(setFilter({ key: 'dateTo', value: localDateTo }));
   };
@@ -94,6 +112,7 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
     setLocalClassification('');
     setLocalBranch([]);
     setLocalSku([]);
+    setLocalDistributor([]);
     setLocalDateFrom('');
     setLocalDateTo('');
     dispatch(resetFilters());
@@ -109,7 +128,8 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
     sale_loc?: string;
     sale_loc_desc?: string;
   };
-  const branchRows: BranchRow[] = (branchesData as { data?: BranchRow[] })?.data ?? [];
+  const branchRows: BranchRow[] =
+    (branchesData as { data?: BranchRow[] })?.data ?? [];
 
   const classificationOptions = useMemo(() => {
     const seen = new Set<string>();
@@ -120,10 +140,13 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
           !seen.has(r.classification) &&
           seen.add(r.classification)
       )
-      .sort((a, b) => (a.classification as string).localeCompare(b.classification as string))
+      .sort((a, b) =>
+        (a.classification as string).localeCompare(b.classification as string)
+      )
       .map((r) => ({
         value: r.classification as string,
-        label: CLS_LABEL[r.classification as string] ?? (r.classification as string),
+        label:
+          CLS_LABEL[r.classification as string] ?? (r.classification as string),
       }));
   }, [rows]);
 
@@ -135,6 +158,42 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
       })),
     [branchRows]
   );
+
+  // RD branch/distributor lists come from the RD Status response itself —
+  // same query key as the tab, so both share one request.
+  const { data: rdStatusData } = useGetRdStatus({
+    date: rdStatusDate(initialFilters.dateTo),
+  });
+  const rdRows: RdStatusApiRow[] =
+    (rdStatusData as { data?: RdStatusApiRow[] })?.data ?? [];
+
+  const rdBranchOptions = useMemo(() => {
+    // branch_desc is a padded char column — trim before it reaches a label.
+    const seen = new Map<string, string>();
+    for (const r of rdRows) {
+      const code = String(r.branch_code ?? '').trim();
+      if (code && !seen.has(code))
+        seen.set(code, r.branch_desc?.trim() || code);
+    }
+    return [...seen]
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [rdRows]);
+
+  const rdDistributorOptions = useMemo(() => {
+    const filtered = localBranch.length
+      ? rdRows.filter((r) =>
+          localBranch.includes(String(r.branch_code ?? '').trim())
+        )
+      : rdRows;
+    return filtered
+      .map((r) => ({
+        value: String(r.ibl_distributor_code).trim(),
+        label:
+          r.distributor_desc?.trim() || String(r.ibl_distributor_code).trim(),
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [rdRows, localBranch]);
 
   const skuOptions = useMemo(() => {
     const seen = new Set<string>();
@@ -214,21 +273,63 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
               />
             </>
           )}
+
+          {isRdStatus && (
+            <>
+              {/* Branch — franchise branches from the RD list */}
+              <MultiSelect
+                label="Branch"
+                value={localBranch}
+                options={rdBranchOptions}
+                onChange={(v) => {
+                  setLocalBranch(v);
+                  // Distributors are scoped to the chosen branches — drop any
+                  // selection that no longer belongs to one.
+                  setLocalDistributor((prev) =>
+                    v.length === 0
+                      ? prev
+                      : prev.filter((code) =>
+                          rdRows.some(
+                            (r) =>
+                              String(r.ibl_distributor_code).trim() === code &&
+                              v.includes(String(r.branch_code ?? '').trim())
+                          )
+                        )
+                  );
+                }}
+                isClearable
+                placeholder="Select..."
+              />
+
+              {/* Distributor — multi select */}
+              <MultiSelect
+                label="Distributor"
+                value={localDistributor}
+                options={rdDistributorOptions}
+                onChange={(v) => setLocalDistributor(v)}
+                isClearable
+                placeholder="Select..."
+              />
+            </>
+          )}
         </Grid>
 
         <Flex align="center" flexShrink={0}>
-          <DatePicker
-            value={localDateFrom}
-            onChange={setLocalDateFrom}
-            placeholder="From"
-            variant="range-start"
-          />
+          {/* RD Status is a position on one date, not a range — one picker. */}
+          {!isRdStatus && (
+            <DatePicker
+              value={localDateFrom}
+              onChange={setLocalDateFrom}
+              placeholder="From"
+              variant="range-start"
+            />
+          )}
           <DatePicker
             value={localDateTo}
             onChange={setLocalDateTo}
-            placeholder="To"
-            variant="range-end"
-            minDate={localDateFrom || undefined}
+            placeholder={isRdStatus ? 'As of' : 'To'}
+            variant={isRdStatus ? 'outline' : 'range-end'}
+            minDate={isRdStatus ? undefined : localDateFrom || undefined}
           />
         </Flex>
 

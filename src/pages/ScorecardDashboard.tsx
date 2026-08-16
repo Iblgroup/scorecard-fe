@@ -44,6 +44,11 @@ import { useGetServiceMeasure } from '@/api/serviceMeasure';
 import { useGetTgtVsActual } from '@/api/tgtVsActual';
 import { useGetTotalSku } from '@/api/totalSku';
 import { RegionalDistributorTab } from '@/components/regional-distributor';
+import {
+  useGetRdStatus,
+  rdStatusDate,
+  type RdStatusApiRow,
+} from '@/api/rdStatus';
 
 const INVENTORY_THRESHOLD_DAYS: Record<string, number> = {
   A: 30,
@@ -1768,6 +1773,37 @@ export default function ScorecardDashboard() {
     ...(cappedEndDate && { endDate: cappedEndDate }),
   };
 
+  // RD stock position — served from the secondary (franchise) database, so it
+  // only fires while its own tab is open.
+  const { data: rdStatusData, isFetching: isLoadingRdStatus } = useGetRdStatus({
+    date: rdStatusDate(filters.dateTo),
+  });
+  // Branch/distributor are applied here rather than in SQL — the RD list is
+  // ~100 rows and both filter lists are built from this same response.
+  const rdStatusRows = useMemo(() => {
+    const all = (rdStatusData as { data?: RdStatusApiRow[] })?.data ?? [];
+    return all
+      .filter(
+        (r) =>
+          (filters.branch.length === 0 ||
+            filters.branch.includes(String(r.branch_code ?? '').trim())) &&
+          (filters.distributor.length === 0 ||
+            filters.distributor.includes(String(r.ibl_distributor_code).trim()))
+      )
+      .map((r) => ({
+        iblDistributorCode: String(r.ibl_distributor_code).trim(),
+        distributorDesc: r.distributor_desc?.trim() ?? '',
+        branchCode: String(r.branch_code ?? '').trim(),
+        branchDesc: r.branch_desc?.trim() ?? '',
+        stockQty: Number(r.stock_qty) || 0,
+        stockValue: Number(r.stock_value) || 0,
+        lastStockQty: Number(r.last_stock_qty) || 0,
+        lastStockValue: Number(r.last_stock_value) || 0,
+        lastStockDate: r.last_stock_date?.trim() || null,
+        dayDiff: Number(r.day_diff) || 0,
+      }));
+  }, [rdStatusData, filters.branch, filters.distributor]);
+
   const { data: totalSkuData } = useGetTotalSku({
     ...(filters.classification && { classification: filters.classification }),
     ...(filters.sku.length > 0 && { sku: filters.sku }),
@@ -2298,9 +2334,10 @@ export default function ScorecardDashboard() {
           />
         )}
         {mainTab === 'regionalDistributor' && (
-          /* UI shell only — no endpoint yet, so the tab falls back to its own
-             dummy rows. Wire the API here and hand it `rows` / `isLoading`. */
-          <RegionalDistributorTab />
+          <RegionalDistributorTab
+            rows={rdStatusRows}
+            isLoading={isLoadingRdStatus}
+          />
         )}
         {mainTab === 'dispatchWip' && (
           <DispatchWipTab

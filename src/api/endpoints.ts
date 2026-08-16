@@ -31,6 +31,7 @@ export const ApiEndpoints = {
   tgtVsActual: '/tgt-vs-actual',
   totalSku: '/total-sku',
   dailySalesAvg: '/daily-sales-avg',
+  rdStatus: '/rd-status',
 } as const;
 
 export type ApiEndpoints = typeof ApiEndpoints;

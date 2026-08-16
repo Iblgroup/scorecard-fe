@@ -37,6 +37,8 @@ export interface SubRowData {
 
 export interface DataTableProps {
   title?: string;
+  /** Export filename when the table renders without a visible title. */
+  exportName?: string;
   headerGradient: string;
   headers: string[];
   children: ReactNode;
@@ -75,6 +77,7 @@ function compareValues(a: string, b: string): number {
 
 export function DataTable({
   title,
+  exportName,
   // headerGradient,
   headers,
   children,
@@ -204,7 +207,7 @@ export function DataTable({
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-    XLSX.writeFile(wb, `${title ?? 'export'}.xlsx`);
+    XLSX.writeFile(wb, `${exportName ?? title ?? 'export'}.xlsx`);
   };
 
   return (
