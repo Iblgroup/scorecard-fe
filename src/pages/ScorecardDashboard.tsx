@@ -1782,13 +1782,38 @@ export default function ScorecardDashboard() {
   // ~100 rows and both filter lists are built from this same response.
   const rdStatusRows = useMemo(() => {
     const all = (rdStatusData as { data?: RdStatusApiRow[] })?.data ?? [];
+
+    // An RD that uploaded for the selected date reports a current stock count
+    // of 1 or more; one that did not sits at 0 and carries its previous figure
+    // under last_stock_* instead.
+    const matchesUploadCount = (currentStockQty: number) => {
+      switch (filters.uploadCount) {
+        case 'uploaded':
+          return currentStockQty > 0;
+        case 'not-uploaded':
+          return currentStockQty === 0;
+        default:
+          return true;
+      }
+    };
+
     return all
       .filter(
         (r) =>
+          // Code and name are separate dropdowns for the same thing, so both
+          // narrow the list when set — picking a code and a name that do not
+          // belong together correctly yields nothing.
           (filters.branch.length === 0 ||
             filters.branch.includes(String(r.branch_code ?? '').trim())) &&
+          (filters.branchName.length === 0 ||
+            filters.branchName.includes(String(r.branch_desc ?? '').trim())) &&
           (filters.distributor.length === 0 ||
-            filters.distributor.includes(String(r.ibl_distributor_code).trim()))
+            filters.distributor.includes(String(r.ibl_distributor_code).trim())) &&
+          (filters.distributorName.length === 0 ||
+            filters.distributorName.includes(
+              String(r.distributor_desc ?? '').trim()
+            )) &&
+          matchesUploadCount(Number(r.stock_qty) || 0)
       )
       .map((r) => ({
         iblDistributorCode: String(r.ibl_distributor_code).trim(),
@@ -1802,7 +1827,14 @@ export default function ScorecardDashboard() {
         lastStockDate: r.last_stock_date?.trim() || null,
         dayDiff: Number(r.day_diff) || 0,
       }));
-  }, [rdStatusData, filters.branch, filters.distributor]);
+  }, [
+    rdStatusData,
+    filters.branch,
+    filters.branchName,
+    filters.distributor,
+    filters.distributorName,
+    filters.uploadCount,
+  ]);
 
   const { data: totalSkuData } = useGetTotalSku({
     ...(filters.classification && { classification: filters.classification }),

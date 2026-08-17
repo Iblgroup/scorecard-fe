@@ -12,6 +12,7 @@ import { colors } from '@/constants/theme';
 import {
   resetFilters,
   setFilter,
+  type UploadCountFilter,
 } from '@/features/salesDashboard/salesDashboardSlice';
 import { Button, Flex, Grid } from '@chakra-ui/react';
 import { useEffect, useMemo, useState } from 'react';
@@ -21,9 +22,20 @@ interface Filters {
   branch: string[];
   sku: string[];
   distributor: string[];
+  branchName: string[];
+  distributorName: string[];
+  uploadCount: UploadCountFilter;
   dateFrom: string;
   dateTo: string;
 }
+
+// Did the RD upload stock for the selected date? "Uploaded" is a current stock
+// count of 1 or more; "Not Uploaded" is 0, meaning it is still carrying the
+// figure from an earlier upload.
+const UPLOAD_COUNT_OPTIONS: { value: UploadCountFilter; label: string }[] = [
+  { value: 'uploaded', label: 'Uploaded' },
+  { value: 'not-uploaded', label: 'Not Uploaded' },
+];
 
 export interface FilterBarProps {
   initialFilters: Filters;
@@ -63,6 +75,15 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
   const [localDistributor, setLocalDistributor] = useState(
     initialFilters.distributor
   );
+  const [localBranchName, setLocalBranchName] = useState(
+    initialFilters.branchName
+  );
+  const [localDistributorName, setLocalDistributorName] = useState(
+    initialFilters.distributorName
+  );
+  const [localUploadCount, setLocalUploadCount] = useState<UploadCountFilter>(
+    initialFilters.uploadCount
+  );
   const [localDateFrom, setLocalDateFrom] = useState(initialFilters.dateFrom);
   const [localDateTo, setLocalDateTo] = useState(initialFilters.dateTo);
 
@@ -72,6 +93,9 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
     setLocalBranch(initialFilters.branch);
     setLocalSku(initialFilters.sku);
     setLocalDistributor(initialFilters.distributor);
+    setLocalBranchName(initialFilters.branchName);
+    setLocalDistributorName(initialFilters.distributorName);
+    setLocalUploadCount(initialFilters.uploadCount);
     setLocalDateFrom(initialFilters.dateFrom);
     setLocalDateTo(initialFilters.dateTo);
   }, [
@@ -79,6 +103,9 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
     initialFilters.branch,
     initialFilters.sku,
     initialFilters.distributor,
+    initialFilters.branchName,
+    initialFilters.distributorName,
+    initialFilters.uploadCount,
     initialFilters.dateFrom,
     initialFilters.dateTo,
   ]);
@@ -89,13 +116,19 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
     localDateTo !== initialFilters.dateTo ||
     localBranch.join(',') !== initialFilters.branch.join(',') ||
     localSku.join(',') !== initialFilters.sku.join(',') ||
-    localDistributor.join(',') !== initialFilters.distributor.join(',');
+    localDistributor.join(',') !== initialFilters.distributor.join(',') ||
+    localBranchName.join(',') !== initialFilters.branchName.join(',') ||
+    localDistributorName.join(',') !== initialFilters.distributorName.join(',') ||
+    localUploadCount !== initialFilters.uploadCount;
 
   const hasActiveFilters =
     !!localClassification ||
     localBranch.length > 0 ||
     localSku.length > 0 ||
     localDistributor.length > 0 ||
+    localBranchName.length > 0 ||
+    localDistributorName.length > 0 ||
+    !!localUploadCount ||
     !!localDateFrom ||
     !!localDateTo;
 
@@ -104,6 +137,9 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
     dispatch(setFilter({ key: 'branch', value: localBranch }));
     dispatch(setFilter({ key: 'sku', value: localSku }));
     dispatch(setFilter({ key: 'distributor', value: localDistributor }));
+    dispatch(setFilter({ key: 'branchName', value: localBranchName }));
+    dispatch(setFilter({ key: 'distributorName', value: localDistributorName }));
+    dispatch(setFilter({ key: 'uploadCount', value: localUploadCount }));
     dispatch(setFilter({ key: 'dateFrom', value: localDateFrom }));
     dispatch(setFilter({ key: 'dateTo', value: localDateTo }));
   };
@@ -113,6 +149,9 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
     setLocalBranch([]);
     setLocalSku([]);
     setLocalDistributor([]);
+    setLocalBranchName([]);
+    setLocalDistributorName([]);
+    setLocalUploadCount('');
     setLocalDateFrom('');
     setLocalDateTo('');
     dispatch(resetFilters());
@@ -167,33 +206,64 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
   const rdRows: RdStatusApiRow[] =
     (rdStatusData as { data?: RdStatusApiRow[] })?.data ?? [];
 
-  const rdBranchOptions = useMemo(() => {
-    // branch_desc is a padded char column — trim before it reaches a label.
-    const seen = new Map<string, string>();
-    for (const r of rdRows) {
-      const code = String(r.branch_code ?? '').trim();
-      if (code && !seen.has(code))
-        seen.set(code, r.branch_desc?.trim() || code);
-    }
-    return [...seen]
-      .map(([value, label]) => ({ value, label }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }, [rdRows]);
+  // Code and name are offered as separate dropdowns, so each list carries only
+  // its own kind of value. Codes sort numerically (8009 before 8010, which a
+  // plain string sort gets backwards); names sort alphabetically.
+  const byCode = (a: { label: string }, b: { label: string }) =>
+    a.label.localeCompare(b.label, undefined, { numeric: true });
+  const byName = (a: { label: string }, b: { label: string }) =>
+    a.label.localeCompare(b.label);
 
-  const rdDistributorOptions = useMemo(() => {
-    const filtered = localBranch.length
-      ? rdRows.filter((r) =>
-          localBranch.includes(String(r.branch_code ?? '').trim())
-        )
-      : rdRows;
-    return filtered
-      .map((r) => ({
-        value: String(r.ibl_distributor_code).trim(),
-        label:
-          r.distributor_desc?.trim() || String(r.ibl_distributor_code).trim(),
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }, [rdRows, localBranch]);
+  // Codes come back as numbers on some rows and strings on others, so
+  // everything is normalised to a trimmed string before it becomes an option.
+  const uniqueOptions = (values: (string | number | null | undefined)[]) => {
+    const seen = new Set<string>();
+    for (const v of values) {
+      // branch_desc is a padded char column — trim before it reaches a label.
+      const text = String(v ?? '').trim();
+      if (text) seen.add(text);
+    }
+    return [...seen].map((value) => ({ value, label: value }));
+  };
+
+  // Distributor lists are scoped by whichever branch filters are set, so
+  // picking a branch narrows the RDs on offer rather than listing all 98.
+  const rdRowsForDistributor = useMemo(() => {
+    if (localBranch.length === 0 && localBranchName.length === 0) return rdRows;
+    return rdRows.filter(
+      (r) =>
+        (localBranch.length === 0 ||
+          localBranch.includes(String(r.branch_code ?? '').trim())) &&
+        (localBranchName.length === 0 ||
+          localBranchName.includes(String(r.branch_desc ?? '').trim()))
+    );
+  }, [rdRows, localBranch, localBranchName]);
+
+  const rdBranchCodeOptions = useMemo(
+    () => uniqueOptions(rdRows.map((r) => r.branch_code)).sort(byCode),
+    [rdRows]
+  );
+
+  const rdBranchNameOptions = useMemo(
+    () => uniqueOptions(rdRows.map((r) => r.branch_desc)).sort(byName),
+    [rdRows]
+  );
+
+  const rdDistributorCodeOptions = useMemo(
+    () =>
+      uniqueOptions(
+        rdRowsForDistributor.map((r) => r.ibl_distributor_code)
+      ).sort(byCode),
+    [rdRowsForDistributor]
+  );
+
+  const rdDistributorNameOptions = useMemo(
+    () =>
+      uniqueOptions(rdRowsForDistributor.map((r) => r.distributor_desc)).sort(
+        byName
+      ),
+    [rdRowsForDistributor]
+  );
 
   const skuOptions = useMemo(() => {
     const seen = new Set<string>();
@@ -232,11 +302,24 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
         <Grid
           gap={3}
           flex={{ base: '1 0 100%', xl: 1 }}
-          templateColumns={{
-            base: 'repeat(1, 1fr)',
-            md: 'repeat(2, 1fr)',
-            lg: 'repeat(3, 1fr)',
-          }}
+          // RD Status carries five filters — give it its own track count so
+          // they sit on one line instead of wrapping onto a second row.
+          // minmax(0, 1fr) rather than 1fr: a select's own min-content width
+          // would otherwise push the tracks wider than the bar and overflow.
+          templateColumns={
+            isRdStatus
+              ? {
+                  base: 'repeat(1, minmax(0, 1fr))',
+                  md: 'repeat(2, minmax(0, 1fr))',
+                  lg: 'repeat(3, minmax(0, 1fr))',
+                  xl: 'repeat(5, minmax(0, 1fr))',
+                }
+              : {
+                  base: 'repeat(1, 1fr)',
+                  md: 'repeat(2, 1fr)',
+                  lg: 'repeat(3, 1fr)',
+                }
+          }
         >
           {!hideClassification && (
             /* Classification — single select */
@@ -276,11 +359,11 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
 
           {isRdStatus && (
             <>
-              {/* Branch — franchise branches from the RD list */}
+              {/* Branch Code — franchise branch ids from the RD list */}
               <MultiSelect
-                label="Branch"
+                label="Branch Code"
                 value={localBranch}
-                options={rdBranchOptions}
+                options={rdBranchCodeOptions}
                 onChange={(v) => {
                   setLocalBranch(v);
                   // Distributors are scoped to the chosen branches — drop any
@@ -301,12 +384,42 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
                 placeholder="Select..."
               />
 
-              {/* Distributor — multi select */}
+              {/* Branch — the same branches picked by name */}
+              <MultiSelect
+                label="Branch"
+                value={localBranchName}
+                options={rdBranchNameOptions}
+                onChange={(v) => setLocalBranchName(v)}
+                isClearable
+                placeholder="Select..."
+              />
+
+              {/* Distributor Code — RD ids, scoped by the branch pickers */}
+              <MultiSelect
+                label="Distributor Code"
+                value={localDistributor}
+                options={rdDistributorCodeOptions}
+                onChange={(v) => setLocalDistributor(v)}
+                isClearable
+                placeholder="Select..."
+              />
+
+              {/* Distributor — the same RDs picked by name */}
               <MultiSelect
                 label="Distributor"
-                value={localDistributor}
-                options={rdDistributorOptions}
-                onChange={(v) => setLocalDistributor(v)}
+                value={localDistributorName}
+                options={rdDistributorNameOptions}
+                onChange={(v) => setLocalDistributorName(v)}
+                isClearable
+                placeholder="Select..."
+              />
+
+              {/* Upload Count — did this RD upload for the selected date? */}
+              <Select
+                label="Upload Count"
+                value={localUploadCount}
+                options={UPLOAD_COUNT_OPTIONS}
+                onChange={(v) => setLocalUploadCount((v ?? '') as UploadCountFilter)}
                 isClearable
                 placeholder="Select..."
               />
