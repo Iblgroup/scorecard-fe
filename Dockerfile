@@ -14,10 +14,10 @@ RUN npm install
 COPY . .
 
 # Expose the port the app runs on
-EXPOSE 3004
+EXPOSE 3013
 
 # Start the development server
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3004"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3013"]
 
 # Production Stage
 FROM node:20-alpine AS build
@@ -35,19 +35,10 @@ RUN npm install
 COPY . .
 
 # Accept build argument for API URL
-ARG VITE_API_BASE_URL=http://localhost:3005/api
+ARG VITE_API_BASE_URL=http://localhost:3014/api
 
 # Set as environment variable for Vite build
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
-
-# Where an unauthenticated visitor is sent. Baked in at build time like the
-# API URL above, so changing it needs a rebuild.
-ARG VITE_AUTH_PORTAL_URL=http://208.110.83.26:4001
-ENV VITE_AUTH_PORTAL_URL=${VITE_AUTH_PORTAL_URL}
-
-# Authenticator API, for redeeming the one-time handoff ticket.
-ARG VITE_AUTH_API_URL=http://208.110.83.26:4002/api
-ENV VITE_AUTH_API_URL=${VITE_AUTH_API_URL}
 
 # Build the application
 RUN npm run build
@@ -61,8 +52,8 @@ COPY --from=build /app/dist /usr/share/nginx/html
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port 3004
-EXPOSE 3004
+# Expose port 3013
+EXPOSE 3013
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
