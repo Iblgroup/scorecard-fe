@@ -4,12 +4,23 @@ type MainTab = 'supplyChain' | 'serviceMeasure' | 'dispatchWip' | 'regionalDistr
 type ViewTab = 'visualizations' | 'tables'
 type DisplayMode = 'TP' | 'EFP'
 
+// RD Status only — whether the RD uploaded stock for the selected date.
+// 'uploaded' is a current stock count of 1 or more; 'not-uploaded' is 0, i.e.
+// the RD is still carrying an older figure. '' is no filter.
+export type UploadCountFilter = '' | 'uploaded' | 'not-uploaded'
+
 interface Filters {
     classification: string
+    // On RD Status this holds franchise branch CODES; other tabs use it for branch_id.
     branch: string[]
     sku: string[]
     // RD Status only — franchise distributor codes
     distributor: string[]
+    // RD Status only — the same two things picked by name instead of code, so
+    // the bar can offer "Branch Code" and "Branch" as separate dropdowns.
+    branchName: string[]
+    distributorName: string[]
+    uploadCount: UploadCountFilter
     dateFrom: string
     dateTo: string
 }
@@ -37,6 +48,9 @@ const initialState: SalesDashboardState = {
         branch: [],
         sku: [],
         distributor: [],
+        branchName: [],
+        distributorName: [],
+        uploadCount: '',
         dateFrom: fromDate,
         dateTo: toDate,
     },
@@ -66,6 +80,9 @@ export const salesDashboardSlice = createSlice({
                 branch: [],
                 sku: [],
                 distributor: [],
+                branchName: [],
+                distributorName: [],
+                uploadCount: '',
                 dateFrom: formatLocal(new Date(now.getFullYear(), now.getMonth(), 1)),
                 dateTo: formatLocal(now),
             }
