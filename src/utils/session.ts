@@ -26,6 +26,8 @@ export const AUTH_API_URL = (
 
 interface TokenPayload {
   exp?: number;
+  /** organization.user_login.user_login_id — who the token belongs to. */
+  sub?: string;
 }
 
 function decodeTokenPayload(token: string): TokenPayload | null {
@@ -108,11 +110,49 @@ async function performRedeem(): Promise<boolean> {
   }
 }
 
+/**
+ * Who the portal says this browser is currently signed in as.
+ *
+ * sessionStorage is per origin AND per tab, so this app cannot see the portal's
+ * session — which meant a dashboard opened by one user stayed fully usable
+ * after somebody else signed in on the same browser. Cookies are scoped by HOST
+ * and ignore the port, so the portal publishes the current user id there and
+ * every dashboard can read it.
+ *
+ *   a user id  the portal is signed in as them
+ *   ""         the portal signed out
+ *   null       no cookie at all — cannot tell, so change nothing. Treating this
+ *              as "signed out" would trap a cookie-less browser in a redirect
+ *              loop between here and the portal.
+ */
+const SESSION_COOKIE = 'ot_session_user';
+
+function portalUserId(): string | null {
+  const match = document.cookie.match(
+    new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=([^;]*)`)
+  );
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+/** The `sub` claim — organization.user_login.user_login_id. */
+function tokenSubject(token: string): string | null {
+  return decodeTokenPayload(token)?.sub ?? null;
+}
+
 export function getToken(): string | null {
   const token = sessionStorage.getItem(TOKEN_KEY);
   if (!token) return null;
 
   if (isExpired(token)) {
+    clearSession();
+    return null;
+  }
+
+  // Still inside its lifetime, but belonging to a session this browser has
+  // since left. Drop it, so the caller re-handshakes as whoever is signed in
+  // now — or gets bounced to the portal.
+  const current = portalUserId();
+  if (current !== null && current !== tokenSubject(token)) {
     clearSession();
     return null;
   }
