@@ -20,7 +20,7 @@ const AUTH_PORTAL_URL = (
   import.meta.env.VITE_AUTH_PORTAL_URL || 'http://208.110.83.26:4001'
 ).replace(/\/+$/, '');
 
-const AUTH_API_URL = (
+export const AUTH_API_URL = (
   import.meta.env.VITE_AUTH_API_URL || 'http://208.110.83.26:4002/api'
 ).replace(/\/+$/, '');
 
@@ -65,7 +65,24 @@ function stripTicketFromUrl() {
  *
  * Returns true when a session was established from the ticket.
  */
-export async function redeemTicketFromUrl(): Promise<boolean> {
+/**
+ * Shared so two callers cannot race each other.
+ *
+ * React.StrictMode mounts, unmounts and remounts in development, so AuthGate's
+ * effect fires twice. The first call strips the ticket from the URL before its
+ * fetch resolves, so the second call found no ticket, concluded there was no
+ * session, and bounced to the portal — which minted another ticket and started
+ * the whole thing again. Handing the second caller the SAME promise means it
+ * waits for the real answer instead of redirecting past it.
+ */
+let pendingRedeem: Promise<boolean> | null = null;
+
+export function redeemTicketFromUrl(): Promise<boolean> {
+  if (!pendingRedeem) pendingRedeem = performRedeem();
+  return pendingRedeem;
+}
+
+async function performRedeem(): Promise<boolean> {
   const ticket = new URL(window.location.href).searchParams.get(TICKET_PARAM);
   if (!ticket) return false;
 

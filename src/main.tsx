@@ -6,6 +6,7 @@ import App from './App';
 import { Provider as ChakraProvider } from '@/providers/chakra-provider';
 import { QueryProvider } from '@/providers/query-provider';
 import { AuthGate } from '@/components/AuthGate';
+import { PermissionGate } from '@/components/no-access/PermissionGate';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -13,7 +14,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <ReduxProvider store={store}>
         <ChakraProvider>
           <AuthGate>
-            <App />
+            <PermissionGate dashboardName="Supply Chain Pulse 1.0">
+              <App />
+            </PermissionGate>
           </AuthGate>
         </ChakraProvider>
       </ReduxProvider>
