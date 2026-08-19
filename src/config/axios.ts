@@ -18,12 +18,6 @@ const axios = Axios.create({
 // Request interceptor
 axios.interceptors.request.use(
     (config) => {
-        // Add auth token if available
-        const token = localStorage.getItem("authToken")
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`
-        }
-
         console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, config.params)
         return config
     },
@@ -50,9 +44,8 @@ axios.interceptors.response.use(
 
         // Handle specific error codes
         if (status === 401) {
-            // Unauthorized - clear token and redirect to login
-            localStorage.removeItem("authToken")
-            window.location.href = "/login"
+            // Unauthorized
+            console.error("Unauthorized")
         } else if (status === 403) {
             // Forbidden
             console.error("Access forbidden")
