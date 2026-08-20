@@ -5,19 +5,25 @@ import { DataTable, DataTableRow } from '@/components/data-table';
 import { gradients } from '@/constants/theme';
 
 // ─── Column / box labels ────────────────────────────────────────────────────
-// Display order (name before code, and the previous-stock date leading its
-// qty/value pair). Source columns, in the same order: distributor_desc,
-// ibl_distributor_code, branch_desc, branch_code, stock_qty, stock_value,
-// last_stock_date, last_stock_qty, last_stock_value, day_diff. Rename or
-// reorder here — the table body and the export follow this list.
+// Display order: branch before RD, name before code in each pair. Source
+// columns, in the same order: branch_desc, branch_code, distributor_desc,
+// ibl_distributor_code, stock_qty, stock_value, last_stock_qty,
+// last_stock_value, day_diff.
+//
+// last_stock_date is still fetched but no longer shown — day_diff already says
+// how old the carried-over upload is, in the unit anyone reading this actually
+// wants.
+//
+// Rename or reorder here, but keep COL_ALIGNS and the four per-cell arrays in
+// the row below the same length and order: they are positional, so a column
+// added to one and not the others silently shifts every value after it.
 const COLUMNS = [
-  'RD Name',
-  'RD Code',
   'Branch Name',
   'Branch Code',
+  'RD Name',
+  'RD Code',
   'Current Stock in Hand Units',
   'Current Stock in Hand Value',
-  'Previous Stock Date',
   'Previous Stock Units',
   'Previous Stock Value',
   'Days Difference',
@@ -30,7 +36,6 @@ const COL_ALIGNS: ('left' | 'right' | 'center')[] = [
   'left',
   'right',
   'right',
-  'center',
   'right',
   'right',
   'right',
@@ -270,13 +275,12 @@ export function RegionalDistributorTab({
             <DataTableRow
               key={i}
               cells={[
-                String(row.distributorDesc || '—'),
-                String(row.iblDistributorCode ?? '—'),
                 String(row.branchDesc || '—'),
                 String(row.branchCode ?? '—'),
+                String(row.distributorDesc || '—'),
+                String(row.iblDistributorCode ?? '—'),
                 fmtOptional(row.stockQty),
                 fmtOptional(row.stockValue),
-                row.lastStockDate || '—',
                 fmtOptional(row.lastStockQty),
                 fmtOptional(row.lastStockValue),
                 daysGone > 0 ? fmt(daysGone) : '—',
@@ -288,7 +292,6 @@ export function RegionalDistributorTab({
                 undefined,
                 current,
                 current,
-                undefined,
                 previous,
                 previous,
                 daysGoneColor(daysGone),
@@ -300,7 +303,6 @@ export function RegionalDistributorTab({
                 undefined,
                 hasCurrent ? '600' : undefined,
                 hasCurrent ? '600' : undefined,
-                undefined,
                 hasPrevious ? '600' : undefined,
                 hasPrevious ? '600' : undefined,
                 daysGone > 0 ? '700' : undefined,
