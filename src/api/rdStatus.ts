@@ -17,29 +17,23 @@ export interface RdStatusApiRow {
   day_diff: string | number;
 }
 
-interface RdStatusParams {
-  date?: string;
-}
-
-// The query takes a single as-of date: the filter bar's "To" date, never in
-// the future. Shared so the dashboard and the filter bar produce the same
-// query key and hit the same cache entry instead of firing twice.
-export const rdStatusDate = (dateTo?: string) => {
-  const today = new Date().toISOString().slice(0, 10);
-  return !dateTo || dateTo > today ? today : dateTo;
-};
-
-const getRdStatus = async (params: RdStatusParams) => {
-  return axios.get(ApiEndpoints.rdStatus, { params });
+// No parameters. The endpoint reports the CURRENT stock position: its source,
+// primary_secondary_stock, is a latest-snapshot view holding one row per RD
+// with no history behind it, so there is no earlier date to ask for. /rd-status
+// still validates a ?date= for older clients but ignores it and answers as of
+// today either way — which is why nothing is sent.
+const getRdStatus = async () => {
+  return axios.get(ApiEndpoints.rdStatus);
 };
 
 // Fires on mount, not on tab switch: the underlying query takes ~12s, so it
 // is prefetched while the user is on another tab and the RD Status tab opens
-// against a warm cache.
-export const useGetRdStatus = (params: RdStatusParams = {}) => {
+// against a warm cache. The key is constant, so the dashboard and the filter
+// bar share one request.
+export const useGetRdStatus = () => {
   return useQuery({
-    queryKey: [ApiKey.rdStatus, params],
-    queryFn: () => getRdStatus(params),
+    queryKey: [ApiKey.rdStatus],
+    queryFn: getRdStatus,
     placeholderData: keepPreviousData,
     staleTime: 5 * 60 * 1000,
   });

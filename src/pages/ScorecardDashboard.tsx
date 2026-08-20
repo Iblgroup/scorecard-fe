@@ -46,7 +46,6 @@ import { useGetTotalSku } from '@/api/totalSku';
 import { RegionalDistributorTab } from '@/components/regional-distributor';
 import {
   useGetRdStatus,
-  rdStatusDate,
   type RdStatusApiRow,
 } from '@/api/rdStatus';
 
@@ -1775,9 +1774,11 @@ export default function ScorecardDashboard() {
 
   // RD stock position — served from the secondary (franchise) database, so it
   // only fires while its own tab is open.
-  const { data: rdStatusData, isFetching: isLoadingRdStatus } = useGetRdStatus({
-    date: rdStatusDate(filters.dateTo),
-  });
+  // No date sent: the endpoint reports the current stock position and ignores
+  // ?date=, so passing one would only put dateTo in the query key and refetch
+  // on range changes made elsewhere.
+  const { data: rdStatusData, isFetching: isLoadingRdStatus } =
+    useGetRdStatus();
   // Branch/distributor are applied here rather than in SQL — the RD list is
   // ~100 rows and both filter lists are built from this same response.
   const rdStatusRows = useMemo(() => {

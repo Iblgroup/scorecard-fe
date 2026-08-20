@@ -2,7 +2,6 @@ import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { useGetFilterBranches, useGetFilters } from '@/api/filters';
 import {
   useGetRdStatus,
-  rdStatusDate,
   type RdStatusApiRow,
 } from '@/api/rdStatus';
 import { DatePicker } from '@/components/date-picker';
@@ -200,9 +199,11 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
 
   // RD branch/distributor lists come from the RD Status response itself —
   // same query key as the tab, so both share one request.
-  const { data: rdStatusData } = useGetRdStatus({
-    date: rdStatusDate(initialFilters.dateTo),
-  });
+  //
+  // No date sent: the endpoint ignores it and always answers as of today. Left
+  // in, it would put dateTo in the query key, so changing the range on another
+  // tab would refetch this for an answer that cannot differ.
+  const { data: rdStatusData } = useGetRdStatus();
   const rdRows: RdStatusApiRow[] =
     (rdStatusData as { data?: RdStatusApiRow[] })?.data ?? [];
 
@@ -427,24 +428,29 @@ export function FilterBar({ initialFilters }: FilterBarProps) {
           )}
         </Grid>
 
-        <Flex align="center" flexShrink={0}>
-          {/* RD Status is a position on one date, not a range — one picker. */}
-          {!isRdStatus && (
+        {/* No date control on RD Status: it reports the CURRENT stock position
+            and nothing else can be asked for. primary_secondary_stock is a
+            latest-snapshot view holding one row per RD, so there is no history
+            to select from, and /rd-status validates ?date= then ignores it and
+            answers as of today regardless. A picker there moved nothing. The
+            other tabs keep their From/To range, which they do use. */}
+        {!isRdStatus && (
+          <Flex align="center" flexShrink={0}>
             <DatePicker
               value={localDateFrom}
               onChange={setLocalDateFrom}
               placeholder="From"
               variant="range-start"
             />
-          )}
-          <DatePicker
-            value={localDateTo}
-            onChange={setLocalDateTo}
-            placeholder={isRdStatus ? 'As of' : 'To'}
-            variant={isRdStatus ? 'outline' : 'range-end'}
-            minDate={isRdStatus ? undefined : localDateFrom || undefined}
-          />
-        </Flex>
+            <DatePicker
+              value={localDateTo}
+              onChange={setLocalDateTo}
+              placeholder="To"
+              variant="range-end"
+              minDate={localDateFrom || undefined}
+            />
+          </Flex>
+        )}
 
         <Flex align="center" gap={2} flexShrink={0}>
           <Button
