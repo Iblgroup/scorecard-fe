@@ -1,28 +1,38 @@
 /**
- * Session handoff from the authenticator portal (port 4001).
+ * Session handoff from the authenticator portal.
  *
  * This app never logs anyone in. The portal sends the browser here with a
  * one-time ticket — ?t=<16 chars> — which we swap for the real access token over
- * a direct call to the authenticator API. The JWT itself never appears in a URL,
- * so it stays out of nginx logs, browser history and Referer headers, and a
- * copied link is worthless: the ticket is dead the moment it is redeemed, and
- * expires on its own after a minute.
+ * a direct call to the authenticator API. The JWT itself never appears in a URL.
  *
- * The token lives in sessionStorage, not localStorage: closing the tab ends the
- * session, which is the behaviour the portal promises. It is also per-origin,
- * so each dashboard keeps its own copy.
+ * Namespaced sessionStorage key — all dashboards share one origin under the
+ * reverse proxy, so an unscoped key would collide across apps in the same tab.
  */
 
-const TOKEN_KEY = 'searle_token';
+const TOKEN_KEY = 'searle_token_scorecard';
 const TICKET_PARAM = 't';
 
-const AUTH_PORTAL_URL = (
-  import.meta.env.VITE_AUTH_PORTAL_URL || 'http://208.110.83.26:4001'
+/** Portal UI base, always with a trailing slash (avoids nginx 301 on bounce). */
+function portalBase(): string {
+  const raw =
+    import.meta.env.VITE_AUTH_PORTAL_URL ||
+    'https://dev.onethunder.iblgrp.com/login/';
+  return String(raw).replace(/\/+$/, '') + '/';
+}
+
+/** Join portal base + path without double slashes. */
+export function joinPortalPath(path: string): string {
+  const base = portalBase().replace(/\/+$/, '');
+  const segment = path.replace(/^\/+/, '');
+  return `${base}/${segment}`;
+}
+
+/** Authenticator API origin only — /api is appended here. */
+const AUTH_API_ORIGIN = (
+  import.meta.env.VITE_AUTH_API_URL || 'https://dev-login.onethunder.iblgrp.com'
 ).replace(/\/+$/, '');
 
-export const AUTH_API_URL = (
-  import.meta.env.VITE_AUTH_API_URL || 'http://208.110.83.26:4002/api'
-).replace(/\/+$/, '');
+export const AUTH_API_URL = AUTH_API_ORIGIN ? `${AUTH_API_ORIGIN}/api` : '';
 
 interface TokenPayload {
   exp?: number;
@@ -60,13 +70,6 @@ function stripTicketFromUrl() {
   window.history.replaceState({}, '', url.toString());
 }
 
-/**
- * Redeems a ?t= ticket if one is present. Always clears it from the URL, even
- * when redemption fails — a spent ticket is noise, and leaving it there would
- * retry on every refresh.
- *
- * Returns true when a session was established from the ticket.
- */
 /**
  * Shared so two callers cannot race each other.
  *
@@ -110,21 +113,6 @@ async function performRedeem(): Promise<boolean> {
   }
 }
 
-/**
- * Who the portal says this browser is currently signed in as.
- *
- * sessionStorage is per origin AND per tab, so this app cannot see the portal's
- * session — which meant a dashboard opened by one user stayed fully usable
- * after somebody else signed in on the same browser. Cookies are scoped by HOST
- * and ignore the port, so the portal publishes the current user id there and
- * every dashboard can read it.
- *
- *   a user id  the portal is signed in as them
- *   ""         the portal signed out
- *   null       no cookie at all — cannot tell, so change nothing. Treating this
- *              as "signed out" would trap a cookie-less browser in a redirect
- *              loop between here and the portal.
- */
 const SESSION_COOKIE = 'ot_session_user';
 
 function portalUserId(): string | null {
@@ -148,9 +136,6 @@ export function getToken(): string | null {
     return null;
   }
 
-  // Still inside its lifetime, but belonging to a session this browser has
-  // since left. Drop it, so the caller re-handshakes as whoever is signed in
-  // now — or gets bounced to the portal.
   const current = portalUserId();
   if (current !== null && current !== tokenSubject(token)) {
     clearSession();
@@ -167,13 +152,11 @@ export function clearSession() {
 /**
  * Hands the browser to the portal's login page, remembering where we were so it
  * can send the user straight back here afterwards.
- *
- * replace() rather than assign() so the back button does not land on a page we
- * are about to bounce out of again.
  */
 export function redirectToPortal() {
   clearSession();
-  const target = `${AUTH_PORTAL_URL}/login?redirect=${encodeURIComponent(
+  // portalBase already ends with / — do not append /login again.
+  const target = `${portalBase()}?redirect=${encodeURIComponent(
     window.location.href
   )}`;
   window.location.replace(target);

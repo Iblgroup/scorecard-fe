@@ -1,14 +1,12 @@
 import { Suspense, lazy } from 'react';
 import { Box, Spinner, VStack, Text } from '@chakra-ui/react';
-import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import ErrorPage from '@/pages/ErrorPage';
 
-// Lazy load pages for better performance
 const ScorecardDashboard = lazy(() => import('@/pages/ScorecardDashboard'));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
 
-// Loading fallback component
 function LoadingFallback() {
   return (
     <Box
@@ -27,30 +25,28 @@ function LoadingFallback() {
   );
 }
 
-// Router configuration
-const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <Navigate to="/scorecard-dashboard" replace />,
-  },
-  {
-    path: '/scorecard-dashboard',
-    element: (
-      <Suspense fallback={<LoadingFallback />}>
-        <ScorecardDashboard />
-      </Suspense>
-    ),
-    errorElement: <ErrorPage />,
-  },
-  {
-    path: '*',
-    element: (
-      <Suspense fallback={<LoadingFallback />}>
-        <NotFoundPage />
-      </Suspense>
-    ),
-  },
-]);
+const router = createBrowserRouter(
+  [
+    {
+      path: '/',
+      element: (
+        <Suspense fallback={<LoadingFallback />}>
+          <ScorecardDashboard />
+        </Suspense>
+      ),
+      errorElement: <ErrorPage />,
+    },
+    {
+      path: '*',
+      element: (
+        <Suspense fallback={<LoadingFallback />}>
+          <NotFoundPage />
+        </Suspense>
+      ),
+    },
+  ],
+  { basename: '/scorecard-dashboard' },
+);
 
 export default function App() {
   return (

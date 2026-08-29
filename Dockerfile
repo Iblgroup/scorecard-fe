@@ -34,19 +34,14 @@ RUN npm install
 # Copy application code
 COPY . .
 
-# Accept build argument for API URL
-ARG VITE_API_BASE_URL=http://localhost:3005/api
-
-# Set as environment variable for Vite build
+# Origins only — clients append /api. Trailing slash on portal avoids an nginx 301.
+ARG VITE_API_BASE_URL=https://dev-scorecard.onethunder.iblgrp.com
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
-# Where an unauthenticated visitor is sent. Baked in at build time like the
-# API URL above, so changing it needs a rebuild.
-ARG VITE_AUTH_PORTAL_URL=http://208.110.83.26:4001
+ARG VITE_AUTH_PORTAL_URL=https://dev.onethunder.iblgrp.com/login/
 ENV VITE_AUTH_PORTAL_URL=${VITE_AUTH_PORTAL_URL}
 
-# Authenticator API, for redeeming the one-time handoff ticket.
-ARG VITE_AUTH_API_URL=http://208.110.83.26:4002/api
+ARG VITE_AUTH_API_URL=https://dev-login.onethunder.iblgrp.com
 ENV VITE_AUTH_API_URL=${VITE_AUTH_API_URL}
 
 # Build the application
@@ -55,8 +50,8 @@ RUN npm run build
 # Production serve stage with nginx
 FROM nginx:alpine AS production
 
-# Copy built files from build stage
-COPY --from=build /app/dist /usr/share/nginx/html
+# Filesystem matches URL sub-path (host nginx forwards /scorecard-dashboard/ unchanged)
+COPY --from=build /app/dist /usr/share/nginx/html/scorecard-dashboard
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf

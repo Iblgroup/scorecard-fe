@@ -2284,7 +2284,7 @@ export default function ScorecardDashboard() {
           <Box flexShrink={0}>
             <img
               width="80px"
-              src="/logo.png"
+              src={`${import.meta.env.BASE_URL}logo.png`}
               style={{ marginBottom: '2px' }}
               alt="Searle"
             />

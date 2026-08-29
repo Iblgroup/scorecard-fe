@@ -8,8 +8,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    # NOTE: the API base URL is baked into the JS bundle at BUILD time by Vite.
-    # It cannot be set here at runtime — pass it when building the image:
-    #   docker build --build-arg VITE_API_BASE_URL=http://208.110.83.26:3005/api ...
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://dev-scorecard.onethunder.iblgrp.com}
+        VITE_AUTH_PORTAL_URL: ${VITE_AUTH_PORTAL_URL:-https://dev.onethunder.iblgrp.com/login/}
+        VITE_AUTH_API_URL: ${VITE_AUTH_API_URL:-https://dev-login.onethunder.iblgrp.com}
+    # Host nginx (HTTPS) is the only public entry; bind localhost so ports are
+    # not reachable from the network.
     ports:
-      - "3004:3004"
+      - "127.0.0.1:3004:3004"

@@ -1,25 +1,11 @@
 /**
  * Reports how long this dashboard is actually being looked at.
- *
- * A beat goes to the authenticator every 30 seconds, but ONLY while the tab is
- * visible — so a dashboard left open behind other windows overnight does not
- * report twelve hours of use. Hiding the tab sends a closing beat; showing it
- * again starts a fresh stretch.
- *
- * The closing beat uses fetch(keepalive) rather than sendBeacon because the
- * request needs an Authorization header, which sendBeacon cannot set. Either
- * way it is best-effort: the server closes silent sessions on its own, so a
- * dropped goodbye costs a little precision, never a lost session.
  */
 
-import { getToken } from '@/utils/session';
+import { getToken, AUTH_API_URL } from '@/utils/session';
 
 const HEARTBEAT_MS = 30_000;
-const SESSION_ID_KEY = 'searle_usage_session';
-
-const AUTH_API_URL = (
-  import.meta.env.VITE_AUTH_API_URL || 'http://208.110.83.26:4002/api'
-).replace(/\/+$/, '');
+const SESSION_ID_KEY = 'searle_usage_session_scorecard';
 
 /** One id per tab, so two tabs on the same dashboard are counted separately. */
 function usageSessionId(): string {
@@ -46,7 +32,6 @@ function send(event: 'ping' | 'end') {
     event,
   });
 
-  // keepalive lets the request outlive the page during an 'end' beat.
   void fetch(`${AUTH_API_URL}/usage/heartbeat`, {
     method: 'POST',
     headers: {
@@ -60,10 +45,6 @@ function send(event: 'ping' | 'end') {
   });
 }
 
-/**
- * Starts reporting. Returns a stop function for React cleanup.
- * Safe to call more than once; the second call replaces the first.
- */
 export function startUsageTracking(): () => void {
   let timer: number | null = null;
 
@@ -88,8 +69,6 @@ export function startUsageTracking(): () => void {
     else stop(true);
   };
 
-  // pagehide covers closing, reloading and back/forward navigation, and unlike
-  // beforeunload it also fires on mobile Safari.
   const onPageHide = () => stop(true);
 
   if (document.visibilityState === 'visible') start();

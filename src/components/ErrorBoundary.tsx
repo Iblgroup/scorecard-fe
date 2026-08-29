@@ -57,7 +57,7 @@ export class ErrorBoundary extends Component<Props, State> {
                             <Button
                                 colorPalette="brand"
                                 size="lg"
-                                onClick={() => window.location.href = '/'}
+                                onClick={() => { window.location.href = import.meta.env.BASE_URL }}
                             >
                                 Go Back Home
                             </Button>

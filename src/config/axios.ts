@@ -1,9 +1,10 @@
 import Axios from "axios"
 import { getToken, redirectToPortal } from "@/utils/session"
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+const API_ORIGIN = String(import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "")
+const API_BASE_URL = API_ORIGIN ? `${API_ORIGIN}/api` : ""
 
-if (!API_BASE_URL) {
+if (!API_ORIGIN) {
     console.warn("VITE_API_BASE_URL is not defined in environment variables")
 }
 
@@ -16,10 +17,8 @@ const axios = Axios.create({
     timeout: 0, // no timeout
 })
 
-// Request interceptor
 axios.interceptors.request.use(
     (config) => {
-        // Add auth token if available
         const token = getToken()
         if (token) {
             config.headers.Authorization = `Bearer ${token}`
@@ -34,7 +33,6 @@ axios.interceptors.request.use(
     }
 )
 
-// Response interceptor
 axios.interceptors.response.use(
     (response) => {
         console.log(`[API Response] ${response.config.url}`, response.status)
@@ -49,19 +47,13 @@ axios.interceptors.response.use(
             error.response?.data || message
         )
 
-        // Handle specific error codes
         if (status === 401) {
-            // Session expired or rejected by the API. This app has no login of
-            // its own — the portal owns that.
             redirectToPortal()
         } else if (status === 403) {
-            // Forbidden
             console.error("Access forbidden")
         } else if (status === 404) {
-            // Not found
             console.error("Resource not found")
         } else if (status >= 500) {
-            // Server error
             console.error("Server error occurred")
         }
 
