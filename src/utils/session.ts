@@ -27,12 +27,11 @@ export function joinPortalPath(path: string): string {
   return `${base}/${segment}`;
 }
 
-/** Authenticator API origin only — /api is appended here. */
-const AUTH_API_ORIGIN = (
-  import.meta.env.VITE_AUTH_API_URL || 'https://dev-login.onethunder.iblgrp.com'
+/** Authenticator API base URL (must include /api). */
+export const AUTH_API_URL = (
+  import.meta.env.VITE_AUTH_API_URL ||
+  'https://dev-login.onethunder.iblgrp.com/api'
 ).replace(/\/+$/, '');
-
-export const AUTH_API_URL = AUTH_API_ORIGIN ? `${AUTH_API_ORIGIN}/api` : '';
 
 interface TokenPayload {
   exp?: number;

@@ -1,10 +1,9 @@
 import Axios from "axios"
 import { getToken, redirectToPortal } from "@/utils/session"
 
-const API_ORIGIN = String(import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "")
-const API_BASE_URL = API_ORIGIN ? `${API_ORIGIN}/api` : ""
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
-if (!API_ORIGIN) {
+if (!API_BASE_URL) {
     console.warn("VITE_API_BASE_URL is not defined in environment variables")
 }
 

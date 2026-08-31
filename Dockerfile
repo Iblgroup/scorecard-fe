@@ -34,14 +34,14 @@ RUN npm install
 # Copy application code
 COPY . .
 
-# Origins only — clients append /api. Trailing slash on portal avoids an nginx 301.
-ARG VITE_API_BASE_URL=https://dev-scorecard.onethunder.iblgrp.com
+# Full API base URLs including /api (baked at build time).
+ARG VITE_API_BASE_URL=https://dev-scorecard.onethunder.iblgrp.com/api
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
 ARG VITE_AUTH_PORTAL_URL=https://dev.onethunder.iblgrp.com/login/
 ENV VITE_AUTH_PORTAL_URL=${VITE_AUTH_PORTAL_URL}
 
-ARG VITE_AUTH_API_URL=https://dev-login.onethunder.iblgrp.com
+ARG VITE_AUTH_API_URL=https://dev-login.onethunder.iblgrp.com/api
 ENV VITE_AUTH_API_URL=${VITE_AUTH_API_URL}
 
 # Build the application
