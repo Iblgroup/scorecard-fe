@@ -12,11 +12,13 @@
 const TOKEN_KEY = 'searle_token_scorecard';
 const TICKET_PARAM = 't';
 
-/** Portal UI base, always with a trailing slash (avoids nginx 301 on bounce). */
+/**
+ * Portal site origin (trailing slash). Sign-in is /login; home is /dashboard.
+ */
 function portalBase(): string {
   const raw =
     import.meta.env.VITE_AUTH_PORTAL_URL ||
-    'https://dev.onethunder.iblgrp.com/login/';
+    'https://dev.onethunder.iblgrp.com/';
   return String(raw).replace(/\/+$/, '') + '/';
 }
 
@@ -136,6 +138,10 @@ export function getToken(): string | null {
   }
 
   const current = portalUserId();
+  if (current === '') {
+    clearSession();
+    return null;
+  }
   if (current !== null && current !== tokenSubject(token)) {
     clearSession();
     return null;
@@ -154,8 +160,7 @@ export function clearSession() {
  */
 export function redirectToPortal() {
   clearSession();
-  // portalBase already ends with / — do not append /login again.
-  const target = `${portalBase()}?redirect=${encodeURIComponent(
+  const target = `${portalBase()}login?redirect=${encodeURIComponent(
     window.location.href
   )}`;
   window.location.replace(target);

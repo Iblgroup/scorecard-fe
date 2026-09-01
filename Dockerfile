@@ -38,7 +38,7 @@ COPY . .
 ARG VITE_API_BASE_URL=https://dev-scorecard.onethunder.iblgrp.com/api
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
-ARG VITE_AUTH_PORTAL_URL=https://dev.onethunder.iblgrp.com/login/
+ARG VITE_AUTH_PORTAL_URL=https://dev.onethunder.iblgrp.com/
 ENV VITE_AUTH_PORTAL_URL=${VITE_AUTH_PORTAL_URL}
 
 ARG VITE_AUTH_API_URL=https://dev-login.onethunder.iblgrp.com/api
